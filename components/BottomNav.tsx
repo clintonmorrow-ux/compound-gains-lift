@@ -1,12 +1,12 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { House, Clock3, Gauge } from 'lucide-react'
+import { House, Clock3, Settings2 } from 'lucide-react'
 
 const TABS = [
-  { href:'/',         label:'Home',    Icon:House  },
-  { href:'/history',  label:'History', Icon:Clock3 },
-  { href:'/settings', label:'1RM',     Icon:Gauge  },
+  { href:'/',         label:'Home',     Icon:House    },
+  { href:'/history',  label:'History',  Icon:Clock3   },
+  { href:'/settings', label:'Settings', Icon:Settings2 },
 ]
 
 export default function BottomNav() {
@@ -28,17 +28,18 @@ export default function BottomNav() {
           return (
             <Link key={href} href={href}
               className="tap flex flex-1 flex-col items-center justify-center"
-              style={{ gap: 3 }}>
+              style={{ gap:3, textDecoration:'none' }}>
               <Icon
-                size={25}
+                size={24}
                 strokeWidth={on ? 2.2 : 1.6}
                 style={{ color: on ? 'var(--accent)' : 'var(--label-4)' }}
               />
               <span style={{
-                fontSize: 10,
+                fontSize:10,
                 fontWeight: on ? 600 : 400,
-                letterSpacing: '-0.02em',
+                letterSpacing:'-0.02em',
                 color: on ? 'var(--accent)' : 'var(--label-4)',
+                textDecoration:'none',
               }}>
                 {label}
               </span>

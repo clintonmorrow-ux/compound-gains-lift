@@ -1,11 +1,11 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CheckCircle2, SlidersHorizontal } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
 import { WORKOUTS, WEEK_CONFIG, PHASE_LABELS } from '@/lib/program/data'
-import { fetchSettings, updateSettings, fetchRecentSessions } from '@/lib/db'
+import { fetchSettings, updateSettings, fetchRecentSessions, fetchAllOneRms } from '@/lib/db'
 
 const WC: Record<string,string> = { A:'var(--wkt-a)', B:'var(--wkt-b)', C:'var(--wkt-c)', D:'var(--wkt-d)' }
 const PC: Record<number,string>  = {
@@ -15,19 +15,26 @@ const PC: Record<number,string>  = {
 }
 
 export default function Dashboard() {
-  const [week, setWeek]     = useState(1)
-  const [done, setDone]     = useState<string[]>([])
-  const [ready, setReady]   = useState(false)
+  const [week,    setWeek]    = useState(1)
+  const [done,    setDone]    = useState<string[]>([])
+  const [hasRms,  setHasRms]  = useState(true)
+  const [ready,   setReady]   = useState(false)
 
   const init = useCallback(async () => {
     const sb = createClient()
     const { data:{session} } = await sb.auth.getSession()
     if (!session) await sb.auth.signInAnonymously()
-    const [s, sessions] = await Promise.all([fetchSettings(), fetchRecentSessions(20)])
+    const [s, sessions, rms] = await Promise.all([
+      fetchSettings(), fetchRecentSessions(20), fetchAllOneRms()
+    ])
     setWeek(s.current_week)
-    setDone((sessions as any[]).filter(x => x.week_number===s.current_week && x.completed_at).map((x:any) => x.workout_key))
+    setHasRms(rms.length > 0)
+    setDone((sessions as any[])
+      .filter(x => x.week_number===s.current_week && x.completed_at)
+      .map((x:any) => x.workout_key))
     setReady(true)
   }, [])
+
   useEffect(() => { init() }, [init])
 
   const bumpWeek = async (d: number) => {
@@ -47,64 +54,88 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen pb-tabs" style={{ background:'var(--bg)' }}>
 
-      {/* ── Navigation bar ── */}
+      {/* ── Nav bar — title only, no crowding ── */}
       <div className="pt-safe sticky top-0 z-20"
-        style={{ background:'rgba(0,0,0,0.85)', backdropFilter:'saturate(180%) blur(24px)', WebkitBackdropFilter:'saturate(180%) blur(24px)', borderBottom:'0.5px solid var(--sep)' }}>
-        <div className="flex items-end justify-between px-5 pb-3 pt-2">
-          <div>
-            <p className="t-caption2" style={{ color:'var(--label-3)', textTransform:'uppercase', letterSpacing:'0.08em' }}>Compound Gains</p>
-            <h1 className="t-large-title sf-heavy" style={{ lineHeight:1.1, marginTop:1 }}>Lift</h1>
-          </div>
-          {/* Week stepper */}
-          <div className="flex items-center gap-1.5">
-            <button onClick={() => bumpWeek(-1)} className="tap w-8 h-8 rounded-full flex items-center justify-center" style={{ background:'var(--fill-3)' }}>
-              <ChevronLeft size={16} style={{ color:'var(--accent)' }} strokeWidth={2.5} />
-            </button>
-            <span className="t-headline sf-semibold" style={{ minWidth:68, textAlign:'center', color:'var(--label)' }}>
-              Week {week}<span className="t-subhead" style={{ color:'var(--label-3)', fontWeight:400 }}>/12</span>
-            </span>
-            <button onClick={() => bumpWeek(+1)} className="tap w-8 h-8 rounded-full flex items-center justify-center" style={{ background:'var(--fill-3)' }}>
-              <ChevronRight size={16} style={{ color:'var(--accent)' }} strokeWidth={2.5} />
-            </button>
-          </div>
+        style={{ background:'rgba(0,0,0,0.88)', backdropFilter:'saturate(180%) blur(24px)', WebkitBackdropFilter:'saturate(180%) blur(24px)', borderBottom:'0.5px solid var(--sep)' }}>
+        <div className="px-5 pb-3 pt-2">
+          <p className="t-caption2" style={{ color:'var(--label-3)', textTransform:'uppercase', letterSpacing:'0.08em' }}>Compound Gains</p>
+          <h1 className="t-large-title sf-heavy" style={{ lineHeight:1.1, marginTop:1 }}>Lift</h1>
         </div>
       </div>
 
-      <div className="px-4 pt-5 space-y-7">
+      <div className="px-4 pt-5 space-y-5">
 
-        {/* Phase + progress */}
-        <div className="flex items-center gap-3 fade-rise">
-          <span className={`${PC[week]} t-caption1 sf-semibold px-3 py-1 rounded-full`} style={{ letterSpacing:'0.02em' }}>
-            {PHASE_LABELS[week]}
-          </span>
-          <div className="flex-1 overflow-hidden rounded-full" style={{ height:3, background:'var(--fill-3)' }}>
-            <div style={{ height:'100%', borderRadius:9999, background:'var(--accent)', width:`${((week-1)/12)*100}%`, transition:'width 0.4s ease' }} />
+        {/* ── 1RM prompt banner ── */}
+        {!hasRms && (
+          <Link href="/settings">
+            <div className="tap rounded-2xl px-4 py-4 flex items-center gap-3 fade-rise"
+                 style={{ background:'color-mix(in srgb, var(--orange) 14%, var(--bg-2))', border:'0.5px solid color-mix(in srgb, var(--orange) 35%, transparent)' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                   style={{ background:'color-mix(in srgb, var(--orange) 20%, transparent)' }}>
+                <SlidersHorizontal size={20} style={{ color:'var(--orange)' }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="t-subhead sf-semibold" style={{ color:'var(--label)' }}>Set your 1-rep maxes</p>
+                <p className="t-footnote mt-0.5" style={{ color:'var(--label-2)' }}>
+                  Target weights will auto-fill for every exercise
+                </p>
+              </div>
+              <ChevronRight size={16} style={{ color:'var(--label-3)', flexShrink:0 }} />
+            </div>
+          </Link>
+        )}
+
+        {/* ── Week picker — full width row, no cramping ── */}
+        <div className="fade-rise rounded-2xl px-4 py-3 flex items-center justify-between"
+             style={{ background:'var(--bg-2)', animationDelay:'0.03s' }}>
+          <div>
+            <p className="t-caption2" style={{ color:'var(--label-3)', textTransform:'uppercase', letterSpacing:'0.07em' }}>Current Week</p>
+            <p className="t-title2 sf-bold mt-0.5" style={{ color:'var(--label)' }}>
+              Week {week}
+              <span className="t-body" style={{ color:'var(--label-3)', fontWeight:400 }}> of 12</span>
+            </p>
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className={`${PC[week]} t-caption2 sf-semibold px-2.5 py-0.5 rounded-full`} style={{ letterSpacing:'0.02em' }}>
+                {PHASE_LABELS[week]}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={() => bumpWeek(-1)}
+              className="tap w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ background:'var(--fill-3)' }}>
+              <ChevronLeft size={18} style={{ color: week===1 ? 'var(--label-4)' : 'var(--accent)' }} strokeWidth={2.5} />
+            </button>
+            <button onClick={() => bumpWeek(+1)}
+              className="tap w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ background:'var(--fill-3)' }}>
+              <ChevronRight size={18} style={{ color: week===12 ? 'var(--label-4)' : 'var(--accent)' }} strokeWidth={2.5} />
+            </button>
           </div>
         </div>
 
-        {/* Next workout card */}
+        {/* ── Next workout ── */}
         {next ? (
-          <div className="fade-rise" style={{ animationDelay:'0.04s' }}>
+          <div className="fade-rise" style={{ animationDelay:'0.06s' }}>
             <p className="ios-section-label mb-2">Up Next</p>
             <Link href={`/workout/${week}/${next.key}`}>
               <div className="tap rounded-2xl overflow-hidden" style={{ background:'var(--bg-2)' }}>
                 <div className="px-5 pt-5 pb-4">
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: WC[next.key] }} />
-                        <span className="t-footnote sf-semibold" style={{ color:'var(--label-2)', letterSpacing:'0.02em', textTransform:'uppercase' }}>Workout {next.key}</span>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-2 h-2 rounded-full" style={{ background: WC[next.key] }} />
+                        <span className="t-caption2 sf-semibold" style={{ color:'var(--label-3)', textTransform:'uppercase', letterSpacing:'0.07em' }}>
+                          Workout {next.key}
+                        </span>
                       </div>
                       <h2 className="t-title1" style={{ color:'var(--label)' }}>{next.shortName}</h2>
-                      <p className="t-subhead" style={{ color:'var(--label-2)', marginTop:5, lineHeight:1.4 }}>{next.focus}</p>
-                    </div>
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background:`color-mix(in srgb, ${WC[next.key]} 18%, transparent)` }}>
-                      <ChevronRight size={20} style={{ color: WC[next.key] }} strokeWidth={2.5} />
+                      <p className="t-subhead mt-1" style={{ color:'var(--label-2)', lineHeight:1.5 }}>{next.focus}</p>
+                      <p className="t-footnote mt-3" style={{ color:'var(--label-3)' }}>
+                        {next.exercises.length} exercises · {cfg.sets.primary} primary sets · RIR {cfg.rir}
+                      </p>
                     </div>
                   </div>
-                  <p className="t-footnote mt-4" style={{ color:'var(--label-3)' }}>
-                    {next.exercises.length} exercises · {cfg.sets.primary} primary sets · RIR {cfg.rir} · ~55 min
-                  </p>
                 </div>
                 <div className="px-4 pb-4">
                   <button className="ios-btn" style={{ background: WC[next.key] }}>
@@ -117,13 +148,13 @@ export default function Dashboard() {
         ) : (
           <div className="fade-rise rounded-2xl px-5 py-7 text-center" style={{ background:'var(--bg-2)' }}>
             <p style={{ fontSize:36, marginBottom:8 }}>🏆</p>
-            <p className="t-headline" style={{ color:'var(--label)' }}>Week {week} Complete</p>
+            <p className="t-headline sf-semibold" style={{ color:'var(--label)' }}>Week {week} Complete</p>
             <p className="t-subhead mt-1" style={{ color:'var(--label-2)' }}>All 4 workouts done</p>
           </div>
         )}
 
-        {/* This week */}
-        <div className="fade-rise" style={{ animationDelay:'0.08s' }}>
+        {/* ── This week grid ── */}
+        <div className="fade-rise" style={{ animationDelay:'0.09s' }}>
           <p className="ios-section-label mb-2">This Week</p>
           <div className="ios-group">
             {WORKOUTS.map((w, i) => {
@@ -131,14 +162,14 @@ export default function Dashboard() {
               const c = WC[w.key]
               return (
                 <Link key={w.key} href={`/workout/${week}/${w.key}`}>
-                  <div className={`ios-row ${i===0 ? 'ios-row-first' : ''}`}>
+                  <div className={`ios-row ${i===0?'ios-row-first':''}`}>
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 t-footnote sf-heavy"
                          style={{ background:`color-mix(in srgb, ${c} 18%, transparent)`, color: c }}>
                       {w.key}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="t-subhead sf-semibold" style={{ color:'var(--label)' }}>{w.shortName}</p>
-                      <p className="t-caption1" style={{ color:'var(--label-3)', marginTop:1 }}>{w.exercises.length} exercises</p>
+                      <p className="t-caption1 mt-0.5" style={{ color:'var(--label-3)' }}>{w.exercises.length} exercises</p>
                     </div>
                     {isDone
                       ? <CheckCircle2 size={21} style={{ color:'var(--green)', flexShrink:0 }} />

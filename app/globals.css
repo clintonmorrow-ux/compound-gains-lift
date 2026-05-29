@@ -47,6 +47,7 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
+a, a:hover, a:visited, a:focus { text-decoration: none !important; color: inherit; }
 
 html, body {
   background: var(--bg);
