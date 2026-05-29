@@ -21,18 +21,23 @@ export default function Dashboard() {
   const [ready,   setReady]   = useState(false)
 
   const init = useCallback(async () => {
-    const sb = createClient()
-    const { data:{session} } = await sb.auth.getSession()
-    if (!session) await sb.auth.signInAnonymously()
-    const [s, sessions, rms] = await Promise.all([
-      fetchSettings(), fetchRecentSessions(20), fetchAllOneRms()
-    ])
-    setWeek(s.current_week)
-    setHasRms(rms.length > 0)
-    setDone((sessions as any[])
-      .filter(x => x.week_number===s.current_week && x.completed_at)
-      .map((x:any) => x.workout_key))
-    setReady(true)
+    try {
+      const sb = createClient()
+      const { data:{session} } = await sb.auth.getSession()
+      if (!session) await sb.auth.signInAnonymously()
+      const [s, sessions, rms] = await Promise.all([
+        fetchSettings(), fetchRecentSessions(20), fetchAllOneRms()
+      ])
+      setWeek(s.current_week)
+      setHasRms(rms.length > 0)
+      setDone((sessions as any[])
+        .filter(x => x.week_number===s.current_week && x.completed_at)
+        .map((x:any) => x.workout_key))
+    } catch(e) {
+      console.error('Dashboard error:', e)
+    } finally {
+      setReady(true)
+    }
   }, [])
 
   useEffect(() => { init() }, [init])

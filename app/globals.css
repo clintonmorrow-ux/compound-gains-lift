@@ -49,6 +49,9 @@
 *, *::before, *::after { box-sizing: border-box; }
 a, a:hover, a:visited, a:focus { text-decoration: none !important; color: inherit; }
 
+/* iOS overrides system light-grey on <button> — force transparent so parent bg shows */
+button { -webkit-appearance: none; background: transparent; border: none; cursor: pointer; }
+
 html, body {
   background: var(--bg);
   color: var(--label);
