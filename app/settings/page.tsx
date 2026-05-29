@@ -13,8 +13,8 @@ export default function SettingsPage() {
   const [rms,   setRms]   = useState<Record<string,string>>({})
   const [round, setRound] = useState(5)
   const [group, setGroup] = useState<string>('A')
-  const [saved,  setSaved]  = useState<string|null>(null)
-  const [equip,  setEquip]  = useState<string[]>(['barbell','dumbbells','cables','machines'])
+  const [equip, setEquip] = useState<string[]>(['barbell','dumbbells','cables','machines'])
+  const [saved, setSaved] = useState<string|null>(null)
 
   const init = useCallback(async () => {
     const [r, s, eq] = await Promise.all([fetchAllOneRms(), fetchSettings(), fetchEquipment()])
@@ -36,6 +36,11 @@ export default function SettingsPage() {
     setRound(v); await updateSettings({ round_to_lbs: v })
   }
 
+  const toggleEquip = async (k: string) => {
+    const next = equip.includes(k) ? equip.filter(e => e !== k) : [...equip, k]
+    setEquip(next); await saveEquipment(next)
+  }
+
   return (
     <div className="min-h-screen pb-tabs" style={{ background:'var(--bg)' }}>
 
@@ -47,68 +52,15 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="px-4 pt-6 space-y-7">
+      <div className="px-4 pt-6 space-y-8">
 
-        {/* What this page does */}
-        <div className="rounded-2xl px-4 py-4" style={{ background:'var(--bg-2)' }}>
-          <p className="t-subhead sf-semibold" style={{ color:'var(--label)' }}>How target weights work</p>
-          <p className="t-footnote mt-1.5" style={{ color:'var(--label-2)', lineHeight:1.6 }}>
-            Enter your 1-rep max (or a heavy working weight) for each exercise below.
-            The app will automatically calculate your prescribed weight for every set
-            across all 12 weeks based on the phase percentage.
-          </p>
-        </div>
-
-        {/* Rounding */}
+        {/* ── 1RM Calculator — FIRST and prominent ── */}
         <div>
-          <p className="ios-section-label mb-2">Round weights to nearest</p>
-          <div className="ios-group">
-            {[2.5, 5, 10].map((v, i) => (
-              <button key={v} onClick={() => changeRound(v)}
-                className={`ios-row tap w-full ${i===0?'ios-row-first':''}`}>
-                <span className="t-body flex-1 text-left" style={{ color:'var(--label)' }}>{v} lbs</span>
-                {round===v && <Check size={18} style={{ color:'var(--accent)' }} strokeWidth={2.5} />}
-              </button>
-            ))}
-          </div>
-          <p className="ios-section-footer mt-1.5">
-            Applied to all calculated target weights. 5 lbs works for most barbell work.
+          <p className="ios-section-label mb-1">1-Rep Max Calculator</p>
+          <p className="t-footnote mb-3" style={{ color:'var(--label-3)', lineHeight:1.5 }}>
+            Enter your 1RM (or heaviest single rep) for each exercise. 
+            Target weights auto-fill across all 12 weeks. Tap a workout to expand.
           </p>
-        </div>
-
-        {/* Equipment selection */}
-        <div>
-          <p className="ios-section-label mb-2">Available Equipment</p>
-          <div className="ios-group">
-            {(Object.keys(EQUIPMENT_LABELS) as EquipmentKey[]).map((k, i) => {
-              const on = equip.includes(k)
-              const toggle = async () => {
-                const next = on ? equip.filter(e => e !== k) : [...equip, k]
-                setEquip(next); await saveEquipment(next)
-              }
-              return (
-                <button key={k} onClick={toggle}
-                  className={`ios-row tap w-full ${i===0?'ios-row-first':''}`}>
-                  <span className="t-body w-7 flex-shrink-0">{EQUIPMENT_ICONS[k]}</span>
-                  <p className="t-subhead flex-1 text-left" style={{ color: on ? 'var(--label)' : 'var(--label-3)' }}>
-                    {EQUIPMENT_LABELS[k]}
-                  </p>
-                  <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                       style={{ background: on ? 'var(--accent)' : 'var(--fill-3)' }}>
-                    {on && <Check size={11} strokeWidth={3} style={{ color:'#fff' }} />}
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-          <p className="ios-section-footer mt-1.5">
-            Workout alternatives will prioritise equipment you have available.
-          </p>
-        </div>
-
-        {/* 1RM entry grouped by workout */}
-        <div>
-          <p className="ios-section-label mb-2">Your 1-rep maxes</p>
           <div className="space-y-3">
             {WORKOUTS.map(wkt => {
               const c      = WC[wkt.key]
@@ -116,24 +68,27 @@ export default function SettingsPage() {
               return (
                 <div key={wkt.key} className="ios-group overflow-hidden">
 
-                  {/* Workout group header — tappable to expand */}
-                  <button className="ios-row ios-row-first tap w-full" onClick={() => setGroup(isOpen ? '' : wkt.key)}>
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 t-caption1 sf-heavy"
+                  {/* Workout header */}
+                  <button className="ios-row ios-row-first tap w-full"
+                          onClick={() => setGroup(isOpen ? '' : wkt.key)}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 t-footnote sf-heavy"
                          style={{ background:`color-mix(in srgb, ${c} 18%, transparent)`, color: c }}>
                       {wkt.key}
                     </div>
                     <div className="flex-1 text-left">
                       <p className="t-subhead sf-semibold" style={{ color:'var(--label)' }}>{wkt.shortName}</p>
                       <p className="t-caption1 mt-0.5" style={{ color:'var(--label-3)' }}>
-                        {wkt.exercises.filter(e => !e.isBodyweight).length} exercises to enter
+                        {wkt.exercises.filter(e => !e.isBodyweight).length} exercises
+                        {' · '}
+                        {wkt.exercises.filter(e => !e.isBodyweight && rms[e.name] && parseFloat(rms[e.name]) > 0).length} entered
                       </p>
                     </div>
                     {isOpen
-                      ? <ChevronUp size={16} style={{ color:'var(--label-4)', flexShrink:0 }} />
+                      ? <ChevronUp  size={16} style={{ color:'var(--label-4)', flexShrink:0 }} />
                       : <ChevronDown size={16} style={{ color:'var(--label-4)', flexShrink:0 }} />}
                   </button>
 
-                  {/* Exercise rows */}
+                  {/* Exercise input rows */}
                   {isOpen && wkt.exercises.map(ex => {
                     if (ex.isBodyweight) return (
                       <div key={ex.name} className="ios-row">
@@ -141,7 +96,8 @@ export default function SettingsPage() {
                           <p className="t-subhead" style={{ color:'var(--label-2)' }}>{ex.name}</p>
                           <p className="t-caption1 mt-0.5" style={{ color:'var(--label-4)' }}>Bodyweight — no entry needed</p>
                         </div>
-                        <span className="t-caption2 px-2.5 py-1 rounded-lg" style={{ background:'var(--fill-3)', color:'var(--label-3)' }}>BW</span>
+                        <span className="t-caption2 px-2.5 py-1 rounded-lg"
+                              style={{ background:'var(--fill-3)', color:'var(--label-3)' }}>BW</span>
                       </div>
                     )
 
@@ -149,27 +105,26 @@ export default function SettingsPage() {
                     const hasVal  = !!(rms[ex.name] && parseFloat(rms[ex.name]) > 0)
                     return (
                       <div key={ex.name} className="ios-row"
-                           style={{ background: isSaved ? `color-mix(in srgb, var(--green) 10%, var(--bg-2))` : 'var(--bg-2)' }}>
+                           style={{ background: isSaved ? 'color-mix(in srgb, var(--green) 10%, var(--bg-2))' : 'var(--bg-2)' }}>
                         <div className="flex-1 min-w-0 pr-3">
                           <p className="t-subhead sf-semibold" style={{ color:'var(--label)' }}>{ex.name}</p>
-                          <p className="t-caption1 mt-0.5" style={{ color: hasVal ? 'var(--label-3)' : 'var(--orange)' }}>
-                            {hasVal ? `${ex.muscle} · ${ex.type}` : `${ex.muscle} · tap to enter`}
+                          <p className="t-caption1 mt-0.5"
+                             style={{ color: hasVal ? 'var(--label-3)' : 'var(--orange)' }}>
+                            {hasVal ? `${ex.muscle} · ${ex.type}` : `Tap to enter · ${ex.muscle}`}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           {isSaved && <Check size={15} style={{ color:'var(--green)' }} strokeWidth={2.5} />}
                           <input
-                            type="number" inputMode="decimal"
-                            placeholder="0"
+                            type="number" inputMode="decimal" placeholder="—"
                             value={rms[ex.name] ?? ''}
                             onChange={e => setRms(p => ({...p, [ex.name]: e.target.value}))}
                             onBlur={e  => save(ex.name, e.target.value)}
                             style={{
-                              width:76, height:38,
-                              textAlign:'right', padding:'0 12px',
-                              fontSize:15, fontWeight:600,
+                              width:76, height:40, textAlign:'right', padding:'0 12px',
+                              fontSize:15, fontWeight:600, letterSpacing:'-0.3px',
                               background:'var(--fill-3)', color:'var(--label)',
-                              border: hasVal ? 'none' : `1px solid color-mix(in srgb, var(--orange) 50%, transparent)`,
+                              border: hasVal ? 'none' : '1px solid color-mix(in srgb, var(--orange) 50%, transparent)',
                               borderRadius:10, outline:'none',
                             }}
                           />
@@ -182,8 +137,47 @@ export default function SettingsPage() {
               )
             })}
           </div>
+        </div>
+
+        {/* ── Rounding ── */}
+        <div>
+          <p className="ios-section-label mb-2">Round weights to nearest</p>
+          <div className="ios-group">
+            {[2.5, 5, 10].map((v, i) => (
+              <button key={v} onClick={() => changeRound(v)}
+                className={`ios-row tap w-full ${i===0?'ios-row-first':''}`}>
+                <span className="t-body flex-1 text-left" style={{ color:'var(--label)' }}>{v} lbs</span>
+                {round===v && <Check size={18} style={{ color:'var(--accent)' }} strokeWidth={2.5} />}
+              </button>
+            ))}
+          </div>
+          <p className="ios-section-footer mt-1.5">Applied to all calculated target weights.</p>
+        </div>
+
+        {/* ── Equipment ── */}
+        <div>
+          <p className="ios-section-label mb-2">Available Equipment</p>
+          <div className="ios-group">
+            {(Object.keys(EQUIPMENT_LABELS) as EquipmentKey[]).map((k, i) => {
+              const on = equip.includes(k)
+              return (
+                <button key={k} onClick={() => toggleEquip(k)}
+                  className={`ios-row tap w-full ${i===0?'ios-row-first':''}`}>
+                  <span className="t-body w-7 flex-shrink-0">{EQUIPMENT_ICONS[k]}</span>
+                  <p className="t-subhead flex-1 text-left"
+                     style={{ color: on ? 'var(--label)' : 'var(--label-3)' }}>
+                    {EQUIPMENT_LABELS[k]}
+                  </p>
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                       style={{ background: on ? 'var(--accent)' : 'var(--fill-3)' }}>
+                    {on && <Check size={11} strokeWidth={3} style={{ color:'#fff' }} />}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
           <p className="ios-section-footer mt-1.5">
-            Fields outlined in orange haven't been set yet. Tap any field to enter a value.
+            Alternatives in workouts prioritise your selected equipment.
           </p>
         </div>
 
