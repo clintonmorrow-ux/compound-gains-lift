@@ -1,0 +1,93 @@
+import type { Workout, WeekConfig } from '@/types'
+
+export const WORKOUTS: Workout[] = [
+  {
+    key: 'A',
+    name: 'WORKOUT A — UPPER PUSH',
+    shortName: 'Upper Push',
+    day: 'Day 1 (e.g. Monday)',
+    focus: 'Chest · Front/Side Delts · Triceps',
+    restTimes: 'Compounds: 2–3 min · Isolation: 60–90 sec',
+    exercises: [
+      { name: 'Barbell Bench Press',          muscle: 'Chest',     type: 'primary',   cue: 'Retract scapula · arch · drive feet through floor' },
+      { name: 'Incline Dumbbell Press',        muscle: 'Chest',     type: 'secondary', cue: '30–45° incline · full ROM · no elbow flare' },
+      { name: 'Cable Chest Fly',               muscle: 'Chest',     type: 'isolation', cue: 'Slight elbow bend · feel the stretch at the bottom' },
+      { name: 'Overhead Press (Barbell)',      muscle: 'Shoulders', type: 'primary',   cue: 'Brace core · bar path directly over traps at top' },
+      { name: 'Cable Lateral Raise',           muscle: 'Side Delts',type: 'isolation', cue: 'Lead with elbow · slight forward lean · control eccentric' },
+      { name: 'Tricep Rope Pushdown',          muscle: 'Triceps',   type: 'primary',   cue: 'Elbows fixed · split rope at bottom · full extension' },
+      { name: 'Overhead DB Tricep Extension',  muscle: 'Triceps',   type: 'isolation', cue: 'Elbows close · feel full stretch · squeeze at top' },
+    ],
+  },
+  {
+    key: 'B',
+    name: 'WORKOUT B — LOWER (QUAD)',
+    shortName: 'Lower Quad',
+    day: 'Day 2 (e.g. Tuesday)',
+    focus: 'Quads · Calves · Core',
+    restTimes: 'Squat/Press: 3 min · Isolation: 60–90 sec',
+    exercises: [
+      { name: 'Barbell Back Squat',            muscle: 'Quads',  type: 'primary',   cue: 'Brace 360° · break at hips & knees simultaneously · depth' },
+      { name: 'Bulgarian Split Squat (DB)',    muscle: 'Quads',  type: 'secondary', cue: 'Front foot loaded · vertical shin · upright torso' },
+      { name: 'Leg Press',                     muscle: 'Quads',  type: 'secondary', cue: 'Feet shoulder-width · full depth · no knee lockout' },
+      { name: 'Leg Extension',                 muscle: 'Quads',  type: 'isolation', cue: 'Slow 3-sec eccentric · hard squeeze at top' },
+      { name: 'Standing Calf Raise',           muscle: 'Calves', type: 'primary',   cue: 'Full dorsiflexion stretch at bottom · pause at top' },
+      { name: 'Hanging Leg Raise',             muscle: 'Core',   type: 'primary',   cue: 'Posterior pelvic tilt · control the descent', isBodyweight: true },
+      { name: 'Ab Wheel Rollout',              muscle: 'Core',   type: 'secondary', cue: 'Hollow body position · don\'t let hips drop', isBodyweight: true },
+    ],
+  },
+  {
+    key: 'C',
+    name: 'WORKOUT C — UPPER PULL',
+    shortName: 'Upper Pull',
+    day: 'Day 3 (e.g. Thursday)',
+    focus: 'Back · Rear Delts · Biceps · Side Delts',
+    restTimes: 'Compounds: 2–3 min · Isolation: 60–90 sec',
+    exercises: [
+      { name: 'Barbell Bent-Over Row',         muscle: 'Back',       type: 'primary',   cue: 'Flat back · pull to navel · hard scapula squeeze' },
+      { name: 'Pull-Up / Lat Pulldown',        muscle: 'Back',       type: 'primary',   cue: 'Dead hang start · chin over bar · full extension at bottom' },
+      { name: 'Seated Cable Row (Wide Grip)',  muscle: 'Back',       type: 'secondary', cue: 'Neutral spine · drive elbows back · chest tall' },
+      { name: 'Face Pull',                     muscle: 'Rear Delts', type: 'primary',   cue: 'Pull to forehead · externally rotate at end position' },
+      { name: 'DB Rear Delt Fly',              muscle: 'Rear Delts', type: 'isolation', cue: 'Near-parallel torso · lead with elbows · no momentum' },
+      { name: 'Barbell Curl',                  muscle: 'Biceps',     type: 'primary',   cue: 'Elbows pinned · supinate at the top · slow eccentric' },
+      { name: 'DB Lateral Raise',              muscle: 'Side Delts', type: 'isolation', cue: 'Lead with elbow · slight lean forward · control eccentric' },
+    ],
+  },
+  {
+    key: 'D',
+    name: 'WORKOUT D — LOWER (HIP/HAM)',
+    shortName: 'Lower Hip',
+    day: 'Day 4 (e.g. Friday)',
+    focus: 'Hamstrings · Glutes · Calves · Core',
+    restTimes: 'RDL/Thrust: 2–3 min · Isolation: 60–90 sec',
+    exercises: [
+      { name: 'Romanian Deadlift (RDL)',       muscle: 'Hamstrings', type: 'primary',   cue: 'Soft knees · hinge at hips · feel hamstring stretch' },
+      { name: 'Barbell Hip Thrust',            muscle: 'Glutes',     type: 'primary',   cue: 'Full glute squeeze at top · posterior tilt · chin down' },
+      { name: 'Lying Leg Curl',                muscle: 'Hamstrings', type: 'isolation', cue: 'Slow eccentric · plantarflex foot for peak contraction' },
+      { name: 'Cable Pull-Through',            muscle: 'Glutes',     type: 'secondary', cue: 'Hip hinge (not a squat) · drive hips forward aggressively' },
+      { name: 'Seated Calf Raise',             muscle: 'Calves',     type: 'secondary', cue: 'Full stretch at bottom · slow 2-sec contraction at top' },
+      { name: 'Cable Crunch',                  muscle: 'Core',       type: 'primary',   cue: 'Flex at the waist — not the hips · round the spine' },
+      { name: 'Pallof Press (per side)',       muscle: 'Core',       type: 'secondary', cue: 'Anti-rotation · brace hard · slow and controlled' },
+    ],
+  },
+]
+
+export const WEEK_CONFIG: Record<number, WeekConfig> = {
+  1:  { sets: { primary: 4, secondary: 3, isolation: 3 }, reps: { primary: '10–12', secondary: '10–12', isolation: '12–15' }, rir: 3, phase: 'Phase 1 — Accumulation',            isDeload: false, note: '4 sets on primary lifts from day one. Leave 3 reps in the tank.',      percentages: { primary: 0.65, secondary: 0.67, isolation: 0.70 } },
+  2:  { sets: { primary: 4, secondary: 3, isolation: 3 }, reps: { primary: '10–12', secondary: '10–12', isolation: '12–15' }, rir: 2, phase: 'Phase 1 — Accumulation',            isDeload: false, note: 'Increase load vs Week 1. Push closer to failure (RIR 2).',             percentages: { primary: 0.68, secondary: 0.70, isolation: 0.73 } },
+  3:  { sets: { primary: 4, secondary: 4, isolation: 3 }, reps: { primary: '10–12', secondary: '10–12', isolation: '12–15' }, rir: 1, phase: 'Phase 1 — Accumulation',            isDeload: false, note: 'Accessories ramp to 4 sets. Push to RIR 1 on every final set.',       percentages: { primary: 0.72, secondary: 0.74, isolation: 0.77 } },
+  4:  { sets: { primary: 2, secondary: 2, isolation: 2 }, reps: { primary: '12–15', secondary: '15–20', isolation: '15–20' }, rir: 5, phase: 'DELOAD — Active Recovery',          isDeload: true,  note: 'Cut load 40–50%. Focus on technique and blood flow.',                percentages: { primary: 0.50, secondary: 0.50, isolation: 0.50 } },
+  5:  { sets: { primary: 4, secondary: 3, isolation: 3 }, reps: { primary: '8–10',  secondary: '8–10',  isolation: '10–12' }, rir: 3, phase: 'Phase 2 — Volume Build',            isDeload: false, note: 'New mesocycle — heavier loads, lower reps. 4 primary sets from start.', percentages: { primary: 0.70, secondary: 0.72, isolation: 0.73 } },
+  6:  { sets: { primary: 4, secondary: 4, isolation: 3 }, reps: { primary: '8–10',  secondary: '8–10',  isolation: '10–12' }, rir: 2, phase: 'Phase 2 — Volume Build',            isDeload: false, note: 'Accessories ramp to 4 sets. Beat Week 5 weights across the board.',    percentages: { primary: 0.75, secondary: 0.75, isolation: 0.77 } },
+  7:  { sets: { primary: 4, secondary: 4, isolation: 4 }, reps: { primary: '8–10',  secondary: '8–10',  isolation: '10–12' }, rir: 1, phase: 'Phase 2 — Volume Build',            isDeload: false, note: 'Peak volume week. Drive all sets to RIR 1.',                           percentages: { primary: 0.80, secondary: 0.80, isolation: 0.82 } },
+  8:  { sets: { primary: 2, secondary: 2, isolation: 2 }, reps: { primary: '12–15', secondary: '15–20', isolation: '15–20' }, rir: 5, phase: 'DELOAD — Active Recovery',          isDeload: true,  note: 'Full deload. Cut load 40–50%. Prep body for Phase 3.',                percentages: { primary: 0.50, secondary: 0.50, isolation: 0.50 } },
+  9:  { sets: { primary: 4, secondary: 3, isolation: 3 }, reps: { primary: '6–8',   secondary: '6–8',   isolation: '8–10'  }, rir: 3, phase: 'Phase 3 — Intensification',         isDeload: false, note: 'Strength focus — significantly heavier loads. New PRs begin here.',   percentages: { primary: 0.78, secondary: 0.78, isolation: 0.78 } },
+  10: { sets: { primary: 4, secondary: 4, isolation: 3 }, reps: { primary: '6–8',   secondary: '6–8',   isolation: '8–10'  }, rir: 2, phase: 'Phase 3 — Intensification',         isDeload: false, note: 'Accessories ramp to 4 sets. Beat Week 9 loads — go for PRs.',         percentages: { primary: 0.82, secondary: 0.82, isolation: 0.82 } },
+  11: { sets: { primary: 5, secondary: 4, isolation: 4 }, reps: { primary: '5–6',   secondary: '6–8',   isolation: '6–8'   }, rir: 1, phase: 'Phase 3 — Intensification (PEAK)', isDeload: false, note: '🔥 Peak week — 5 sets on primary lifts. Push for PRs.',                percentages: { primary: 0.87, secondary: 0.85, isolation: 0.83 } },
+  12: { sets: { primary: 2, secondary: 2, isolation: 2 }, reps: { primary: '10–12', secondary: '12–15', isolation: '12–15' }, rir: 5, phase: 'FINAL DELOAD',                      isDeload: true,  note: 'Final deload. Light and controlled. Prepare for next 12-week cycle.',  percentages: { primary: 0.55, secondary: 0.55, isolation: 0.55 } },
+}
+
+export const PHASE_LABELS: Record<number, string> = {
+  1: 'Phase 1', 2: 'Phase 1', 3: 'Phase 1', 4: 'Deload',
+  5: 'Phase 2', 6: 'Phase 2', 7: 'Phase 2', 8: 'Deload',
+  9: 'Phase 3', 10: 'Phase 3', 11: 'Phase 3 (Peak)', 12: 'Deload',
+}

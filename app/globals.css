@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg:          #0B0F1A;
+  --surface:     #131929;
+  --surface-2:   #1A2338;
+  --border:      #253048;
+  --accent:      #F97316;
+  --accent-dim:  #7C2D12;
+  --text:        #F1F5F9;
+  --muted:       #64748B;
+  --muted-light: #94A3B8;
+  --success:     #22C55E;
+  --warning:     #F59E0B;
+  --danger:      #EF4444;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top:    env(safe-area-inset-top, 0px);
+}
+* { box-sizing: border-box; }
+html, body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.safe-top    { padding-top: var(--safe-top); }
+.safe-bottom { padding-bottom: calc(var(--safe-bottom) + 72px); }
+.bottom-nav-height { height: calc(64px + var(--safe-bottom)); }
+.no-select { -webkit-user-select: none; user-select: none; }
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type='number'] { -moz-appearance: textfield; }
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.slide-up { animation: slide-up 0.25s ease-out; }
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fade-in 0.2s ease-out; }
+@keyframes pulse-ring {
+  0%   { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+.phase-1 { background: #1E3A5F; color: #60A5FA; }
+.phase-2 { background: #14532D; color: #4ADE80; }
+.phase-3 { background: #3B0764; color: #C084FC; }
+.phase-deload { background: #1C1917; color: #A8A29E; }
