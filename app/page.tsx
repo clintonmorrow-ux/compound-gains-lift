@@ -1,170 +1,148 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, Zap, CheckCircle2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CheckCircle2, Circle } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
 import { WORKOUTS, WEEK_CONFIG, PHASE_LABELS } from '@/lib/program/data'
 import { fetchSettings, updateSettings, fetchRecentSessions } from '@/lib/db'
 
-const WKT_COLOR = { A:'--a', B:'--b', C:'--c', D:'--d' } as const
-const WKT_BG    = { A:'--a-bg', B:'--b-bg', C:'--c-bg', D:'--d-bg' } as const
-const PHASE_CLASS: Record<number,string> = {
-  1:'phase-1',2:'phase-1',3:'phase-1',4:'phase-deload',
-  5:'phase-2',6:'phase-2',7:'phase-2',8:'phase-deload',
-  9:'phase-3',10:'phase-3',11:'phase-3',12:'phase-deload',
+const WC: Record<string,string> = { A:'var(--wkt-a)', B:'var(--wkt-b)', C:'var(--wkt-c)', D:'var(--wkt-d)' }
+const PC: Record<number,string>  = {
+  1:'ph-1',2:'ph-1',3:'ph-1',4:'ph-d',
+  5:'ph-2',6:'ph-2',7:'ph-2',8:'ph-d',
+  9:'ph-3',10:'ph-3',11:'ph-3',12:'ph-d',
 }
 
 export default function Dashboard() {
-  const [week,    setWeek]    = useState(1)
-  const [done,    setDone]    = useState<string[]>([])
-  const [loading, setLoading] = useState(true)
+  const [week, setWeek]     = useState(1)
+  const [done, setDone]     = useState<string[]>([])
+  const [ready, setReady]   = useState(false)
 
   const init = useCallback(async () => {
     const sb = createClient()
-    const { data: { session } } = await sb.auth.getSession()
+    const { data:{session} } = await sb.auth.getSession()
     if (!session) await sb.auth.signInAnonymously()
-    const [settings, sessions] = await Promise.all([fetchSettings(), fetchRecentSessions(20)])
-    setWeek(settings.current_week)
-    setDone((sessions as any[])
-      .filter(s => s.week_number === settings.current_week && s.completed_at)
-      .map(s => s.workout_key))
-    setLoading(false)
+    const [s, sessions] = await Promise.all([fetchSettings(), fetchRecentSessions(20)])
+    setWeek(s.current_week)
+    setDone((sessions as any[]).filter(x => x.week_number===s.current_week && x.completed_at).map((x:any) => x.workout_key))
+    setReady(true)
   }, [])
-
   useEffect(() => { init() }, [init])
 
-  const changeWeek = async (d: number) => {
+  const bumpWeek = async (d: number) => {
     const n = Math.max(1, Math.min(12, week + d))
-    setWeek(n)
-    await updateSettings({ current_week: n })
+    setWeek(n); await updateSettings({ current_week: n })
   }
 
-  const cfg         = WEEK_CONFIG[week]
-  const nextWorkout = WORKOUTS.find(w => !done.includes(w.key))
-
-  if (loading) return (
+  if (!ready) return (
     <div className="flex items-center justify-center min-h-screen" style={{ background:'var(--bg)' }}>
-      <div className="w-7 h-7 rounded-full border-2 border-t-transparent animate-spin"
-           style={{ borderColor:'var(--accent)' }} />
+      <div className="w-8 h-8 rounded-full border-[2.5px] border-t-transparent animate-spin" style={{ borderColor:'var(--accent)' }} />
     </div>
   )
 
+  const cfg  = WEEK_CONFIG[week]
+  const next = WORKOUTS.find(w => !done.includes(w.key))
+
   return (
-    <div className="min-h-screen pb-nav" style={{ background:'var(--bg)' }}>
+    <div className="min-h-screen pb-tabs" style={{ background:'var(--bg)' }}>
 
-      {/* ── Header ── */}
-      <div className="pt-safe px-5 pb-4"
-           style={{ background:'var(--bg)', borderBottom:'1px solid var(--border)' }}>
-        <div className="flex items-center justify-between pt-3">
-          {/* Brand */}
+      {/* ── Navigation bar ── */}
+      <div className="pt-safe sticky top-0 z-20"
+        style={{ background:'rgba(0,0,0,0.85)', backdropFilter:'saturate(180%) blur(24px)', WebkitBackdropFilter:'saturate(180%) blur(24px)', borderBottom:'0.5px solid var(--sep)' }}>
+        <div className="flex items-end justify-between px-5 pb-3 pt-2">
           <div>
-            <p className="label" style={{ color:'var(--accent)' }}>Compound Gains</p>
-            <h1 className="text-[28px] font-black tracking-tight leading-none mt-0.5"
-                style={{ color:'var(--text)' }}>Lift</h1>
+            <p className="t-caption2" style={{ color:'var(--label-3)', textTransform:'uppercase', letterSpacing:'0.08em' }}>Compound Gains</p>
+            <h1 className="t-large-title sf-heavy" style={{ lineHeight:1.1, marginTop:1 }}>Lift</h1>
           </div>
-
-          {/* Week picker */}
-          <div className="flex items-center gap-1"
-               style={{ background:'var(--surface)', border:'1px solid var(--border)', borderRadius:14, padding:'6px 8px' }}>
-            <button onClick={() => changeWeek(-1)} className="pressable p-1">
-              <ChevronLeft size={16} style={{ color:'var(--text-2)' }} />
+          {/* Week stepper */}
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => bumpWeek(-1)} className="tap w-8 h-8 rounded-full flex items-center justify-center" style={{ background:'var(--fill-3)' }}>
+              <ChevronLeft size={16} style={{ color:'var(--accent)' }} strokeWidth={2.5} />
             </button>
-            <div className="text-center w-12">
-              <p className="text-[11px] font-semibold" style={{ color:'var(--text-2)' }}>WEEK</p>
-              <p className="text-[22px] font-black leading-none" style={{ color:'var(--text)' }}>
-                {week}<span className="text-sm font-normal" style={{ color:'var(--text-3)' }}>/12</span>
-              </p>
-            </div>
-            <button onClick={() => changeWeek(+1)} className="pressable p-1">
-              <ChevronRight size={16} style={{ color:'var(--text-2)' }} />
+            <span className="t-headline sf-semibold" style={{ minWidth:68, textAlign:'center', color:'var(--label)' }}>
+              Week {week}<span className="t-subhead" style={{ color:'var(--label-3)', fontWeight:400 }}>/12</span>
+            </span>
+            <button onClick={() => bumpWeek(+1)} className="tap w-8 h-8 rounded-full flex items-center justify-center" style={{ background:'var(--fill-3)' }}>
+              <ChevronRight size={16} style={{ color:'var(--accent)' }} strokeWidth={2.5} />
             </button>
-          </div>
-        </div>
-
-        {/* Phase + progress */}
-        <div className="flex items-center gap-3 mt-3">
-          <span className={`pill ${PHASE_CLASS[week]}`}>{PHASE_LABELS[week]}</span>
-          <div className="flex-1 h-[3px] rounded-full overflow-hidden"
-               style={{ background:'var(--surface-3)' }}>
-            <div className="h-full rounded-full transition-all duration-500"
-                 style={{ width:`${((week-1)/12)*100}%`, background:'var(--accent)' }} />
           </div>
         </div>
       </div>
 
-      <div className="px-5 pt-5 space-y-5">
+      <div className="px-4 pt-5 space-y-7">
 
-        {/* ── Next Workout ── */}
-        {nextWorkout ? (
-          <div className="fade-up">
-            <p className="label mb-3">Up Next</p>
-            <Link href={`/workout/${week}/${nextWorkout.key}`}>
-              <div className="pressable card p-5"
-                   style={{ borderColor:`color-mix(in srgb, var(${WKT_COLOR[nextWorkout.key as keyof typeof WKT_COLOR]}) 30%, transparent)` }}>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-7 h-7 rounded-xl flex items-center justify-center"
-                           style={{ background:`var(${WKT_BG[nextWorkout.key as keyof typeof WKT_BG]})` }}>
-                        <Zap size={14} style={{ color:`var(${WKT_COLOR[nextWorkout.key as keyof typeof WKT_COLOR]})` }} />
+        {/* Phase + progress */}
+        <div className="flex items-center gap-3 fade-rise">
+          <span className={`${PC[week]} t-caption1 sf-semibold px-3 py-1 rounded-full`} style={{ letterSpacing:'0.02em' }}>
+            {PHASE_LABELS[week]}
+          </span>
+          <div className="flex-1 overflow-hidden rounded-full" style={{ height:3, background:'var(--fill-3)' }}>
+            <div style={{ height:'100%', borderRadius:9999, background:'var(--accent)', width:`${((week-1)/12)*100}%`, transition:'width 0.4s ease' }} />
+          </div>
+        </div>
+
+        {/* Next workout card */}
+        {next ? (
+          <div className="fade-rise" style={{ animationDelay:'0.04s' }}>
+            <p className="ios-section-label mb-2">Up Next</p>
+            <Link href={`/workout/${week}/${next.key}`}>
+              <div className="tap rounded-2xl overflow-hidden" style={{ background:'var(--bg-2)' }}>
+                <div className="px-5 pt-5 pb-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: WC[next.key] }} />
+                        <span className="t-footnote sf-semibold" style={{ color:'var(--label-2)', letterSpacing:'0.02em', textTransform:'uppercase' }}>Workout {next.key}</span>
                       </div>
-                      <span className="label" style={{ color:`var(${WKT_COLOR[nextWorkout.key as keyof typeof WKT_COLOR]})` }}>
-                        Workout {nextWorkout.key}
-                      </span>
+                      <h2 className="t-title1" style={{ color:'var(--label)' }}>{next.shortName}</h2>
+                      <p className="t-subhead" style={{ color:'var(--label-2)', marginTop:5, lineHeight:1.4 }}>{next.focus}</p>
                     </div>
-                    <h2 className="text-[26px] font-black leading-tight tracking-tight"
-                        style={{ color:'var(--text)' }}>
-                      {nextWorkout.shortName}
-                    </h2>
-                    <p className="text-[13px] mt-1 leading-snug" style={{ color:'var(--text-2)' }}>
-                      {nextWorkout.focus}
-                    </p>
-                    <p className="text-[12px] mt-3" style={{ color:'var(--text-3)' }}>
-                      {nextWorkout.exercises.length} exercises · {cfg.sets.primary} primary sets · RIR {cfg.rir}
-                    </p>
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background:`color-mix(in srgb, ${WC[next.key]} 18%, transparent)` }}>
+                      <ChevronRight size={20} style={{ color: WC[next.key] }} strokeWidth={2.5} />
+                    </div>
                   </div>
+                  <p className="t-footnote mt-4" style={{ color:'var(--label-3)' }}>
+                    {next.exercises.length} exercises · {cfg.sets.primary} primary sets · RIR {cfg.rir} · ~55 min
+                  </p>
                 </div>
-                <div className="btn-primary mt-5 flex items-center justify-center gap-2"
-                     style={{ background:`var(${WKT_COLOR[nextWorkout.key as keyof typeof WKT_COLOR]})` }}>
-                  <Zap size={16} />
-                  Start Workout
+                <div className="px-4 pb-4">
+                  <button className="ios-btn" style={{ background: WC[next.key] }}>
+                    Start Workout
+                  </button>
                 </div>
               </div>
             </Link>
           </div>
         ) : (
-          <div className="fade-up card p-6 text-center">
-            <CheckCircle2 size={36} className="mx-auto mb-3" style={{ color:'var(--success)' }} />
-            <p className="text-[17px] font-bold" style={{ color:'var(--text)' }}>Week {week} Complete</p>
-            <p className="text-[13px] mt-1" style={{ color:'var(--text-2)' }}>
-              All 4 workouts done. Move to week {Math.min(week+1,12)} when ready.
-            </p>
+          <div className="fade-rise rounded-2xl px-5 py-7 text-center" style={{ background:'var(--bg-2)' }}>
+            <p style={{ fontSize:36, marginBottom:8 }}>🏆</p>
+            <p className="t-headline" style={{ color:'var(--label)' }}>Week {week} Complete</p>
+            <p className="t-subhead mt-1" style={{ color:'var(--label-2)' }}>All 4 workouts done</p>
           </div>
         )}
 
-        {/* ── Week Grid ── */}
-        <div className="fade-up" style={{ animationDelay:'0.05s' }}>
-          <p className="label mb-3">This Week</p>
-          <div className="grid grid-cols-4 gap-2.5">
-            {WORKOUTS.map(w => {
+        {/* This week */}
+        <div className="fade-rise" style={{ animationDelay:'0.08s' }}>
+          <p className="ios-section-label mb-2">This Week</p>
+          <div className="ios-group">
+            {WORKOUTS.map((w, i) => {
               const isDone = done.includes(w.key)
-              const c = WKT_COLOR[w.key as keyof typeof WKT_COLOR]
-              const bg = WKT_BG[w.key as keyof typeof WKT_BG]
+              const c = WC[w.key]
               return (
                 <Link key={w.key} href={`/workout/${week}/${w.key}`}>
-                  <div className="pressable card-sm flex flex-col items-center py-4 gap-1.5"
-                       style={{
-                         background: isDone ? `var(${bg})` : 'var(--surface)',
-                         borderColor: isDone ? `color-mix(in srgb, var(${c}) 40%, transparent)` : 'var(--border)',
-                       }}>
-                    <span className="text-[13px] font-black" style={{ color: isDone ? `var(${c})` : 'var(--text-3)' }}>
+                  <div className={`ios-row ${i===0 ? 'ios-row-first' : ''}`}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 t-footnote sf-heavy"
+                         style={{ background:`color-mix(in srgb, ${c} 18%, transparent)`, color: c }}>
                       {w.key}
-                    </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="t-subhead sf-semibold" style={{ color:'var(--label)' }}>{w.shortName}</p>
+                      <p className="t-caption1" style={{ color:'var(--label-3)', marginTop:1 }}>{w.exercises.length} exercises</p>
+                    </div>
                     {isDone
-                      ? <CheckCircle2 size={14} style={{ color:`var(${c})` }} />
-                      : <div className="w-3.5 h-3.5 rounded-full" style={{ border:'1.5px solid var(--border-md)' }} />
-                    }
+                      ? <CheckCircle2 size={21} style={{ color:'var(--green)', flexShrink:0 }} />
+                      : <ChevronRight size={17} style={{ color:'var(--label-4)', flexShrink:0 }} />}
                   </div>
                 </Link>
               )
@@ -172,16 +150,12 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── Week note ── */}
-        <div className="fade-up" style={{ animationDelay:'0.1s' }}>
-          <div className="card-sm px-4 py-3.5">
-            <p className="text-[13px] leading-relaxed" style={{ color:'var(--text-2)' }}>
-              {cfg.note}
-            </p>
-          </div>
+        {/* Week note */}
+        <div className="fade-rise rounded-2xl px-4 py-3.5" style={{ animationDelay:'0.12s', background:'var(--bg-2)' }}>
+          <p className="t-footnote" style={{ color:'var(--label-2)', lineHeight:1.6 }}>{cfg.note}</p>
         </div>
-      </div>
 
+      </div>
       <BottomNav />
     </div>
   )

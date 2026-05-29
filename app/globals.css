@@ -3,150 +3,178 @@
 @tailwind utilities;
 
 :root {
-  /* Backgrounds */
-  --bg:        #0C0C14;
-  --surface:   #13131F;
-  --surface-2: #1A1A2A;
-  --surface-3: #222235;
+  /* ── iOS System Backgrounds ── */
+  --bg:     #000000;
+  --bg-2:   #1C1C1E;
+  --bg-3:   #2C2C2E;
+  --bg-4:   #3A3A3C;
 
-  /* Borders */
-  --border:    rgba(255,255,255,0.07);
-  --border-md: rgba(255,255,255,0.12);
+  /* ── iOS Label Colors ── */
+  --label:   #FFFFFF;
+  --label-2: rgba(235,235,245,0.60);
+  --label-3: rgba(235,235,245,0.30);
+  --label-4: rgba(235,235,245,0.18);
 
-  /* Accent */
-  --accent:    #FF6B00;
-  --accent-bg: rgba(255,107,0,0.12);
+  /* ── iOS Fill Colors ── */
+  --fill:   rgba(120,120,128,0.36);
+  --fill-2: rgba(120,120,128,0.32);
+  --fill-3: rgba(118,118,128,0.24);
+  --fill-4: rgba(116,116,128,0.18);
 
-  /* Text */
-  --text:   #FFFFFF;
-  --text-2: #8B8B9E;
-  --text-3: #4B4B60;
+  /* ── Separator ── */
+  --sep: rgba(84,84,88,0.65);
 
-  /* Status */
-  --success:    #34D399;
-  --success-bg: rgba(52,211,153,0.12);
-  --warning:    #FBBF24;
+  /* ── iOS System Colors (dark mode) ── */
+  --blue:   #0A84FF;
+  --green:  #30D158;
+  --orange: #FF9F0A;
+  --purple: #BF5AF2;
+  --red:    #FF453A;
+  --teal:   #40CBE0;
 
-  /* Workout keys */
-  --a: #5B8DF8; --a-bg: rgba(91,141,248,0.12);
-  --b: #10CFA0; --b-bg: rgba(16,207,160,0.12);
-  --c: #9F7AEA; --c-bg: rgba(159,122,234,0.12);
-  --d: #FF6B00; --d-bg: rgba(255,107,0,0.12);
+  /* ── App Accent ── */
+  --accent: #FF9F0A;
 
-  /* Layout */
+  /* ── Per-Workout ── */
+  --wkt-a: #0A84FF;
+  --wkt-b: #30D158;
+  --wkt-c: #BF5AF2;
+  --wkt-d: #FF9F0A;
+
+  /* ── Layout ── */
   --safe-top:    env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --nav-h:       64px;
 }
 
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+*, *::before, *::after { box-sizing: border-box; }
 
 html, body {
   background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
-  overscroll-behavior: none;
+  color: var(--label);
+  font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
 }
-
-/* Scrollbars */
 ::-webkit-scrollbar { display: none; }
+input[type='number'] { -moz-appearance: textfield; }
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; }
 
-/* Safe area helpers */
+/* ── Layout helpers ── */
 .pt-safe { padding-top: var(--safe-top); }
-.pb-nav  { padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 8px); }
+.pb-tabs { padding-bottom: calc(49px + var(--safe-bottom) + 12px); }
 
-/* Number inputs */
-input[type='number'] { -moz-appearance:textfield; }
-input[type='number']::-webkit-outer-spin-button,
-input[type='number']::-webkit-inner-spin-button { -webkit-appearance:none; }
+/* ── iOS type scale ── */
+.t-large-title { font-size: 34px; font-weight: 700; letter-spacing: 0.37px; line-height: 1.2; }
+.t-title1      { font-size: 28px; font-weight: 700; letter-spacing: 0.36px; line-height: 1.25; }
+.t-title2      { font-size: 22px; font-weight: 700; letter-spacing: 0.35px; }
+.t-title3      { font-size: 20px; font-weight: 600; letter-spacing: 0.38px; }
+.t-headline    { font-size: 17px; font-weight: 600; letter-spacing: -0.41px; }
+.t-body        { font-size: 17px; font-weight: 400; letter-spacing: -0.41px; }
+.t-callout     { font-size: 16px; font-weight: 400; letter-spacing: -0.32px; }
+.t-subhead     { font-size: 15px; font-weight: 400; letter-spacing: -0.24px; }
+.t-footnote    { font-size: 13px; font-weight: 400; letter-spacing: -0.08px; }
+.t-caption1    { font-size: 12px; font-weight: 400; }
+.t-caption2    { font-size: 11px; font-weight: 400; letter-spacing: 0.07px; }
+.sf-medium     { font-weight: 500; }
+.sf-semibold   { font-weight: 600; }
+.sf-bold       { font-weight: 700; }
+.sf-heavy      { font-weight: 800; }
 
-/* Typography */
-.label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-2);
-}
+/* ── Inset grouped list ── */
+.ios-group { background: var(--bg-2); border-radius: 12px; overflow: hidden; }
 
-/* Cards */
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-}
-.card-sm {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-}
-
-/* Press feedback */
-.pressable { transition: transform 0.1s ease, opacity 0.1s ease; }
-.pressable:active { transform: scale(0.97); opacity: 0.85; }
-
-/* Pill button */
-.pill {
-  display: inline-flex;
+.ios-row {
+  min-height: 50px;
+  padding: 11px 16px;
+  background: var(--bg-2);
+  display: flex;
   align-items: center;
-  padding: 4px 10px;
-  border-radius: 100px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  gap: 14px;
+  position: relative;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s;
 }
+.ios-row:active { background: var(--bg-3); }
+.ios-row + .ios-row::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 60px; right: 0;
+  height: 0.5px;
+  background: var(--sep);
+}
+.ios-row-first::before { display: none !important; }
 
-/* Primary CTA */
-.btn-primary {
-  width: 100%;
-  height: 56px;
-  border-radius: 16px;
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
+/* ── Section labels ── */
+.ios-section-label {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--label-3);
   text-transform: uppercase;
-  background: var(--accent);
-  color: #fff;
-  transition: transform 0.1s, opacity 0.1s;
+  letter-spacing: 0.05em;
+  padding: 0 4px 7px;
 }
-.btn-primary:active { transform: scale(0.97); opacity: 0.9; }
 
-/* Sheet modal overlay */
-.sheet-overlay {
-  position: fixed; inset: 0; z-index: 50;
-  background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+/* ── Pressable ── */
+.tap { transition: opacity 0.1s; }
+.tap:active { opacity: 0.55; }
+
+/* ── iOS Primary Button ── */
+.ios-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; height: 50px;
+  border-radius: 14px;
+  font-size: 17px; font-weight: 600; letter-spacing: -0.41px;
+  background: var(--accent); color: #fff;
+  transition: opacity 0.1s;
 }
-.sheet {
+.ios-btn:active { opacity: 0.8; }
+
+/* ── Sheets ── */
+.sheet-scrim {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.sheet-panel {
   position: absolute; bottom: 0; left: 0; right: 0;
-  background: var(--surface-2);
-  border-top: 1px solid var(--border-md);
-  border-radius: 28px 28px 0 0;
-  padding: 0 0 calc(var(--safe-bottom) + 12px);
-  animation: sheet-up 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  background: var(--bg-2);
+  border-radius: 20px 20px 0 0;
+  padding-bottom: max(var(--safe-bottom), 16px);
+  animation: sheet-up 0.35s cubic-bezier(0.32,0.72,0,1);
 }
 @keyframes sheet-up {
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
 }
 
-/* Fade in */
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(10px); }
+/* ── Animations ── */
+@keyframes fade-rise {
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.fade-up { animation: fade-up 0.22s ease-out both; }
+.fade-rise { animation: fade-rise 0.22s ease-out both; }
 
-/* Phase pills */
-.phase-1     { background: rgba(59,130,246,0.15);  color: #93C5FD; }
-.phase-2     { background: rgba(16,185,129,0.15);  color: #6EE7B7; }
-.phase-3     { background: rgba(139,92,246,0.15);  color: #C4B5FD; }
-.phase-deload{ background: rgba(107,114,128,0.15); color: #9CA3AF; }
+/* ── Phase pills ── */
+.ph-1 { background: rgba(10,132,255,0.16);  color: #5AABFF; }
+.ph-2 { background: rgba(48,209,88,0.16);   color: #5EE886; }
+.ph-3 { background: rgba(191,90,242,0.16);  color: #D08EFF; }
+.ph-d { background: rgba(120,120,128,0.2);  color: rgba(235,235,245,0.45); }
 
-/* Timer ring */
-@keyframes timer-pulse {
-  0%   { opacity: 0.6; transform: scale(1); }
-  100% { opacity: 0;   transform: scale(1.6); }
+/* ── Rest timer pill ── */
+.rest-pill {
+  position: fixed; top: calc(var(--safe-top) + 56px); left: 50%; transform: translateX(-50%);
+  z-index: 40;
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 16px 8px 10px;
+  border-radius: 999px;
+  background: rgba(44,44,46,0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 0.5px solid var(--sep);
+  white-space: nowrap;
+  animation: fade-rise 0.2s ease-out both;
 }

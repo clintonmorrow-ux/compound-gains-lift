@@ -1,51 +1,45 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Clock, SlidersHorizontal } from 'lucide-react'
+import { House, Clock3, Gauge } from 'lucide-react'
 
 const TABS = [
-  { href: '/',         label: 'Home',    Icon: Home               },
-  { href: '/history',  label: 'History', Icon: Clock              },
-  { href: '/settings', label: 'Weights', Icon: SlidersHorizontal  },
+  { href:'/',         label:'Home',    Icon:House  },
+  { href:'/history',  label:'History', Icon:Clock3 },
+  { href:'/settings', label:'1RM',     Icon:Gauge  },
 ]
 
 export default function BottomNav() {
   const path = usePathname()
-
   return (
     <nav
       className="fixed bottom-0 inset-x-0 z-50"
       style={{
-        background: 'rgba(13,13,21,0.85)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderTop: '1px solid var(--border)',
+        background: 'rgba(28,28,30,0.82)',
+        backdropFilter: 'saturate(180%) blur(20px)',
+        WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+        borderTop: '0.5px solid var(--sep)',
         paddingBottom: 'var(--safe-bottom)',
       }}
     >
-      <div className="flex h-16">
+      <div className="flex" style={{ height: 49 }}>
         {TABS.map(({ href, label, Icon }) => {
-          const active = path === href
+          const on = path === href
           return (
-            <Link
-              key={href}
-              href={href}
-              className="flex flex-1 flex-col items-center justify-center gap-1 pressable"
-            >
-              <div
-                className="flex items-center justify-center w-10 h-7 rounded-full transition-all duration-200"
-                style={{ background: active ? 'var(--accent-bg)' : 'transparent' }}
-              >
-                <Icon
-                  size={20}
-                  strokeWidth={active ? 2.5 : 1.8}
-                  style={{ color: active ? 'var(--accent)' : 'var(--text-3)' }}
-                />
-              </div>
-              <span
-                className="text-[10px] font-semibold tracking-wide"
-                style={{ color: active ? 'var(--accent)' : 'var(--text-3)' }}
-              >
+            <Link key={href} href={href}
+              className="tap flex flex-1 flex-col items-center justify-center"
+              style={{ gap: 3 }}>
+              <Icon
+                size={25}
+                strokeWidth={on ? 2.2 : 1.6}
+                style={{ color: on ? 'var(--accent)' : 'var(--label-4)' }}
+              />
+              <span style={{
+                fontSize: 10,
+                fontWeight: on ? 600 : 400,
+                letterSpacing: '-0.02em',
+                color: on ? 'var(--accent)' : 'var(--label-4)',
+              }}>
                 {label}
               </span>
             </Link>
