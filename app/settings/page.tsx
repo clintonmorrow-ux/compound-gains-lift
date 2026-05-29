@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, ChevronUp, ChevronLeft } from 'lucide-react'
+import { ChevronLeft, ChevronDown, ChevronUp, Check } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
 import { WORKOUTS } from '@/lib/program/data'
@@ -15,33 +15,29 @@ const WC: Record<string,string> = {
 }
 
 export default function SettingsPage() {
-  const router = useRouter()
+  const router  = useRouter()
   const [rms,     setRms]     = useState<Record<string,string>>({})
   const [round,   setRound]   = useState(5)
   const [group,   setGroup]   = useState<string>('A')
   const [equip,   setEquip]   = useState<string[]>(['barbell','dumbbells','cables','machines'])
   const [saved,   setSaved]   = useState<string|null>(null)
   const [loading, setLoading] = useState(true)
+  const [error,   setError]   = useState(false)
 
   const init = useCallback(async () => {
     try {
-      // Ensure session exists before any DB calls
       const sb = createClient()
-      const { data: { session } } = await sb.auth.getSession()
+      const { data:{ session } } = await sb.auth.getSession()
       if (!session) await sb.auth.signInAnonymously()
-
       const [r, s, eq] = await Promise.all([
-        fetchAllOneRms(),
-        fetchSettings(),
-        fetchEquipment(),
+        fetchAllOneRms(), fetchSettings(), fetchEquipment()
       ])
       const m: Record<string,string> = {}
       r.forEach((x: UserOneRm) => { m[x.exercise_name] = String(x.weight_lbs) })
-      setRms(m)
-      setRound(s.round_to_lbs)
-      setEquip(eq)
-    } catch (e) {
-      console.error('Settings load error:', e)
+      setRms(m); setRound(s.round_to_lbs); setEquip(eq)
+    } catch(e) {
+      console.error('Settings error:', e)
+      setError(true)
     } finally {
       setLoading(false)
     }
@@ -52,11 +48,8 @@ export default function SettingsPage() {
   const save = async (name: string, val: string) => {
     const n = parseFloat(val)
     if (!val || isNaN(n) || n <= 0) return
-    try {
-      await upsertOneRm(name, n)
-      setSaved(name)
-      setTimeout(() => setSaved(null), 1800)
-    } catch (e) { console.error('Save 1RM error:', e) }
+    try { await upsertOneRm(name, n); setSaved(name); setTimeout(()=>setSaved(null),1800) }
+    catch(e) { console.error(e) }
   }
 
   const changeRound = async (v: number) => {
@@ -65,61 +58,80 @@ export default function SettingsPage() {
   }
 
   const toggleEquip = async (k: string) => {
-    const next = equip.includes(k) ? equip.filter(e => e !== k) : [...equip, k]
+    const next = equip.includes(k) ? equip.filter(e=>e!==k) : [...equip, k]
     setEquip(next)
     try { await saveEquipment(next) } catch {}
   }
 
+  // ── Header — always visible ──────────────────────────────────────
+  const Header = (
+    <div className="pt-safe sticky top-0 z-20"
+      style={{ background:'rgba(0,0,0,0.95)', backdropFilter:'saturate(180%) blur(24px)',
+               WebkitBackdropFilter:'saturate(180%) blur(24px)',
+               borderBottom:'1px solid rgba(84,84,88,0.8)' }}>
+      <div className="flex items-center gap-3 px-4 pb-3 pt-2">
+        <button onClick={() => router.push('/')}
+          className="tap w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+          style={{ background:'var(--fill-3)' }}>
+          <ChevronLeft size={20} strokeWidth={2.5} style={{ color:'var(--accent)' }} />
+        </button>
+        <h1 className="t-title2 sf-bold flex-1" style={{ color:'var(--label)' }}>Settings</h1>
+      </div>
+    </div>
+  )
+
   if (loading) return (
-    <div className="flex items-center justify-center min-h-screen" style={{ background:'var(--bg)' }}>
-      <div className="w-8 h-8 rounded-full border-[2.5px] border-t-transparent animate-spin"
-           style={{ borderColor:'var(--accent)' }} />
+    <div className="min-h-screen" style={{ background:'var(--bg)' }}>
+      {Header}
+      <div className="flex items-center justify-center py-32">
+        <div className="w-8 h-8 rounded-full border-[2.5px] border-t-transparent animate-spin"
+             style={{ borderColor:'var(--accent)' }} />
+      </div>
+      <BottomNav />
+    </div>
+  )
+
+  if (error) return (
+    <div className="min-h-screen" style={{ background:'var(--bg)' }}>
+      {Header}
+      <div className="px-4 py-8 text-center">
+        <p className="t-headline" style={{ color:'var(--label)' }}>Couldn't load settings</p>
+        <p className="t-subhead mt-2" style={{ color:'#8E8E93' }}>Check your connection and try again</p>
+        <button onClick={() => { setError(false); setLoading(true); init() }}
+          className="ios-btn mt-6" style={{ maxWidth:200, margin:'24px auto 0' }}>
+          Retry
+        </button>
+      </div>
+      <BottomNav />
     </div>
   )
 
   return (
     <div className="min-h-screen pb-tabs" style={{ background:'var(--bg)' }}>
-
-      {/* Header */}
-      <div className="pt-safe sticky top-0 z-20"
-        style={{ background:'rgba(0,0,0,0.88)', backdropFilter:'saturate(180%) blur(24px)',
-                 WebkitBackdropFilter:'saturate(180%) blur(24px)', borderBottom:'0.5px solid var(--sep)' }}>
-        <div className="flex items-center gap-3 px-4 pb-3 pt-2">
-          <button onClick={() => router.push('/')}
-            className="tap w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ background:'var(--fill-3)' }}>
-            <ChevronLeft size={18} strokeWidth={2.5} style={{ color:'var(--accent)' }} />
-          </button>
-          <h1 className="t-title2 sf-bold" style={{ color:'var(--label)' }}>Settings</h1>
-        </div>
-      </div>
+      {Header}
 
       <div className="px-4 pt-6 space-y-8">
 
         {/* ── 1RM Calculator ── */}
         <div>
           <p className="ios-section-label mb-1">1-Rep Max Calculator</p>
-          <p className="t-footnote mb-3" style={{ color:'var(--label-2)', lineHeight:1.6 }}>
-            Enter your 1RM for each exercise below. Target weights auto-fill
-            across all 12 weeks. Orange fields still need a value.
+          <p className="t-footnote mb-3" style={{ color:'#8E8E93', lineHeight:1.6 }}>
+            Enter your 1RM for each exercise. Target weights auto-fill 
+            across all 12 weeks. Tap a workout letter to expand it.
           </p>
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {WORKOUTS.map(wkt => {
               const c = WC[wkt.key]
               const isOpen = group === wkt.key
-              const entered = wkt.exercises.filter(
-                e => !e.isBodyweight && rms[e.name] && parseFloat(rms[e.name]) > 0
-              ).length
-              const total = wkt.exercises.filter(e => !e.isBodyweight).length
+              const nonBW = wkt.exercises.filter(e => !e.isBodyweight)
+              const entered = nonBW.filter(e => rms[e.name] && parseFloat(rms[e.name]) > 0).length
 
               return (
                 <div key={wkt.key} className="ios-group overflow-hidden">
-
-                  {/* Workout header */}
                   <button className="ios-row ios-row-first tap w-full"
                           onClick={() => setGroup(isOpen ? '' : wkt.key)}>
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 t-subhead sf-heavy"
-                         style={{ background:`color-mix(in srgb, ${c} 18%, transparent)`, color: c }}>
+                         style={{ background:`color-mix(in srgb, ${c} 20%, transparent)`, color: c }}>
                       {wkt.key}
                     </div>
                     <div className="flex-1 text-left min-w-0">
@@ -127,72 +139,61 @@ export default function SettingsPage() {
                         {wkt.shortName}
                       </p>
                       <p className="t-caption1 mt-0.5"
-                         style={{ color: entered === total ? 'var(--green)' : 'var(--orange)' }}>
-                        {entered}/{total} entered
+                         style={{ color: entered===nonBW.length ? 'var(--green)' : 'var(--orange)' }}>
+                        {entered} of {nonBW.length} entered
+                        {entered===nonBW.length ? ' ✓' : ' — tap to fill in'}
                       </p>
                     </div>
                     {isOpen
-                      ? <ChevronUp   size={16} style={{ color:'var(--label-2)', flexShrink:0 }} />
-                      : <ChevronDown size={16} style={{ color:'var(--label-2)', flexShrink:0 }} />}
+                      ? <ChevronUp   size={16} style={{ color:'#8E8E93', flexShrink:0 }} />
+                      : <ChevronDown size={16} style={{ color:'#8E8E93', flexShrink:0 }} />}
                   </button>
 
-                  {/* Exercise rows */}
-                  {isOpen && wkt.exercises.map(ex => {
+                  {isOpen && wkt.exercises.map((ex, i) => {
                     if (ex.isBodyweight) return (
                       <div key={ex.name} className="ios-row">
                         <div className="flex-1 min-w-0">
                           <p className="t-subhead" style={{ color:'var(--label-2)' }}>{ex.name}</p>
-                          <p className="t-caption1 mt-0.5" style={{ color:'var(--label-3)' }}>
-                            Bodyweight — no entry needed
-                          </p>
+                          <p className="t-caption1 mt-0.5" style={{ color:'#8E8E93' }}>Bodyweight</p>
                         </div>
-                        <span className="t-caption2 px-2.5 py-1 rounded-lg"
-                              style={{ background:'var(--fill-3)', color:'var(--label-2)' }}>BW</span>
+                        <span className="t-caption2 px-2 py-1 rounded-lg"
+                              style={{ background:'var(--fill-3)', color:'#8E8E93' }}>BW</span>
                       </div>
                     )
 
                     const isSaved = saved === ex.name
                     const hasVal  = !!(rms[ex.name] && parseFloat(rms[ex.name]) > 0)
-
                     return (
                       <div key={ex.name} className="ios-row"
                            style={{ background: isSaved
-                             ? 'color-mix(in srgb, var(--green) 10%, var(--bg-2))'
+                             ? 'color-mix(in srgb, var(--green) 12%, var(--bg-2))'
                              : 'var(--bg-2)' }}>
-                        <div className="flex-1 min-w-0 pr-3">
+                        <div className="flex-1 min-w-0 pr-2">
                           <p className="t-subhead sf-semibold" style={{ color:'var(--label)' }}>
                             {ex.name}
                           </p>
                           <p className="t-caption1 mt-0.5"
-                             style={{ color: hasVal ? 'var(--label-2)' : 'var(--orange)' }}>
-                            {hasVal ? ex.muscle : `Enter your 1RM · ${ex.muscle}`}
+                             style={{ color: hasVal ? '#8E8E93' : 'var(--orange)' }}>
+                            {hasVal ? ex.muscle : `Enter 1RM · ${ex.muscle}`}
                           </p>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {isSaved && (
-                            <Check size={15} strokeWidth={2.5} style={{ color:'var(--green)' }} />
-                          )}
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {isSaved && <Check size={14} strokeWidth={3} style={{ color:'var(--green)' }} />}
                           <input
-                            type="number"
-                            inputMode="decimal"
-                            placeholder="0"
+                            type="number" inputMode="decimal" placeholder="0"
                             value={rms[ex.name] ?? ''}
                             onChange={e => setRms(p => ({ ...p, [ex.name]: e.target.value }))}
                             onBlur={e  => save(ex.name, e.target.value)}
                             style={{
-                              width:76, height:40, textAlign:'right', padding:'0 12px',
-                              fontSize:15, fontWeight:600, letterSpacing:'-0.3px',
-                              background:'var(--fill-3)',
+                              width:72, height:40, textAlign:'right', padding:'0 10px',
+                              fontSize:15, fontWeight:700,
+                              background: hasVal ? 'var(--fill-3)' : 'color-mix(in srgb, var(--orange) 15%, var(--fill-3))',
                               color:'var(--label)',
-                              border: hasVal
-                                ? '1px solid var(--fill)'
-                                : '1px solid color-mix(in srgb, var(--orange) 60%, transparent)',
+                              border: hasVal ? 'none' : '1px solid color-mix(in srgb, var(--orange) 50%, transparent)',
                               borderRadius:10, outline:'none',
                             }}
                           />
-                          <span className="t-caption1" style={{ color:'var(--label-2)', minWidth:22 }}>
-                            lbs
-                          </span>
+                          <span className="t-caption1" style={{ color:'#8E8E93' }}>lbs</span>
                         </div>
                       </div>
                     )
@@ -213,13 +214,10 @@ export default function SettingsPage() {
                 <span className="t-body flex-1 text-left" style={{ color:'var(--label)' }}>
                   {v} lbs
                 </span>
-                {round === v && (
-                  <Check size={18} strokeWidth={2.5} style={{ color:'var(--accent)' }} />
-                )}
+                {round===v && <Check size={19} strokeWidth={2.5} style={{ color:'var(--accent)' }} />}
               </button>
             ))}
           </div>
-          <p className="ios-section-footer mt-1.5">Applied to all calculated target weights.</p>
         </div>
 
         {/* ── Equipment ── */}
@@ -231,23 +229,32 @@ export default function SettingsPage() {
               return (
                 <button key={k} onClick={() => toggleEquip(k)}
                   className={`ios-row tap w-full ${i===0?'ios-row-first':''}`}>
-                  <span style={{ fontSize:18, width:28, flexShrink:0 }}>{EQUIPMENT_ICONS[k]}</span>
+                  <span style={{ fontSize:18, width:30, flexShrink:0, textAlign:'center' }}>
+                    {EQUIPMENT_ICONS[k]}
+                  </span>
                   <p className="t-subhead flex-1 text-left"
-                     style={{ color: on ? 'var(--label)' : 'var(--label-2)' }}>
+                     style={{ color: on ? 'var(--label)' : '#8E8E93' }}>
                     {EQUIPMENT_LABELS[k]}
                   </p>
-                  <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
                        style={{ background: on ? 'var(--accent)' : 'var(--fill-3)' }}>
-                    {on && <Check size={11} strokeWidth={3} style={{ color:'#fff' }} />}
+                    {on && <Check size={12} strokeWidth={3} style={{ color:'#fff' }} />}
                   </div>
                 </button>
               )
             })}
           </div>
-          <p className="ios-section-footer mt-1.5">
-            Alternatives in workouts prioritise your selected equipment.
+          <p className="ios-section-footer mt-2">
+            Workout alternatives will show your available equipment first.
           </p>
         </div>
+
+        {/* ── Back to Home ── */}
+        <button onClick={() => router.push('/')}
+          className="tap w-full py-4 rounded-2xl t-subhead sf-semibold"
+          style={{ background:'var(--fill-3)', color:'#8E8E93' }}>
+          ← Back to Home
+        </button>
 
       </div>
       <BottomNav />

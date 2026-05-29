@@ -1,7 +1,8 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, CheckCircle2, SlidersHorizontal } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ChevronLeft, ChevronRight, CheckCircle2, Settings2, Clock } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
 import { WORKOUTS, WEEK_CONFIG, PHASE_LABELS } from '@/lib/program/data'
@@ -15,6 +16,7 @@ const PC: Record<number,string>  = {
 }
 
 export default function Dashboard() {
+  const router = useRouter()
   const [week,    setWeek]    = useState(1)
   const [done,    setDone]    = useState<string[]>([])
   const [hasRms,  setHasRms]  = useState(true)
@@ -59,12 +61,26 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen pb-tabs" style={{ background:'var(--bg)' }}>
 
-      {/* ── Nav bar — title only, no crowding ── */}
+      {/* ── Nav bar ── */}
       <div className="pt-safe sticky top-0 z-20"
-        style={{ background:'rgba(0,0,0,0.88)', backdropFilter:'saturate(180%) blur(24px)', WebkitBackdropFilter:'saturate(180%) blur(24px)', borderBottom:'0.5px solid var(--sep)' }}>
-        <div className="px-5 pb-3 pt-2">
-          <p className="t-caption2" style={{ color:'var(--label-3)', textTransform:'uppercase', letterSpacing:'0.08em' }}>Compound Gains</p>
-          <h1 className="t-large-title sf-heavy" style={{ lineHeight:1.1, marginTop:1 }}>Lift</h1>
+        style={{ background:'rgba(0,0,0,0.95)', backdropFilter:'saturate(180%) blur(24px)', WebkitBackdropFilter:'saturate(180%) blur(24px)', borderBottom:'1px solid rgba(84,84,88,0.8)' }}>
+        <div className="flex items-center justify-between px-5 pb-3 pt-2">
+          <div>
+            <p className="t-caption2" style={{ color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.08em' }}>Compound Gains</p>
+            <h1 className="t-large-title sf-heavy" style={{ lineHeight:1.1, marginTop:1 }}>Lift</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => router.push('/history')}
+              className="tap w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ background:'var(--fill-3)' }}>
+              <Clock size={18} strokeWidth={1.8} style={{ color:'#8E8E93' }} />
+            </button>
+            <button onClick={() => router.push('/settings')}
+              className="tap w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ background:'var(--fill-3)' }}>
+              <Settings2 size={18} strokeWidth={1.8} style={{ color:'#8E8E93' }} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -77,7 +93,7 @@ export default function Dashboard() {
                  style={{ background:'color-mix(in srgb, var(--orange) 14%, var(--bg-2))', border:'0.5px solid color-mix(in srgb, var(--orange) 35%, transparent)' }}>
               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                    style={{ background:'color-mix(in srgb, var(--orange) 20%, transparent)' }}>
-                <SlidersHorizontal size={20} style={{ color:'var(--orange)' }} />
+                <Settings2 size={20} style={{ color:'var(--orange)' }} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="t-subhead sf-semibold" style={{ color:'var(--label)' }}>Set your 1-rep maxes</p>
