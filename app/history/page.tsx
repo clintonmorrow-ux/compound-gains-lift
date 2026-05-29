@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import { ChevronRight, Dumbbell } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { ChevronLeft, ChevronRight, Dumbbell } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { fetchRecentSessions } from '@/lib/db'
 import { WORKOUTS } from '@/lib/program/data'
@@ -23,6 +24,7 @@ function dur(a: string, b: string|null) {
 }
 
 export default function HistoryPage() {
+  const router = useRouter()
   const [sessions, setSessions] = useState<any[]>([])
   const [loading,  setLoading]  = useState(true)
 
@@ -36,12 +38,19 @@ export default function HistoryPage() {
     <div className="min-h-screen pb-tabs" style={{ background:'var(--bg)' }}>
 
       <div className="pt-safe sticky top-0 z-20"
-        style={{ background:'rgba(0,0,0,0.88)', backdropFilter:'saturate(180%) blur(24px)', WebkitBackdropFilter:'saturate(180%) blur(24px)', borderBottom:'0.5px solid var(--sep)' }}>
-        <div className="px-5 pb-3 pt-2">
-          <h1 className="t-large-title sf-bold" style={{ color:'var(--label)' }}>History</h1>
-          <p className="t-subhead mt-0.5" style={{ color:'var(--label-3)' }}>
-            {loading ? 'Loading…' : `${sessions.length} sessions`}
-          </p>
+        style={{ background:'rgba(0,0,0,0.95)', backdropFilter:'saturate(180%) blur(24px)', WebkitBackdropFilter:'saturate(180%) blur(24px)', borderBottom:'1px solid rgba(84,84,88,0.8)' }}>
+        <div className="flex items-center gap-3 px-4 pb-3 pt-2">
+          <button onClick={() => router.push('/')}
+            className="tap w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{ background:'var(--fill-3)' }}>
+            <ChevronLeft size={20} strokeWidth={2.5} style={{ color:'var(--accent)' }} />
+          </button>
+          <div>
+            <h1 className="t-title2 sf-bold" style={{ color:'var(--label)' }}>History</h1>
+            <p className="t-caption1" style={{ color:'#8E8E93' }}>
+              {loading ? 'Loading…' : `${sessions.length} sessions`}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -92,6 +101,13 @@ export default function HistoryPage() {
             })}
           </div>
         )}
+      </div>
+      <div className="px-4 py-6">
+        <button onClick={() => router.push('/')}
+          className="tap w-full py-4 rounded-2xl t-subhead sf-semibold"
+          style={{ background:'var(--fill-3)', color:'#8E8E93' }}>
+          ← Back to Home
+        </button>
       </div>
       <BottomNav />
     </div>

@@ -69,7 +69,7 @@ export default function Dashboard() {
             <p className="t-caption2" style={{ color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.08em' }}>Compound Gains</p>
             <h1 className="t-large-title sf-heavy" style={{ lineHeight:1.1, marginTop:1 }}>Lift</h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <button onClick={() => router.push('/history')}
               className="tap w-10 h-10 rounded-full flex items-center justify-center"
               style={{ background:'var(--fill-3)' }}>
