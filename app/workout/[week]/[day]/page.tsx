@@ -1,65 +1,73 @@
 'use client'
-import { use, useEffect, useState, useCallback, useRef } from 'react'
+import { use, useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Check, SkipForward, Timer, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp, Check, Info } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { WORKOUTS, WEEK_CONFIG } from '@/lib/program/data'
 import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/calculator'
 import { fetchAllOneRms, fetchSettings, createSession, completeSession, logSet, getLastWeightForExercise } from '@/lib/db'
-import type { Exercise, LoggedSet, WorkoutKey } from '@/types'
+import type { Exercise, WorkoutKey } from '@/types'
 
-const COLORS: Record<string, string> = { A: '#3B82F6', B: '#22C55E', C: '#A855F7', D: '#F97316' }
-const REST_DEFAULTS: Record<string, number> = { primary: 150, secondary: 120, isolation: 75 }
+const WKT_COLOR = { A:'--a', B:'--b', C:'--c', D:'--d' } as const
+const REST_SECS  = { primary: 150, secondary: 120, isolation: 75 }
 
-// ── Weight Modal ────────────────────────────────────────────────────────
-function WeightModal({ exercise, setNum, suggested, onSave, onClose }: {
-  exercise: Exercise, setNum: number, suggested: number, onSave: (w: number, r: number) => void, onClose: () => void
+// ── Weight Entry Sheet ──────────────────────────────────────────────────
+function WeightSheet({ exercise, setNum, suggested, onSave, onClose }: {
+  exercise: Exercise; setNum: number; suggested: number
+  onSave: (w: number, r: number) => void; onClose: () => void
 }) {
   const [weight, setWeight] = useState(suggested || 0)
   const [reps,   setReps]   = useState(10)
-
-  const adjust = (delta: number) => setWeight(w => Math.max(0, w + delta))
+  const adj = (d: number) => setWeight(w => Math.max(0, +(w + d).toFixed(1)))
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end" style={{ background: '#00000088' }} onClick={onClose}>
-      <div className="w-full rounded-t-3xl p-5 slide-up" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }} onClick={e => e.stopPropagation()}>
-        <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: 'var(--border)' }} />
-        <p className="text-xs font-bold tracking-widest uppercase mb-1" style={{ color: 'var(--muted)' }}>Set {setNum}</p>
-        <h3 className="text-lg font-black mb-5" style={{ color: 'var(--text)' }}>{exercise.name}</h3>
+    <div className="sheet-overlay" onClick={onClose}>
+      <div className="sheet px-5 pt-3" onClick={e => e.stopPropagation()}>
+        {/* Handle */}
+        <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background:'var(--border-md)' }} />
+
+        <p className="label mb-0.5">Set {setNum}</p>
+        <p className="text-[18px] font-bold mb-6" style={{ color:'var(--text)' }}>{exercise.name}</p>
 
         {/* Weight display */}
-        <div className="text-center mb-4">
-          <span className="text-6xl font-black tabular-nums" style={{ color: 'var(--text)' }}>{weight}</span>
-          <span className="text-xl ml-2" style={{ color: 'var(--muted)' }}>lbs</span>
+        <div className="text-center mb-5">
+          <span className="text-[72px] font-black leading-none tabular-nums"
+                style={{ color:'var(--text)', fontVariantNumeric:'tabular-nums' }}>
+            {weight}
+          </span>
+          <span className="text-[20px] ml-2 font-medium" style={{ color:'var(--text-2)' }}>lbs</span>
         </div>
 
-        {/* Quick adjust */}
-        <div className="grid grid-cols-4 gap-2 mb-5">
-          {[-10, -5, +5, +10].map(d => (
-            <button key={d} onClick={() => adjust(d)}
-              className="py-3 rounded-xl text-sm font-bold active:scale-95 transition-transform"
-              style={{ background: 'var(--surface)', color: d > 0 ? 'var(--accent)' : 'var(--muted-light)' }}>
+        {/* Adjust buttons */}
+        <div className="grid grid-cols-4 gap-2.5 mb-5">
+          {([-10,-5,+5,+10] as const).map(d => (
+            <button key={d} onClick={() => adj(d)}
+              className="pressable h-14 rounded-2xl text-[15px] font-bold"
+              style={{ background:'var(--surface-3)', color: d > 0 ? 'var(--accent)' : 'var(--text-2)' }}>
               {d > 0 ? `+${d}` : d}
             </button>
           ))}
         </div>
 
         {/* Reps */}
-        <p className="text-xs font-bold tracking-widest uppercase mb-2" style={{ color: 'var(--muted)' }}>Reps</p>
+        <p className="label mb-2">Reps</p>
         <div className="grid grid-cols-6 gap-2 mb-6">
-          {[6, 8, 10, 12, 15, 20].map(r => (
+          {[5,6,8,10,12,15].map(r => (
             <button key={r} onClick={() => setReps(r)}
-              className="py-2.5 rounded-xl text-sm font-bold active:scale-95 transition-transform"
-              style={{ background: reps === r ? 'var(--accent)' : 'var(--surface)', color: reps === r ? '#fff' : 'var(--muted-light)' }}>
+              className="pressable h-12 rounded-xl text-[14px] font-bold transition-colors"
+              style={{
+                background: reps===r ? 'var(--accent)'    : 'var(--surface-3)',
+                color:       reps===r ? '#fff'             : 'var(--text-2)',
+              }}>
               {r}
             </button>
           ))}
         </div>
 
         <button onClick={() => onSave(weight, reps)}
-          className="w-full py-4 rounded-2xl text-base font-extrabold tracking-wider active:scale-[0.98] transition-transform"
-          style={{ background: 'var(--accent)', color: '#fff' }}>
-          LOG SET {setNum}
+          className="btn-primary flex items-center justify-center gap-2">
+          <Check size={18} />
+          Log Set {setNum}
         </button>
       </div>
     </div>
@@ -67,217 +75,252 @@ function WeightModal({ exercise, setNum, suggested, onSave, onClose }: {
 }
 
 // ── Rest Timer ──────────────────────────────────────────────────────────
-function RestTimer({ seconds, onDone }: { seconds: number, onDone: () => void }) {
+function RestTimer({ seconds, onDone }: { seconds: number; onDone: () => void }) {
   const [rem, setRem] = useState(seconds)
   useEffect(() => {
     if (rem <= 0) { onDone(); return }
     const t = setTimeout(() => setRem(r => r - 1), 1000)
     return () => clearTimeout(t)
   }, [rem, onDone])
-  const pct = ((seconds - rem) / seconds) * 100
+  const pct = (rem / seconds) * 100
   const m = Math.floor(rem / 60), s = rem % 60
+
   return (
-    <div className="fixed inset-x-4 bottom-24 z-40 rounded-2xl p-4 flex items-center gap-4"
-         style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+    <div className="fixed bottom-24 inset-x-4 z-40 card px-5 py-4 flex items-center gap-4"
+         style={{ background:'var(--surface-2)' }}>
+      {/* Circle */}
       <div className="relative w-12 h-12 flex-shrink-0">
         <svg className="w-full h-full -rotate-90" viewBox="0 0 44 44">
-          <circle cx="22" cy="22" r="18" fill="none" strokeWidth="3" style={{ stroke: 'var(--border)' }} />
+          <circle cx="22" cy="22" r="18" fill="none" strokeWidth="3" stroke="var(--surface-3)" />
           <circle cx="22" cy="22" r="18" fill="none" strokeWidth="3" strokeLinecap="round"
-            style={{ stroke: 'var(--accent)', strokeDasharray: `${2 * Math.PI * 18}`, strokeDashoffset: `${2 * Math.PI * 18 * (1 - pct / 100)}`, transition: 'stroke-dashoffset 1s linear' }} />
+            style={{ stroke:'var(--accent)',
+              strokeDasharray:`${2*Math.PI*18}`,
+              strokeDashoffset:`${2*Math.PI*18*(1-pct/100)}`,
+              transition:'stroke-dashoffset 1s linear' }} />
         </svg>
-        <Timer size={14} className="absolute inset-0 m-auto" style={{ color: 'var(--accent)' }} />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-[10px] font-bold" style={{ color:'var(--accent)' }}>
+            {m}:{String(s).padStart(2,'0')}
+          </span>
+        </div>
       </div>
       <div className="flex-1">
-        <p className="text-xs" style={{ color: 'var(--muted)' }}>Rest</p>
-        <p className="text-xl font-black tabular-nums" style={{ color: 'var(--text)' }}>{m}:{String(s).padStart(2,'0')}</p>
+        <p className="text-[11px] font-semibold" style={{ color:'var(--text-2)' }}>Rest</p>
+        <p className="text-[17px] font-black tabular-nums" style={{ color:'var(--text)' }}>
+          {m}:{String(s).padStart(2,'0')}
+        </p>
       </div>
-      <button onClick={onDone} className="px-4 py-2 rounded-xl text-xs font-bold" style={{ background: 'var(--surface)', color: 'var(--muted-light)' }}>
+      <button onClick={onDone}
+        className="pressable px-4 h-9 rounded-xl text-[13px] font-semibold"
+        style={{ background:'var(--surface-3)', color:'var(--text-2)' }}>
         Skip
       </button>
     </div>
   )
 }
 
-// ── Main page ───────────────────────────────────────────────────────────
-export default function WorkoutPage({ params }: { params: Promise<{ week: string; day: string }> }) {
-  const { week: weekStr, day } = use(params)
-  const weekNum    = parseInt(weekStr)
+// ── Main Page ───────────────────────────────────────────────────────────
+export default function WorkoutPage({ params }: { params: Promise<{ week:string; day:string }> }) {
+  const { week: ws, day } = use(params)
+  const weekNum    = parseInt(ws)
   const workoutKey = day as WorkoutKey
   const router     = useRouter()
 
-  const workout  = WORKOUTS.find(w => w.key === workoutKey)!
-  const cfg      = WEEK_CONFIG[weekNum]
-  const color    = COLORS[workoutKey]
+  const workout = WORKOUTS.find(w => w.key === workoutKey)!
+  const cfg     = WEEK_CONFIG[weekNum]
+  const cvar    = `var(${WKT_COLOR[workoutKey]})`
 
-  const [oneRms,      setOneRms]      = useState<Record<string, number>>({})
-  const [lastWeights, setLastWeights] = useState<Record<string, number | null>>({})
+  const [oneRms,      setOneRms]      = useState<Record<string,number>>({})
+  const [lastWeights, setLastWeights] = useState<Record<string,number|null>>({})
   const [roundTo,     setRoundTo]     = useState(5)
-  const [sessionId,   setSessionId]   = useState<string | null>(null)
-  const [sets,        setSets]        = useState<Record<string, LoggedSet[]>>({})
+  const [sessionId,   setSessionId]   = useState<string|null>(null)
+  const [sets,        setSets]        = useState<Record<string,any[]>>({})
   const [expanded,    setExpanded]    = useState<string>(workout.exercises[0]?.name ?? '')
-  const [modal,       setModal]       = useState<{ exercise: Exercise; setNum: number; suggested: number } | null>(null)
-  const [restTimer,   setRestTimer]   = useState<{ seconds: number } | null>(null)
-  const [saving,      setSaving]      = useState(false)
+  const [showCue,     setShowCue]     = useState<string|null>(null)
+  const [modal,       setModal]       = useState<{exercise:Exercise;setNum:number;suggested:number}|null>(null)
+  const [rest,        setRest]        = useState<{seconds:number}|null>(null)
   const [finished,    setFinished]    = useState(false)
 
   const init = useCallback(async () => {
-    const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { await supabase.auth.signInAnonymously() }
-
-    const [allRms, settings] = await Promise.all([fetchAllOneRms(), fetchSettings()])
-    const rmMap: Record<string, number> = {}
-    allRms.forEach(r => { rmMap[r.exercise_name] = r.weight_lbs })
-    setOneRms(rmMap)
-    setRoundTo(settings.round_to_lbs)
-
-    // Fetch last used weights for each exercise
-    const lwMap: Record<string, number | null> = {}
+    const sb = createClient()
+    const { data:{session} } = await sb.auth.getSession()
+    if (!session) await sb.auth.signInAnonymously()
+    const [rms, settings] = await Promise.all([fetchAllOneRms(), fetchSettings()])
+    const rm: Record<string,number> = {}
+    rms.forEach((r:any) => { rm[r.exercise_name] = r.weight_lbs })
+    setOneRms(rm); setRoundTo(settings.round_to_lbs)
+    const lw: Record<string,number|null> = {}
     await Promise.all(workout.exercises.map(async ex => {
-      if (!ex.isBodyweight) lwMap[ex.name] = await getLastWeightForExercise(ex.name)
+      if (!ex.isBodyweight) lw[ex.name] = await getLastWeightForExercise(ex.name)
     }))
-    setLastWeights(lwMap)
-
+    setLastWeights(lw)
     const sess = await createSession(weekNum, workoutKey)
     setSessionId(sess.id)
   }, [weekNum, workoutKey, workout.exercises])
 
   useEffect(() => { init() }, [init])
 
-  const totalSets   = workout.exercises.reduce((acc, ex) => acc + getSetsForWeek(ex.type, weekNum), 0)
-  const loggedCount = Object.values(sets).reduce((a, s) => a + s.length, 0)
-  const progress    = totalSets > 0 ? loggedCount / totalSets : 0
+  const totalSets   = workout.exercises.reduce((a,ex) => a + getSetsForWeek(ex.type, weekNum), 0)
+  const loggedCount = Object.values(sets).reduce((a,s) => a + s.length, 0)
 
-  const getSuggested = (ex: Exercise): number => {
+  const suggested = (ex: Exercise) => {
     if (ex.isBodyweight) return 0
-    const target = getTargetWeight(oneRms[ex.name] ?? 0, ex.type, weekNum, roundTo)
-    if (target > 0) return target
-    return lastWeights[ex.name] ?? 0
+    const t = getTargetWeight(oneRms[ex.name]??0, ex.type, weekNum, roundTo)
+    return t > 0 ? t : (lastWeights[ex.name] ?? 0)
   }
 
-  const openModal = (exercise: Exercise, setNum: number) => {
-    setModal({ exercise, setNum, suggested: getSuggested(exercise) })
-  }
-
-  const handleSaveSet = async (weight: number, reps: number) => {
+  const handleSave = async (weight: number, reps: number) => {
     if (!modal || !sessionId) return
     const { exercise, setNum } = modal
-    setSaving(true)
-    const logged = await logSet(sessionId, exercise.name, setNum, weight || null, reps)
-    setSets(prev => ({ ...prev, [exercise.name]: [...(prev[exercise.name] ?? []), logged] }))
+    const logged = await logSet(sessionId, exercise.name, setNum, weight||null, reps)
+    setSets(p => ({ ...p, [exercise.name]: [...(p[exercise.name]??[]), logged] }))
     setModal(null)
-    setSaving(false)
-    setRestTimer({ seconds: REST_DEFAULTS[exercise.type] })
+    setRest({ seconds: REST_SECS[exercise.type] })
   }
 
   const handleFinish = async () => {
-    if (!sessionId) return
-    await completeSession(sessionId)
+    if (sessionId) await completeSession(sessionId)
     setFinished(true)
   }
 
-  const allDone = loggedCount >= totalSets
-
+  // ── Finished screen ──
   if (finished) return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center gap-6 px-8" style={{ background: 'var(--bg)' }}>
-      <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: `${color}25` }}>
-        <Check size={40} style={{ color }} />
+    <div className="fixed inset-0 flex flex-col items-center justify-center gap-6 px-6"
+         style={{ background:'var(--bg)' }}>
+      <div className="w-20 h-20 rounded-full flex items-center justify-center"
+           style={{ background:'var(--success-bg)' }}>
+        <Check size={38} style={{ color:'var(--success)' }} strokeWidth={3} />
       </div>
       <div className="text-center">
-        <h2 className="text-3xl font-black" style={{ color: 'var(--text)' }}>Workout Complete</h2>
-        <p className="mt-1" style={{ color: 'var(--muted)' }}>{loggedCount} sets logged · Week {weekNum}</p>
+        <h2 className="text-[28px] font-black tracking-tight" style={{ color:'var(--text)' }}>
+          Workout Done
+        </h2>
+        <p className="text-[15px] mt-1" style={{ color:'var(--text-2)' }}>
+          {loggedCount} sets · Week {weekNum} · Workout {workoutKey}
+        </p>
       </div>
-      <button onClick={() => router.push('/')} className="w-full py-4 rounded-2xl font-extrabold text-base tracking-wider" style={{ background: color, color: '#fff' }}>
-        BACK TO HOME
+      <button onClick={() => router.push('/')} className="btn-primary" style={{ background: cvar }}>
+        Back to Home
       </button>
     </div>
   )
 
   return (
-    <div className="min-h-screen safe-bottom" style={{ background: 'var(--bg)' }}>
-      {/* Header */}
-      <div className="safe-top px-4 pt-3 pb-3 sticky top-0 z-30" style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
-        <div className="flex items-center gap-3 mb-2">
-          <button onClick={() => router.back()} className="p-2 rounded-xl active:opacity-60" style={{ background: 'var(--surface-2)' }}>
-            <ArrowLeft size={18} style={{ color: 'var(--muted)' }} />
+    <div className="min-h-screen pb-nav" style={{ background:'var(--bg)' }}>
+
+      {/* ── Sticky header ── */}
+      <div className="pt-safe sticky top-0 z-30 px-4 pb-3"
+           style={{ background:'rgba(12,12,20,0.9)', backdropFilter:'blur(16px)', WebkitBackdropFilter:'blur(16px)', borderBottom:'1px solid var(--border)' }}>
+        <div className="flex items-center gap-3 pt-3 mb-2.5">
+          <button onClick={() => router.back()}
+            className="pressable w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background:'var(--surface-2)' }}>
+            <ArrowLeft size={17} style={{ color:'var(--text-2)' }} />
           </button>
           <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-bold tracking-widest uppercase" style={{ color }}>Week {weekNum} · Workout {workoutKey}</p>
-            <h1 className="text-base font-extrabold truncate" style={{ color: 'var(--text)' }}>{workout.shortName}</h1>
+            <p className="label" style={{ color: cvar }}>Wk {weekNum} · {workout.shortName}</p>
           </div>
-          <div className="text-right">
-            <p className="text-xs font-bold tabular-nums" style={{ color: 'var(--text)' }}>{loggedCount}<span style={{ color: 'var(--muted)' }}>/{totalSets}</span></p>
-            <p className="text-[10px]" style={{ color: 'var(--muted)' }}>sets</p>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl"
+               style={{ background:'var(--surface-2)' }}>
+            <span className="text-[15px] font-black tabular-nums" style={{ color: cvar }}>{loggedCount}</span>
+            <span className="text-[13px]" style={{ color:'var(--text-3)' }}>/ {totalSets}</span>
           </div>
         </div>
         {/* Progress bar */}
-        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
-          <div className="h-full rounded-full transition-all duration-300" style={{ width: `${progress * 100}%`, background: color }} />
+        <div className="h-1 rounded-full overflow-hidden" style={{ background:'var(--surface-3)' }}>
+          <div className="h-full rounded-full transition-all duration-500"
+               style={{ width:`${totalSets>0?(loggedCount/totalSets)*100:0}%`, background: cvar }} />
         </div>
       </div>
 
-      {/* Exercises */}
-      <div className="px-4 py-3 space-y-2.5">
+      {/* ── Exercise list ── */}
+      <div className="px-4 py-4 space-y-2.5">
         {workout.exercises.map((ex, idx) => {
-          const exSets  = getSetsForWeek(ex.type, weekNum)
-          const exReps  = getRepsForWeek(ex.type, weekNum)
-          const logged  = sets[ex.name] ?? []
-          const isOpen  = expanded === ex.name
-          const target  = getSuggested(ex)
-          const allLogged = logged.length >= exSets
+          const exSets    = getSetsForWeek(ex.type, weekNum)
+          const exReps    = getRepsForWeek(ex.type, weekNum)
+          const exLogged  = sets[ex.name] ?? []
+          const isOpen    = expanded === ex.name
+          const isDone    = exLogged.length >= exSets
+          const target    = suggested(ex)
 
           return (
-            <div key={ex.name} className={`rounded-2xl overflow-hidden transition-all ${allLogged ? 'opacity-70' : ''}`}
-                 style={{ background: 'var(--surface)', border: `1px solid ${isOpen ? color + '55' : 'var(--border)'}` }}>
-              {/* Exercise header */}
-              <button className="w-full px-4 py-3.5 flex items-center gap-3 active:opacity-70" onClick={() => setExpanded(isOpen ? '' : ex.name)}>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-black"
-                     style={{ background: allLogged ? `${color}25` : 'var(--surface-2)', color: allLogged ? color : 'var(--muted)' }}>
-                  {allLogged ? '✓' : idx + 1}
+            <div key={ex.name} className="card overflow-hidden"
+                 style={{ borderColor: isOpen ? `color-mix(in srgb, ${cvar} 35%, transparent)` : 'var(--border)',
+                          opacity: isDone && !isOpen ? 0.55 : 1, transition:'opacity 0.2s' }}>
+
+              {/* Exercise header row */}
+              <button className="w-full flex items-center gap-3 px-4 py-3.5 pressable"
+                      onClick={() => setExpanded(isOpen ? '' : ex.name)}>
+                {/* Index / done indicator */}
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-[12px] font-black transition-all"
+                     style={{ background: isDone ? 'var(--success-bg)' : 'var(--surface-2)',
+                              color:      isDone ? 'var(--success)'    : 'var(--text-3)' }}>
+                  {isDone ? '✓' : idx + 1}
                 </div>
+
+                {/* Name + meta */}
                 <div className="flex-1 text-left min-w-0">
-                  <p className="text-sm font-bold truncate" style={{ color: 'var(--text)' }}>{ex.name}</p>
-                  <p className="text-[11px]" style={{ color: 'var(--muted)' }}>
-                    {ex.muscle} · {exSets} × {exReps}
-                    {!ex.isBodyweight && target > 0 && <span style={{ color }}> · {target} lbs target</span>}
+                  <p className="text-[15px] font-semibold leading-tight truncate" style={{ color:'var(--text)' }}>
+                    {ex.name}
+                  </p>
+                  <p className="text-[12px] mt-0.5" style={{ color:'var(--text-2)' }}>
+                    {ex.muscle}
+                    {!ex.isBodyweight && target > 0 &&
+                      <span style={{ color: cvar }}> · {target} lbs</span>}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold tabular-nums" style={{ color }}>
-                    {logged.length}/{exSets}
+
+                {/* Set count + chevron */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-[13px] font-bold tabular-nums" style={{ color: isDone ? 'var(--success)' : cvar }}>
+                    {exLogged.length}/{exSets}
                   </span>
-                  {isOpen ? <ChevronUp size={14} style={{ color: 'var(--muted)' }} /> : <ChevronDown size={14} style={{ color: 'var(--muted)' }} />}
+                  {isOpen
+                    ? <ChevronUp  size={15} style={{ color:'var(--text-3)' }} />
+                    : <ChevronDown size={15} style={{ color:'var(--text-3)' }} />}
                 </div>
               </button>
 
-              {/* Expanded content */}
+              {/* Expanded body */}
               {isOpen && (
                 <div className="px-4 pb-4 space-y-2">
-                  {/* Cue */}
-                  <p className="text-[11px] italic leading-snug px-3 py-2 rounded-lg" style={{ color: 'var(--muted)', background: 'var(--surface-2)' }}>
-                    {ex.cue}
-                  </p>
+
+                  {/* Cue strip */}
+                  <button className="w-full flex items-start gap-2 px-3 py-2.5 rounded-xl text-left pressable"
+                          style={{ background:'var(--surface-2)' }}
+                          onClick={() => setShowCue(showCue===ex.name ? null : ex.name)}>
+                    <Info size={13} className="mt-0.5 flex-shrink-0" style={{ color:'var(--text-3)' }} />
+                    <p className="text-[12px] leading-relaxed italic" style={{ color:'var(--text-2)' }}>
+                      {ex.cue}
+                    </p>
+                  </button>
+
                   {/* Set rows */}
-                  {Array.from({ length: exSets }, (_, i) => i + 1).map(setNum => {
-                    const logged_set = logged.find(l => l.set_number === setNum)
-                    const isDone = !!logged_set
+                  {Array.from({length:exSets},(_,i)=>i+1).map(n => {
+                    const logged = exLogged.find((l:any) => l.set_number===n)
                     return (
-                      <button key={setNum} onClick={() => !isDone && openModal(ex, setNum)}
-                        className="w-full flex items-center gap-3 py-3 px-3 rounded-xl active:scale-[0.98] transition-transform"
-                        style={{ background: isDone ? `${color}18` : 'var(--surface-2)', border: `1px solid ${isDone ? color + '44' : 'var(--border)'}` }}>
-                        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
-                             style={{ background: isDone ? color : 'var(--border)', color: '#fff' }}>
-                          {isDone ? '✓' : setNum}
+                      <button key={n}
+                        onClick={() => !logged && setModal({exercise:ex, setNum:n, suggested:suggested(ex)})}
+                        className="pressable w-full flex items-center gap-3 h-14 px-4 rounded-2xl"
+                        style={{ background: logged ? 'var(--success-bg)' : 'var(--surface-2)',
+                                 border:`1px solid ${logged ? 'rgba(52,211,153,0.25)' : 'var(--border)'}` }}>
+                        {/* Set indicator */}
+                        <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-[12px] font-bold"
+                             style={{ background: logged ? 'var(--success)' : 'var(--surface-3)',
+                                      color: logged ? '#fff' : 'var(--text-3)' }}>
+                          {logged ? '✓' : n}
                         </div>
-                        {isDone ? (
-                          <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
-                            {logged_set.weight_lbs ?? 'BW'} lbs × {logged_set.reps} reps
+                        {logged ? (
+                          <p className="text-[15px] font-semibold flex-1 text-left" style={{ color:'var(--text)' }}>
+                            {logged.weight_lbs ?? 'BW'} lbs
+                            <span className="font-normal" style={{ color:'var(--text-2)' }}> × {logged.reps} reps</span>
                           </p>
                         ) : (
-                          <p className="text-sm" style={{ color: 'var(--muted)' }}>
-                            Tap to log · {ex.isBodyweight ? 'Bodyweight' : target > 0 ? `${target} lbs suggested` : 'enter weight'}
+                          <p className="text-[14px] flex-1 text-left" style={{ color:'var(--text-3)' }}>
+                            {ex.isBodyweight ? 'Bodyweight' : target > 0 ? `${target} lbs suggested` : 'Tap to log'}
                           </p>
                         )}
+                        <p className="text-[11px] font-medium" style={{ color:'var(--text-3)' }}>{exReps}</p>
                       </button>
                     )
                   })}
@@ -286,23 +329,26 @@ export default function WorkoutPage({ params }: { params: Promise<{ week: string
             </div>
           )
         })}
+
+        {/* ── Finish button ── */}
+        {loggedCount >= totalSets && (
+          <button onClick={handleFinish}
+            className="btn-primary flex items-center justify-center gap-2 mt-4"
+            style={{ background: cvar }}>
+            <Check size={18} strokeWidth={3} />
+            Complete Workout
+          </button>
+        )}
       </div>
 
-      {/* Finish button */}
-      {allDone && (
-        <div className="fixed bottom-20 inset-x-4">
-          <button onClick={handleFinish}
-            className="w-full py-4 rounded-2xl text-base font-extrabold tracking-wider flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
-            style={{ background: color, color: '#fff' }}>
-            <Check size={20} />
-            COMPLETE WORKOUT
-          </button>
-        </div>
-      )}
-
       {/* Modals */}
-      {modal && <WeightModal exercise={modal.exercise} setNum={modal.setNum} suggested={modal.suggested} onSave={handleSaveSet} onClose={() => setModal(null)} />}
-      {restTimer && <RestTimer seconds={restTimer.seconds} onDone={() => setRestTimer(null)} />}
+      {modal && (
+        <WeightSheet
+          exercise={modal.exercise} setNum={modal.setNum} suggested={modal.suggested}
+          onSave={handleSave} onClose={() => setModal(null)}
+        />
+      )}
+      {rest && <RestTimer seconds={rest.seconds} onDone={() => setRest(null)} />}
     </div>
   )
 }
