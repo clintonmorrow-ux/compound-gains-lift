@@ -105,7 +105,7 @@ function RestPill({ seconds, exName, onDone }: { seconds:number; exName:string; 
       <span className="t-subhead sf-semibold tabular-nums" style={{ color:'var(--label)' }}>
         {m}:{String(s).padStart(2,'0')}
       </span>
-      <span className="t-caption1" style={{ color:'var(--label-3)' }}>rest</span>
+      <span className="t-caption1" style={{ color:'var(--label-2)' }}>rest</span>
       <button onClick={onDone} className="tap t-caption2 sf-semibold px-3 py-1.5 rounded-full"
               style={{ background:'var(--fill-3)', color:'var(--label-2)' }}>Skip</button>
     </div>
@@ -313,13 +313,13 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           </button>
           <div className="flex-1 min-w-0">
             <p className="t-headline sf-semibold truncate" style={{ color:'var(--label)' }}>{workout.shortName}</p>
-            <p className="t-caption1 mt-0.5" style={{ color:'var(--label-3)' }}>
+            <p className="t-caption1 mt-0.5" style={{ color:'var(--label-2)' }}>
               Week {wk} · RIR {cfg.rir} · Rest {formatRestTime(getRestSeconds(wk,'primary'))} / {formatRestTime(getRestSeconds(wk,'isolation'))}
             </p>
           </div>
           <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-full" style={{ background:'var(--fill-3)' }}>
             <span className="t-subhead sf-semibold tabular-nums" style={{ color:c }}>{logged}</span>
-            <span className="t-caption1" style={{ color:'var(--label-3)' }}>/{total}</span>
+            <span className="t-caption1" style={{ color:'var(--label-2)' }}>/{total}</span>
           </div>
         </div>
         <div className="px-4 pb-2.5">
@@ -352,7 +352,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                       onClick={() => setOpen(isOpen ? '' : origEx.name)}>
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 t-footnote sf-heavy"
                      style={{ background: isComp ? 'rgba(48,209,88,0.15)' : 'var(--bg-3)',
-                              color:      isComp ? 'var(--green)'         : 'var(--label-3)' }}>
+                              color:      isComp ? 'var(--green)'         : 'var(--label-2)' }}>
                   {isComp ? '✓' : idx+1}
                 </div>
                 <div className="flex-1 min-w-0 text-left">
@@ -360,7 +360,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                     <p className="t-subhead sf-semibold truncate" style={{ color:'var(--label)' }}>{ex.name}</p>
                     {isSwap && <span className="t-caption2 px-1.5 py-0.5 rounded" style={{ background:'rgba(10,132,255,0.15)', color:'var(--blue)', flexShrink:0 }}>swapped</span>}
                   </div>
-                  <p className="t-caption1 mt-0.5" style={{ color:'var(--label-3)' }}>
+                  <p className="t-caption1 mt-0.5" style={{ color:'var(--label-2)' }}>
                     {origEx.muscle}
                     {!origEx.isBodyweight && target > 0 && (
                       <span style={{ color: hasSmartBump ? (smart!.direction==='up' ? 'var(--green)' : 'var(--orange)') : c }}>
@@ -371,7 +371,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <span className="t-subhead sf-semibold tabular-nums"
-                        style={{ color: isComp ? 'var(--green)' : c }}>
+                        style={{ color: isComp ? 'var(--green)' : 'var(--label)' }}>
                     {exLogged.length}/{exSets}
                   </span>
                   {isOpen ? <ChevronLeft size={14} className="rotate-90" style={{ color:'var(--label-4)' }} />
@@ -385,7 +385,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                   {/* Cue + swap row */}
                   <div className="flex items-start gap-2 mx-4 mb-2.5 px-3.5 py-2.5 rounded-xl"
                        style={{ background:'var(--bg-3)' }}>
-                    <p className="t-caption1 flex-1" style={{ color:'var(--label-3)', lineHeight:1.6, fontStyle:'italic' }}>
+                    <p className="t-caption1 flex-1" style={{ color:'var(--label-2)', lineHeight:1.6, fontStyle:'italic' }}>
                       {ex.cue}
                     </p>
                     {EXERCISE_ALTS[origEx.name] && (
@@ -435,7 +435,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                               <span className="t-subhead" style={{ color:'var(--label-3)', fontWeight:400 }}> × {l.reps} reps</span>
                             </p>
                           ) : (
-                            <p className="flex-1 text-left t-subhead" style={{ color:'var(--label-3)' }}>
+                            <p className="flex-1 text-left t-subhead" style={{ color:'var(--label-2)' }}>
                               {origEx.isBodyweight ? 'Bodyweight' : target > 0 ? `${target} lbs` : 'Tap to log'}
                             </p>
                           )}
