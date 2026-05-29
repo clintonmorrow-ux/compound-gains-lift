@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import { Check, ChevronDown, ChevronUp } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Check, ChevronDown, ChevronUp, ChevronLeft } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
 import { WORKOUTS } from '@/lib/program/data'
@@ -14,6 +15,7 @@ const WC: Record<string,string> = {
 }
 
 export default function SettingsPage() {
+  const router = useRouter()
   const [rms,     setRms]     = useState<Record<string,string>>({})
   const [round,   setRound]   = useState(5)
   const [group,   setGroup]   = useState<string>('A')
@@ -82,8 +84,13 @@ export default function SettingsPage() {
       <div className="pt-safe sticky top-0 z-20"
         style={{ background:'rgba(0,0,0,0.88)', backdropFilter:'saturate(180%) blur(24px)',
                  WebkitBackdropFilter:'saturate(180%) blur(24px)', borderBottom:'0.5px solid var(--sep)' }}>
-        <div className="px-5 pb-3 pt-2">
-          <h1 className="t-large-title sf-bold" style={{ color:'var(--label)' }}>Settings</h1>
+        <div className="flex items-center gap-3 px-4 pb-3 pt-2">
+          <button onClick={() => router.push('/')}
+            className="tap w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{ background:'var(--fill-3)' }}>
+            <ChevronLeft size={18} strokeWidth={2.5} style={{ color:'var(--accent)' }} />
+          </button>
+          <h1 className="t-title2 sf-bold" style={{ color:'var(--label)' }}>Settings</h1>
         </div>
       </div>
 
