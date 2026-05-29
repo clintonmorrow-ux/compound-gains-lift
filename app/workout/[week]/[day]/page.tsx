@@ -43,16 +43,16 @@ function WeightSheet({ ex, setNum, suggested, smart, onSave, onClose }: {
           </div>
         )}
 
-        {/* Weight */}
+        {/* Weight display */}
         <div className="text-center mb-6">
-          <span style={{ fontSize:72, fontWeight:700, letterSpacing:'-2px', color:'var(--label)', fontVariantNumeric:'tabular-nums' }}>
+          <span style={{ fontSize:68, fontWeight:700, letterSpacing:'-2px', color:'var(--label)', fontVariantNumeric:'tabular-nums' }}>
             {wt}
           </span>
-          <span className="t-title3" style={{ color:'var(--label-3)', marginLeft:6 }}>lbs</span>
+          <span className="t-title3" style={{ color:'#8E8E93', marginLeft:8 }}>lbs</span>
         </div>
 
-        {/* ± */}
-        <div className="grid grid-cols-4 gap-2.5 mb-8">
+        {/* ± adjust buttons */}
+        <div className="grid grid-cols-4 gap-3 mb-10">
           {([-10,-5,+5,+10] as const).map(d => (
             <button key={d} onClick={() => adj(d)}
               className="tap t-headline sf-semibold h-14 rounded-2xl"
@@ -62,15 +62,15 @@ function WeightSheet({ ex, setNum, suggested, smart, onSave, onClose }: {
           ))}
         </div>
 
-        {/* Divider */}
-        <div className="mb-5" style={{ height:'0.5px', background:'var(--sep)' }} />
+        {/* ── Divider ── */}
+        <div style={{ height:1, background:'rgba(84,84,88,0.7)', marginBottom:28 }} />
 
         {/* Reps */}
-        <p className="t-caption2 sf-semibold mb-3" style={{ color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.06em' }}>Reps</p>
-        <div className="grid grid-cols-6 gap-2.5 mb-7">
+        <p className="t-subhead sf-semibold mb-4" style={{ color:'var(--label)' }}>Reps</p>
+        <div className="grid grid-cols-6 gap-2.5 mb-8">
           {[5,6,8,10,12,15].map(r => (
             <button key={r} onClick={() => setReps(r)}
-              className="tap h-12 rounded-xl t-callout sf-semibold"
+              className="tap h-14 rounded-xl t-callout sf-semibold"
               style={{ background: reps===r ? 'var(--accent)' : 'var(--bg-3)', color: reps===r ? '#fff' : 'var(--label-2)' }}>
               {r}
             </button>

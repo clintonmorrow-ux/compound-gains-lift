@@ -147,7 +147,10 @@ input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; }
   position: absolute; bottom: 0; left: 0; right: 0;
   background: var(--bg-2);
   border-radius: 20px 20px 0 0;
-  padding-bottom: max(var(--safe-bottom), 16px);
+  max-height: 82vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: max(var(--safe-bottom), 20px);
   animation: sheet-up 0.35s cubic-bezier(0.32,0.72,0,1);
 }
 @keyframes sheet-up {
