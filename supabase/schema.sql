@@ -97,3 +97,8 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- ── Equipment preference (run this if upgrading from initial schema) ────
+alter table public.user_settings
+  add column if not exists equipment_types text[]
+  default array['barbell','dumbbells','cables','machines']::text[];

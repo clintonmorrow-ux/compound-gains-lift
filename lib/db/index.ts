@@ -122,3 +122,34 @@ export async function getLastWeightForExercise(exerciseName: string): Promise<nu
   if (error || !data) return null
   return data.weight_lbs
 }
+
+export async function getRecentSetsForExercise(exerciseName: string, limit = 15) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('logged_sets')
+    .select('weight_lbs, reps, completed_at')
+    .eq('exercise_name', exerciseName)
+    .not('weight_lbs', 'is', null)
+    .not('reps', 'is', null)
+    .order('completed_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return (data ?? []) as { weight_lbs: number; reps: number; completed_at: string }[]
+}
+
+export async function fetchEquipment(): Promise<string[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('user_settings')
+    .select('equipment_types')
+    .single()
+  if (error || !data?.equipment_types) return ['barbell','dumbbells','cables','machines']
+  return data.equipment_types
+}
+
+export async function saveEquipment(types: string[]): Promise<void> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  await supabase.from('user_settings').upsert({ id: user.id, equipment_types: types }, { onConflict:'id' })
+}

@@ -3,7 +3,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { Check, ChevronDown, ChevronUp } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { WORKOUTS } from '@/lib/program/data'
-import { fetchAllOneRms, upsertOneRm, fetchSettings, updateSettings } from '@/lib/db'
+import { fetchAllOneRms, upsertOneRm, fetchSettings, updateSettings, fetchEquipment, saveEquipment } from '@/lib/db'
+import { EQUIPMENT_LABELS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import type { UserOneRm } from '@/types'
 
 const WC: Record<string,string> = { A:'var(--wkt-a)', B:'var(--wkt-b)', C:'var(--wkt-c)', D:'var(--wkt-d)' }
@@ -12,13 +13,14 @@ export default function SettingsPage() {
   const [rms,   setRms]   = useState<Record<string,string>>({})
   const [round, setRound] = useState(5)
   const [group, setGroup] = useState<string>('A')
-  const [saved, setSaved] = useState<string|null>(null)
+  const [saved,  setSaved]  = useState<string|null>(null)
+  const [equip,  setEquip]  = useState<string[]>(['barbell','dumbbells','cables','machines'])
 
   const init = useCallback(async () => {
-    const [r, s] = await Promise.all([fetchAllOneRms(), fetchSettings()])
+    const [r, s, eq] = await Promise.all([fetchAllOneRms(), fetchSettings(), fetchEquipment()])
     const m: Record<string,string> = {}
     r.forEach((x: UserOneRm) => { m[x.exercise_name] = String(x.weight_lbs) })
-    setRms(m); setRound(s.round_to_lbs)
+    setRms(m); setRound(s.round_to_lbs); setEquip(eq)
   }, [])
   useEffect(() => { init() }, [init])
 
@@ -71,6 +73,36 @@ export default function SettingsPage() {
           </div>
           <p className="ios-section-footer mt-1.5">
             Applied to all calculated target weights. 5 lbs works for most barbell work.
+          </p>
+        </div>
+
+        {/* Equipment selection */}
+        <div>
+          <p className="ios-section-label mb-2">Available Equipment</p>
+          <div className="ios-group">
+            {(Object.keys(EQUIPMENT_LABELS) as EquipmentKey[]).map((k, i) => {
+              const on = equip.includes(k)
+              const toggle = async () => {
+                const next = on ? equip.filter(e => e !== k) : [...equip, k]
+                setEquip(next); await saveEquipment(next)
+              }
+              return (
+                <button key={k} onClick={toggle}
+                  className={`ios-row tap w-full ${i===0?'ios-row-first':''}`}>
+                  <span className="t-body w-7 flex-shrink-0">{EQUIPMENT_ICONS[k]}</span>
+                  <p className="t-subhead flex-1 text-left" style={{ color: on ? 'var(--label)' : 'var(--label-3)' }}>
+                    {EQUIPMENT_LABELS[k]}
+                  </p>
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                       style={{ background: on ? 'var(--accent)' : 'var(--fill-3)' }}>
+                    {on && <Check size={11} strokeWidth={3} style={{ color:'#fff' }} />}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+          <p className="ios-section-footer mt-1.5">
+            Workout alternatives will prioritise equipment you have available.
           </p>
         </div>
 
