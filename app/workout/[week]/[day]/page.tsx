@@ -23,7 +23,7 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
   const parts   = repsRange.replace('–','-').split('-').map(Number)
   const maxReps = parts[1] || parts[0] || 10
 
-  const [wt,   setWt]   = useState(target > 0 ? target : lastWeight ?? 0)
+  const [wt,   setWt]   = useState(isBodyweight ? 0 : (target > 0 ? target : lastWeight ?? 0))
   const [reps, setReps] = useState(maxReps)
   const [rir,  setRir]  = useState(3)
   const [busy, setBusy] = useState(false)
@@ -36,7 +36,7 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
   const commit = async () => {
     if (busy) return
     setBusy(true)
-    await onLog(isBodyweight ? null : wt || null, reps, rir)
+    await onLog(wt > 0 ? wt : null, reps, rir)
     setBusy(false)
   }
 
@@ -50,42 +50,52 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
         Set {setNum} of {setCount}
       </p>
 
-      {/* Weight stepper */}
-      {!isBodyweight && (
-        <div style={{ marginBottom:16 }}>
+      {/* Weight stepper — always shown; for BW exercises it means added load */}
+      <div style={{ marginBottom:16 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
           <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase',
-            letterSpacing:'0.08em', marginBottom:8 }}>Weight</p>
-          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <button onClick={()=>adjust('wt',-5)} style={{ width:44, height:44, borderRadius:12,
-              background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <Minus size={18} strokeWidth={2.5} style={{ color:'#fff' }} />
-            </button>
-            <div style={{ flex:1, textAlign:'center' }}>
-              <input type="number" inputMode="decimal"
-                value={wt || ''} onChange={e => setWt(parseFloat(e.target.value)||0)}
-                onFocus={e => e.target.select()}
-                style={{ width:'100%', background:'transparent', border:'none', outline:'none',
-                  fontSize:42, fontWeight:800, color:'#fff', textAlign:'center',
-                  letterSpacing:'-1px' }} />
-              <p style={{ fontSize:13, color:'#8E8E93', marginTop:-4 }}>lbs</p>
-            </div>
-            <button onClick={()=>adjust('wt',+5)} style={{ width:44, height:44, borderRadius:12,
-              background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <Plus size={18} strokeWidth={2.5} style={{ color:accentColor }} />
-            </button>
-          </div>
-          {/* Fine adjust */}
-          <div style={{ display:'flex', gap:8, marginTop:10 }}>
-            {([-10,-5,+5,+10]).map(d => (
-              <button key={d} onClick={()=>adjust('wt',d)} style={{ flex:1, height:36, borderRadius:10,
-                background:'rgba(118,118,128,0.15)', fontSize:13, fontWeight:700,
-                color: d<0 ? '#8E8E93' : accentColor }}>
-                {d>0?`+${d}`:d}
-              </button>
-            ))}
-          </div>
+            letterSpacing:'0.08em' }}>
+            {isBodyweight ? 'Added Weight' : 'Weight'}
+          </p>
+          {isBodyweight && (
+            <span style={{ fontSize:11, color:'rgba(255,159,10,0.7)',
+              background:'rgba(255,159,10,0.1)', padding:'2px 7px', borderRadius:6 }}>
+              belt · vest · optional
+            </span>
+          )}
         </div>
-      )}
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <button onClick={()=>adjust('wt',-5)} style={{ width:44, height:44, borderRadius:12,
+            background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <Minus size={18} strokeWidth={2.5} style={{ color:'#fff' }} />
+          </button>
+          <div style={{ flex:1, textAlign:'center' }}>
+            <input type="number" inputMode="decimal"
+              value={wt || ''} onChange={e => setWt(parseFloat(e.target.value)||0)}
+              onFocus={e => e.target.select()}
+              placeholder={isBodyweight ? '0' : ''}
+              style={{ width:'100%', background:'transparent', border:'none', outline:'none',
+                fontSize:42, fontWeight:800, color:'#fff', textAlign:'center',
+                letterSpacing:'-1px' }} />
+            <p style={{ fontSize:13, color:'#8E8E93', marginTop:-4 }}>
+              {isBodyweight ? (wt > 0 ? 'lbs added' : 'bodyweight') : 'lbs'}
+            </p>
+          </div>
+          <button onClick={()=>adjust('wt',+5)} style={{ width:44, height:44, borderRadius:12,
+            background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <Plus size={18} strokeWidth={2.5} style={{ color:accentColor }} />
+          </button>
+        </div>
+        <div style={{ display:'flex', gap:8, marginTop:10 }}>
+          {([-10,-5,+5,+10]).map(d => (
+            <button key={d} onClick={()=>adjust('wt',d)} style={{ flex:1, height:36, borderRadius:10,
+              background:'rgba(118,118,128,0.15)', fontSize:13, fontWeight:700,
+              color: d<0 ? '#8E8E93' : accentColor }}>
+              {d>0?`+${d}`:d}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Reps stepper */}
       <div style={{ marginBottom:16 }}>
@@ -154,7 +164,7 @@ function LoggedRow({ setNum, weight, reps, rir }: { setNum:number; weight:number
       </div>
       <span style={{ fontSize:13, fontWeight:700, color:'#fff' }}>Set {setNum}</span>
       <span style={{ fontSize:13, color:'#8E8E93', flex:1 }}>
-        {weight ? `${weight} lbs` : 'BW'} × {reps} reps
+        {weight != null ? `${weight} lbs` : 'Bodyweight'} × {reps} reps
         {rir !== undefined && <span style={{ color:'rgba(48,209,88,0.8)' }}> · RIR {rir}</span>}
       </span>
     </div>
