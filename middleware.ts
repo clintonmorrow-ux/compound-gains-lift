@@ -27,8 +27,9 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Not logged in — redirect to login
-  if (!user) {
+  // No session, or anonymous session — redirect to login
+  // user.is_anonymous covers the old throwaway sessions
+  if (!user || user.is_anonymous || !user.email) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
