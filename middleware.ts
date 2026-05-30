@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Allow login and auth callback through without session check
+  // Allow login and auth routes through without session check
   if (pathname.startsWith('/login') || pathname.startsWith('/auth')) {
     return NextResponse.next()
   }

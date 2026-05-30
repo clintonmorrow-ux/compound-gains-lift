@@ -15,7 +15,7 @@ export default function LoginPage() {
     const sb = createClient()
     const { error: err } = await sb.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/` }
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` }
     })
     if (err) { setError(err.message); setLoading(false); return }
     setSent(true); setLoading(false)
