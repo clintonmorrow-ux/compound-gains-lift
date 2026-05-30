@@ -14,6 +14,7 @@ export const WORKOUTS: Workout[] = [
       { name: 'Cable Chest Fly',               muscle: 'Chest',     type: 'isolation', cue: 'Slight elbow bend · feel the stretch at the bottom' },
       { name: 'Overhead Press (Barbell)',      muscle: 'Shoulders', type: 'primary',   cue: 'Brace core · bar path directly over traps at top' },
       { name: 'Cable Lateral Raise',           muscle: 'Side Delts',type: 'isolation', cue: 'Lead with elbow · slight forward lean · control eccentric' },
+      { name: 'DB Lateral Raise',              muscle: 'Side Delts',type: 'isolation', cue: '3-sec eccentric · slight lean forward · thumb down at top · no momentum' },
       { name: 'Tricep Rope Pushdown',          muscle: 'Triceps',   type: 'primary',   cue: 'Elbows fixed · split rope at bottom · full extension' },
       { name: 'Overhead DB Tricep Extension',  muscle: 'Triceps',   type: 'isolation', cue: 'Elbows close · feel full stretch · squeeze at top' },
     ],
