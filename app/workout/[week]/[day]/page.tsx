@@ -311,9 +311,15 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       const lastMap:Record<string,number|null>={}, smartM:Record<string,SmartSuggestion|null>={}
       await Promise.all(workout.exercises.map(async ex=>{
         if (ex.isBodyweight) { smartM[ex.name]=null; lastMap[ex.name]=null; return }
-        const recent = await getRecentSetsForExercise(ex.name, 15)
+        // Use the preferred exercise name (from program prefs) for history lookup.
+        // If user swapped "Bench Press" → "DB Bench Press" in Program, we look up
+        // DB Bench Press history so suggestions are based on what they actually lift.
+        const effectiveName = prefs[ex.name]?.name ?? ex.name
+        // Also check if there's a 1RM stored under the effective name; fall back to original
+        const oneRm = rm[effectiveName] ?? rm[ex.name] ?? 0
+        const recent = await getRecentSetsForExercise(effectiveName, 15)
         lastMap[ex.name]  = recent[0]?.weight_lbs ?? null
-        smartM[ex.name]   = calculateSmartSuggestion(recent, ex.type, wk, rm[ex.name]??0, settings.round_to_lbs)
+        smartM[ex.name]   = calculateSmartSuggestion(recent, ex.type, wk, oneRm, settings.round_to_lbs)
       }))
       setLasts(lastMap); setSmartMap(smartM)
       const sess = await createSession(wk, key)
@@ -331,8 +337,11 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const effCue  = (ex:Exercise) => swapped[ex.name]?.cue  ?? progPrefs[ex.name]?.cue  ?? ex.cue
   const tgt     = (ex:Exercise) => {
     if (ex.isBodyweight) return 0
-    const sm=smartMap[ex.name]; if (sm) return sm.weight
-    return getTargetWeight(rms[ex.name]??0, ex.type, wk, round)
+    const sm = smartMap[ex.name]; if (sm) return sm.weight
+    // Check 1RM under effective name (preferred exercise) first, then original
+    const effectiveName = progPrefs[ex.name]?.name ?? ex.name
+    const oneRm = rms[effectiveName] ?? rms[ex.name] ?? 0
+    return getTargetWeight(oneRm, ex.type, wk, round)
   }
 
   const handleLog = async (origEx:Exercise, setNum:number, weight:number|null, reps:number, rir:number) => {
