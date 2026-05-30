@@ -153,3 +153,17 @@ export async function saveEquipment(types: string[]): Promise<void> {
   if (!user) return
   await supabase.from('user_settings').upsert({ id: user.id, equipment_types: types }, { onConflict:'id' })
 }
+
+// ── Analytics: fetch ALL logged sets joined with session dates ──────
+export async function fetchAllLoggedSets(): Promise<{
+  exercise_name: string; weight_lbs: number|null; reps: number|null; completed_at: string
+}[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('logged_sets')
+    .select('exercise_name, weight_lbs, reps, completed_at')
+    .not('reps', 'is', null)
+    .order('completed_at', { ascending: true })
+  if (error) { console.error(error); return [] }
+  return (data ?? []) as any[]
+}
