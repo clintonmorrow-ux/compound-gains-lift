@@ -1,220 +1,177 @@
 'use client'
-import { use, useEffect, useState, useCallback, useRef } from 'react'
+import { use, useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Zap } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { WORKOUTS, WEEK_CONFIG } from '@/lib/program/data'
 import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/calculator'
 import { fetchAllOneRms, fetchSettings, createSession, completeSession,
          logSet, getRecentSetsForExercise, fetchEquipment } from '@/lib/db'
-import { getRestSeconds, formatRestTime, fireRestCompleteNotification,
-         requestNotificationPermission } from '@/lib/program/restTimes'
-import { EXERCISE_ALTS, EQUIPMENT_LABELS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
+import { getRestSeconds, fireRestCompleteNotification, requestNotificationPermission } from '@/lib/program/restTimes'
+import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { calculateSmartSuggestion, type SmartSuggestion } from '@/lib/program/smartSuggestions'
 import type { Exercise, WorkoutKey } from '@/types'
 
-const WC: Record<string,string> = { A:'var(--wkt-a)', B:'var(--wkt-b)', C:'var(--wkt-c)', D:'var(--wkt-d)' }
-const REST: Record<string,number> = { primary:150, secondary:120, isolation:75 }
+const WC: Record<string,string> = { A:'#0A84FF', B:'#30D158', C:'#BF5AF2', D:'#FF9F0A' }
 
 // ── Inline Set Row ────────────────────────────────────────────────
-function SetRow({ setNum, targetWeight, repsRange, existing, onLog, isBodyweight }: {
-  setNum:       number
-  targetWeight: number
-  repsRange:    string
-  existing:     any | null
-  onLog:        (w: number|null, r: number) => Promise<void>
-  isBodyweight: boolean
+function SetRow({ setNum, target, repsRange, lastWeight, existing, onLog, isBodyweight }: {
+  setNum:number; target:number; repsRange:string; lastWeight:number|null
+  existing:any|null; onLog:(w:number|null,r:number)=>Promise<void>; isBodyweight:boolean
 }) {
-  const [wt,     setWt]     = useState(existing?.weight_lbs?.toString() ?? (targetWeight > 0 ? targetWeight.toString() : ''))
-  const [reps,   setReps]   = useState(existing?.reps?.toString() ?? '')
-  const [saving, setSaving] = useState(false)
-  const isDone = !!existing
-  const [minR, maxR] = repsRange.replace('–','-').split('-').map(Number)
+  const [_, maxR] = repsRange.replace('–','-').split('-').map(Number)
+  const initWt = existing?.weight_lbs?.toString()
+    ?? (target > 0 ? target.toString() : lastWeight ? lastWeight.toString() : '')
+  const initRp = existing?.reps?.toString() ?? ''
 
-  const handleLog = async () => {
-    if (isDone || saving) return
-    const parsedWt   = isBodyweight ? null : (parseFloat(wt) || null)
-    const parsedReps = parseInt(reps) || maxR || 10
-    setSaving(true)
-    await onLog(parsedWt, parsedReps)
-    setSaving(false)
+  const [wt,   setWt]   = useState(initWt)
+  const [reps, setReps] = useState(initRp)
+  const [busy, setBusy] = useState(false)
+  const isDone = !!existing
+
+  const ready  = !isDone && !busy && (isBodyweight || wt.length > 0) && reps.length > 0
+
+  const commit = async () => {
+    if (!ready) return
+    setBusy(true)
+    await onLog(isBodyweight ? null : (parseFloat(wt)||null), parseInt(reps)||(maxR||10))
+    setBusy(false)
   }
 
-  const canLog = !isDone && !saving && (isBodyweight || wt) && reps
+  const rowBg     = isDone ? 'rgba(48,209,88,0.1)'  : 'rgba(118,118,128,0.1)'
+  const rowBorder = isDone ? 'rgba(48,209,88,0.35)' : 'rgba(84,84,88,0.4)'
+  const inputBg   = isDone ? 'transparent'          : 'rgba(118,118,128,0.18)'
+  const inputClr  = isDone ? '#8E8E93'               : 'var(--label)'
 
   return (
-    <div className="flex items-center gap-2.5 px-3 rounded-2xl"
-         style={{
-           minHeight:56,
-           background: isDone ? 'rgba(48,209,88,0.1)' : 'var(--bg-3)',
-           border:`0.5px solid ${isDone ? 'rgba(48,209,88,0.4)' : 'rgba(84,84,88,0.5)'}`,
-         }}>
-      {/* Set badge */}
-      <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-           style={{ background: isDone ? 'var(--green)' : 'rgba(84,84,88,0.4)',
-                    fontSize:12, fontWeight:700, color: isDone ? '#000' : '#8E8E93' }}>
+    <div style={{ display:'flex', alignItems:'center', gap:8, height:52, paddingInline:12,
+      borderRadius:14, background:rowBg, border:`0.5px solid ${rowBorder}` }}>
+
+      {/* Badge */}
+      <div style={{ width:28, height:28, borderRadius:'50%', flexShrink:0, display:'flex',
+        alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800,
+        background: isDone ? '#30D158' : 'rgba(84,84,88,0.35)',
+        color: isDone ? '#000' : '#8E8E93' }}>
         {isDone ? '✓' : setNum}
       </div>
 
       {/* Weight */}
-      {!isBodyweight ? (
-        <>
-          <input
-            type="number" inputMode="decimal"
-            placeholder={targetWeight > 0 ? String(targetWeight) : '0'}
-            value={wt}
-            onChange={e => setWt(e.target.value)}
-            onFocus={e => e.target.select()}
+      {isBodyweight
+        ? <span style={{ flex:1, fontSize:14, color:'#8E8E93', textAlign:'center' }}>Bodyweight</span>
+        : <input type="number" inputMode="decimal"
+            placeholder={target>0 ? String(target) : lastWeight ? String(lastWeight) : '—'}
+            value={wt} onChange={e=>setWt(e.target.value)} onFocus={e=>e.target.select()}
             readOnly={isDone}
-            style={{
-              flex:1, height:38, textAlign:'center', borderRadius:10, outline:'none',
-              fontSize:15, fontWeight:700, letterSpacing:'-0.3px',
-              background: isDone ? 'transparent' : 'rgba(118,118,128,0.18)',
-              color: isDone ? '#8E8E93' : 'var(--label)', border:'none',
-            }}
-          />
-          <span style={{ fontSize:12, color:'#8E8E93', flexShrink:0 }}>lbs</span>
-        </>
-      ) : (
-        <span style={{ flex:1, fontSize:14, color:'#8E8E93', textAlign:'center' }}>Bodyweight</span>
-      )}
+            style={{ flex:1, height:36, textAlign:'center', borderRadius:10, outline:'none',
+              fontSize:16, fontWeight:700, letterSpacing:'-0.5px',
+              background:inputBg, color:inputClr, border:'none' }} />}
 
-      {/* Divider */}
-      <div style={{ width:0.5, height:28, background:'rgba(84,84,88,0.5)', flexShrink:0 }} />
+      <span style={{ fontSize:13, color:'rgba(84,84,88,0.8)', flexShrink:0 }}>×</span>
 
       {/* Reps */}
-      <input
-        type="number" inputMode="numeric"
-        placeholder={String(maxR || 10)}
-        value={reps}
-        onChange={e => setReps(e.target.value)}
-        onFocus={e => e.target.select()}
+      <input type="number" inputMode="numeric"
+        placeholder={String(maxR||10)}
+        value={reps} onChange={e=>setReps(e.target.value)} onFocus={e=>e.target.select()}
         readOnly={isDone}
-        style={{
-          width:52, height:38, textAlign:'center', borderRadius:10, outline:'none',
-          fontSize:15, fontWeight:700, letterSpacing:'-0.3px',
-          background: isDone ? 'transparent' : 'rgba(118,118,128,0.18)',
-          color: isDone ? '#8E8E93' : 'var(--label)', border:'none',
-        }}
-      />
-      <span style={{ fontSize:12, color:'#8E8E93', flexShrink:0 }}>reps</span>
+        style={{ width:56, height:36, textAlign:'center', borderRadius:10, outline:'none',
+          fontSize:16, fontWeight:700, letterSpacing:'-0.5px',
+          background:inputBg, color:inputClr, border:'none' }} />
 
-      {/* Log button */}
-      <button
-        onClick={handleLog}
-        disabled={!canLog}
-        style={{
-          width:36, height:36, borderRadius:'50%', flexShrink:0,
+      <span style={{ fontSize:12, color:'#8E8E93', flexShrink:0, minWidth:28 }}>reps</span>
+
+      {/* CTA */}
+      <button onClick={commit} disabled={!ready && !isDone}
+        style={{ width:36, height:36, borderRadius:'50%', flexShrink:0,
           display:'flex', alignItems:'center', justifyContent:'center',
-          background: isDone ? 'rgba(48,209,88,0.25)' : canLog ? 'var(--accent)' : 'rgba(84,84,88,0.25)',
-          transition:'background 0.15s',
-        }}>
-        {saving
-          ? <div style={{ width:14, height:14, borderRadius:'50%', border:'2px solid transparent', borderTopColor:'#fff', animation:'spin 0.7s linear infinite' }} />
-          : <Check size={15} strokeWidth={3} style={{ color: isDone ? 'var(--green)' : canLog ? '#fff' : '#8E8E93' }} />}
+          background: isDone ? 'rgba(48,209,88,0.2)' : ready ? '#FF9F0A' : 'rgba(84,84,88,0.2)',
+          transition:'background 0.15s, transform 0.1s' }}>
+        {busy
+          ? <div style={{ width:13, height:13, borderRadius:'50%', border:'2px solid transparent',
+              borderTopColor:'#fff', animation:'spin 0.7s linear infinite' }} />
+          : <Check size={15} strokeWidth={3}
+              style={{ color: isDone ? '#30D158' : ready ? '#fff' : '#8E8E93' }} />}
       </button>
     </div>
   )
 }
 
-// ── Rest Timer Pill ───────────────────────────────────────────────
+// ── Rest Timer ────────────────────────────────────────────────────
 function RestPill({ seconds, exName, onDone }: { seconds:number; exName:string; onDone:()=>void }) {
   const [rem, setRem] = useState(seconds)
   useEffect(() => {
-    if (rem <= 0) { fireRestCompleteNotification(exName); onDone(); return }
-    const t = setTimeout(() => setRem(r => r-1), 1000)
-    return () => clearTimeout(t)
+    if (rem<=0) { fireRestCompleteNotification(exName); onDone(); return }
+    const t = setTimeout(()=>setRem(r=>r-1), 1000)
+    return ()=>clearTimeout(t)
   }, [rem, exName, onDone])
-  const m = Math.floor(rem/60), s = rem % 60
-  const pct = (rem / seconds) * 100
+  const m=Math.floor(rem/60), s=rem%60, pct=(rem/seconds)*100
   return (
     <div className="rest-pill">
-      <div className="relative w-8 h-8 flex-shrink-0">
-        <svg className="-rotate-90 w-full h-full" viewBox="0 0 32 32">
-          <circle cx="16" cy="16" r="13" fill="none" strokeWidth="2.5" stroke="var(--bg-4)" />
-          <circle cx="16" cy="16" r="13" fill="none" strokeWidth="2.5" strokeLinecap="round"
-            style={{ stroke:'var(--accent)', strokeDasharray:`${2*Math.PI*13}`,
-              strokeDashoffset:`${2*Math.PI*13*(1-pct/100)}`, transition:'stroke-dashoffset 1s linear' }} />
-        </svg>
-      </div>
-      <span style={{ fontSize:17, fontWeight:700, color:'var(--label)', fontVariantNumeric:'tabular-nums' }}>
+      <svg width="32" height="32" viewBox="0 0 32 32" style={{ transform:'rotate(-90deg)', flexShrink:0 }}>
+        <circle cx="16" cy="16" r="13" fill="none" strokeWidth="2.5" stroke="rgba(84,84,88,0.4)" />
+        <circle cx="16" cy="16" r="13" fill="none" strokeWidth="2.5" strokeLinecap="round"
+          style={{ stroke:'#FF9F0A', strokeDasharray:`${2*Math.PI*13}`,
+            strokeDashoffset:`${2*Math.PI*13*(1-pct/100)}`, transition:'stroke-dashoffset 1s linear' }} />
+      </svg>
+      <span style={{ fontSize:18, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums', letterSpacing:'-0.5px' }}>
         {m}:{String(s).padStart(2,'0')}
       </span>
       <span style={{ fontSize:12, color:'#8E8E93' }}>rest</span>
-      <button onClick={onDone} style={{ padding:'6px 12px', borderRadius:999,
-        background:'rgba(118,118,128,0.24)', fontSize:12, fontWeight:600, color:'#8E8E93' }}>
+      <button onClick={onDone} style={{ padding:'5px 12px', borderRadius:999,
+        background:'rgba(118,118,128,0.25)', fontSize:12, fontWeight:600, color:'#8E8E93' }}>
         Skip
       </button>
     </div>
   )
 }
 
-// ── Alternatives Sheet ────────────────────────────────────────────
+// ── Alts Sheet ────────────────────────────────────────────────────
 function AltsSheet({ exName, equipment, onSwap, onClose }: {
-  exName:string; equipment:string[]
-  onSwap:(n:string,c:string)=>void; onClose:()=>void
+  exName:string; equipment:string[]; onSwap:(n:string,c:string)=>void; onClose:()=>void
 }) {
   const alts  = EXERCISE_ALTS[exName] ?? {}
   const keys  = Object.keys(alts) as EquipmentKey[]
-  const avail = keys.filter(k => equipment.includes(k))
-  const other = keys.filter(k => !equipment.includes(k))
-
+  const avail = keys.filter(k=>equipment.includes(k))
+  const other = keys.filter(k=>!equipment.includes(k))
+  const Section = ({ title, items, dim=false }: { title:string; items:EquipmentKey[]; dim?:boolean }) => (
+    <div style={{ opacity: dim ? 0.55 : 1 }}>
+      <p style={{ fontSize:11, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>{title}</p>
+      <div className="ios-group">
+        {items.flatMap((k,gi)=>(alts[k]??[]).map((alt,ai)=>(
+          <button key={`${k}-${ai}`} onClick={()=>onSwap(alt.name,alt.cue)}
+            className={`ios-row tap w-full ${gi===0&&ai===0?'ios-row-first':''}`}>
+            <span style={{ fontSize:18, width:28, textAlign:'center', flexShrink:0 }}>{EQUIPMENT_ICONS[k]}</span>
+            <div className="flex-1 text-left">
+              <p style={{ fontSize:15, fontWeight:600, color:'var(--label)' }}>{alt.name}</p>
+              <p style={{ fontSize:12, color:'#8E8E93', fontStyle:'italic', marginTop:2, lineHeight:1.4 }}>{alt.cue}</p>
+            </div>
+            <ChevronRight size={14} style={{ color:'#8E8E93', flexShrink:0 }} />
+          </button>
+        )))}
+      </div>
+    </div>
+  )
   return (
     <div className="sheet-scrim" onClick={onClose}>
-      <div className="sheet-panel" onClick={e => e.stopPropagation()}
+      <div className="sheet-panel" onClick={e=>e.stopPropagation()}
            style={{ maxHeight:'80vh', display:'flex', flexDirection:'column' }}>
-        <div className="flex items-center justify-between px-5 pt-4 pb-3 flex-shrink-0">
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 20px 12px' }}>
           <div>
-            <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.06em' }}>Alternatives</p>
-            <p style={{ fontSize:17, fontWeight:700, color:'var(--label)', marginTop:2 }}>{exName}</p>
+            <p style={{ fontSize:11, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.06em' }}>Alternatives</p>
+            <p style={{ fontSize:18, fontWeight:700, color:'var(--label)', marginTop:2 }}>{exName}</p>
           </div>
-          <button onClick={onClose} style={{ width:32, height:32, borderRadius:'50%', background:'var(--fill-3)',
+          <button onClick={onClose} style={{ width:32, height:32, borderRadius:'50%', background:'rgba(118,118,128,0.2)',
             display:'flex', alignItems:'center', justifyContent:'center' }}>
             <X size={15} style={{ color:'#8E8E93' }} />
           </button>
         </div>
-        <div style={{ height:0.5, background:'var(--sep)' }} />
-        <div className="overflow-y-auto flex-1 px-4 py-3 space-y-4">
-          {avail.length > 0 && (
-            <div>
-              <p style={{ fontSize:12, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>Your Equipment</p>
-              <div className="ios-group">
-                {avail.flatMap((key,gi) => (alts[key]??[]).map((alt,ai) => (
-                  <button key={`${key}-${ai}`} onClick={() => onSwap(alt.name,alt.cue)}
-                    className={`ios-row tap w-full ${gi===0&&ai===0?'ios-row-first':''}`}>
-                    <span style={{ fontSize:16, width:24, flexShrink:0 }}>{EQUIPMENT_ICONS[key]}</span>
-                    <div className="flex-1 text-left">
-                      <p style={{ fontSize:15, fontWeight:600, color:'var(--label)' }}>{alt.name}</p>
-                      <p style={{ fontSize:12, color:'#8E8E93', fontStyle:'italic', marginTop:1 }}>{alt.cue}</p>
-                    </div>
-                    <ChevronRight size={14} style={{ color:'#8E8E93', flexShrink:0 }} />
-                  </button>
-                )))}
-              </div>
-            </div>
-          )}
-          {other.length > 0 && (
-            <div>
-              <p style={{ fontSize:12, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>Other Options</p>
-              <div className="ios-group" style={{ opacity:0.6 }}>
-                {other.flatMap((key,gi) => (alts[key]??[]).map((alt,ai) => (
-                  <button key={`${key}-${ai}`} onClick={() => onSwap(alt.name,alt.cue)}
-                    className={`ios-row tap w-full ${gi===0&&ai===0?'ios-row-first':''}`}>
-                    <span style={{ fontSize:16, width:24, flexShrink:0 }}>{EQUIPMENT_ICONS[key]}</span>
-                    <div className="flex-1 text-left">
-                      <p style={{ fontSize:15, fontWeight:600, color:'var(--label)' }}>{alt.name}</p>
-                      <p style={{ fontSize:12, color:'#8E8E93', fontStyle:'italic', marginTop:1 }}>{alt.cue}</p>
-                    </div>
-                    <ChevronRight size={14} style={{ color:'#8E8E93', flexShrink:0 }} />
-                  </button>
-                )))}
-              </div>
-            </div>
-          )}
+        <div style={{ height:0.5, background:'rgba(84,84,88,0.6)' }} />
+        <div className="overflow-y-auto flex-1" style={{ padding:'16px', display:'flex', flexDirection:'column', gap:20 }}>
+          {avail.length>0 && <Section title="Your Equipment" items={avail} />}
+          {other.length>0 && <Section title="Other Options" items={other} dim />}
         </div>
-        <div className="px-4 py-3 flex-shrink-0">
+        <div style={{ padding:'12px 16px 4px' }}>
           <button onClick={onClose} style={{ width:'100%', padding:'14px', borderRadius:14,
-            background:'var(--fill-3)', fontSize:15, fontWeight:600, color:'#8E8E93' }}>
+            background:'rgba(118,118,128,0.18)', fontSize:15, fontWeight:600, color:'#8E8E93' }}>
             Keep Original
           </button>
         </div>
@@ -223,27 +180,27 @@ function AltsSheet({ exName, equipment, onSwap, onClose }: {
   )
 }
 
-// ── Main Page ─────────────────────────────────────────────────────
+// ── Page ──────────────────────────────────────────────────────────
 export default function WorkoutPage({ params }: { params: Promise<{week:string;day:string}> }) {
   const { week:ws, day } = use(params)
-  const wk  = parseInt(ws)
-  const key = day as WorkoutKey
+  const wk=parseInt(ws), key=day as WorkoutKey
   const router = useRouter()
 
-  const workout = WORKOUTS.find(w => w.key===key)!
+  const workout = WORKOUTS.find(w=>w.key===key)!
   const cfg     = WEEK_CONFIG[wk]
-  const c       = WC[key]
+  const accent  = WC[key]
 
   const [rms,       setRms]       = useState<Record<string,number>>({})
   const [round,     setRound]     = useState(5)
   const [equipment, setEquipment] = useState<string[]>(['barbell','dumbbells','cables','machines'])
   const [sid,       setSid]       = useState<string|null>(null)
   const [sets,      setSets]      = useState<Record<string,any[]>>({})
+  const [lasts,     setLasts]     = useState<Record<string,number|null>>({})
+  const [smartMap,  setSmartMap]  = useState<Record<string,SmartSuggestion|null>>({})
   const [open,      setOpen]      = useState<string>(workout.exercises[0]?.name ?? '')
   const [swapped,   setSwapped]   = useState<Record<string,{name:string;cue:string}>>({})
-  const [smartMap,  setSmartMap]  = useState<Record<string,SmartSuggestion|null>>({})
   const [altsFor,   setAltsFor]   = useState<string|null>(null)
-  const [rest,      setRest]      = useState<{sec:number;exName:string}|null>(null)
+  const [rest,      setRest]      = useState<{sec:number;name:string}|null>(null)
   const [done,      setDone]      = useState(false)
 
   const init = useCallback(async () => {
@@ -253,244 +210,265 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       if (!session) await sb.auth.signInAnonymously()
       await requestNotificationPermission()
       const [rmArr, settings, equip] = await Promise.all([fetchAllOneRms(), fetchSettings(), fetchEquipment()])
-      const rm: Record<string,number> = {}
-      rmArr.forEach((x:any) => { rm[x.exercise_name] = x.weight_lbs })
+      const rm:Record<string,number>={}; rmArr.forEach((x:any)=>{rm[x.exercise_name]=x.weight_lbs})
       setRms(rm); setRound(settings.round_to_lbs); setEquipment(equip)
-      const smart: Record<string,SmartSuggestion|null> = {}
-      await Promise.all(workout.exercises.map(async ex => {
-        if (ex.isBodyweight) { smart[ex.name] = null; return }
+      // Load recent performance for each exercise
+      const lastMap:Record<string,number|null>={}, smartM:Record<string,SmartSuggestion|null>={}
+      await Promise.all(workout.exercises.map(async ex=>{
+        if (ex.isBodyweight) { smartM[ex.name]=null; lastMap[ex.name]=null; return }
         const recent = await getRecentSetsForExercise(ex.name, 15)
-        smart[ex.name] = calculateSmartSuggestion(recent, ex.type, wk, rm[ex.name]??0, settings.round_to_lbs)
+        lastMap[ex.name]  = recent[0]?.weight_lbs ?? null
+        smartM[ex.name]   = calculateSmartSuggestion(recent, ex.type, wk, rm[ex.name]??0, settings.round_to_lbs)
       }))
-      setSmartMap(smart)
+      setLasts(lastMap); setSmartMap(smartM)
       const sess = await createSession(wk, key)
       setSid(sess.id)
-    } catch(e) { console.error('Workout init error:', e) }
+    } catch(e){ console.error('Init error:',e) }
   }, [wk, key, workout.exercises])
 
-  useEffect(() => { init() }, [init])
+  useEffect(()=>{ init() }, [init])
 
-  const total  = workout.exercises.reduce((a,ex) => a+getSetsForWeek(ex.type,wk), 0)
-  const logged = Object.values(sets).reduce((a,s) => a+s.length, 0)
-  const pct    = total > 0 ? logged/total : 0
+  const total  = workout.exercises.reduce((a,ex)=>a+getSetsForWeek(ex.type,wk), 0)
+  const logged = Object.values(sets).reduce((a,s)=>a+s.length, 0)
+  const pct    = total>0 ? logged/total : 0
 
-  const effectiveName = (ex: Exercise) => swapped[ex.name]?.name ?? ex.name
-  const effectiveCue  = (ex: Exercise) => swapped[ex.name]?.cue  ?? ex.cue
-
-  const getTarget = (ex: Exercise): number => {
+  const effName = (ex:Exercise) => swapped[ex.name]?.name ?? ex.name
+  const effCue  = (ex:Exercise) => swapped[ex.name]?.cue  ?? ex.cue
+  const tgt     = (ex:Exercise) => {
     if (ex.isBodyweight) return 0
-    const sm = smartMap[ex.name]
-    if (sm) return sm.weight
+    const sm=smartMap[ex.name]; if (sm) return sm.weight
     return getTargetWeight(rms[ex.name]??0, ex.type, wk, round)
   }
 
-  const handleLog = async (origEx: Exercise, setNum: number, weight: number|null, reps: number) => {
+  const handleLog = async (origEx:Exercise, setNum:number, weight:number|null, reps:number) => {
     if (!sid) return
-    const name = effectiveName(origEx)
-    const row  = await logSet(sid, name, setNum, weight, reps)
-    setSets(p => ({ ...p, [origEx.name]: [...(p[origEx.name]??[]), row] }))
-    setRest({ sec: getRestSeconds(wk, origEx.type), exName: name })
-    // Auto-advance to next incomplete exercise
-    const next = workout.exercises.find(e => {
-      const need = getSetsForWeek(e.type, wk)
-      const have = (sets[e.name]?.length ?? 0) + (e.name===origEx.name ? 1 : 0)
-      return have < need && e.name !== origEx.name
-    })
-    if (next && (sets[origEx.name]?.length ?? 0) + 1 >= getSetsForWeek(origEx.type, wk)) {
-      setOpen(next.name)
+    const row = await logSet(sid, effName(origEx), setNum, weight, reps)
+    const newSets = {...sets, [origEx.name]: [...(sets[origEx.name]??[]), row]}
+    setSets(newSets)
+    setRest({ sec: getRestSeconds(wk, origEx.type), name: effName(origEx) })
+    const allDoneNow = getSetsForWeek(origEx.type, wk) <= (newSets[origEx.name]?.length??0)
+    if (allDoneNow) {
+      const next = workout.exercises.find(e => (newSets[e.name]?.length??0) < getSetsForWeek(e.type,wk))
+      if (next) setTimeout(()=>setOpen(next.name), 400)
     }
   }
 
+  // ── Complete screen ──
   if (done) return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center gap-5 px-6" style={{ background:'var(--bg)' }}>
-      <CheckCircle2 size={64} style={{ color:'var(--green)' }} strokeWidth={1.5} />
-      <div className="text-center">
-        <h2 style={{ fontSize:28, fontWeight:700, color:'var(--label)' }}>Workout Complete</h2>
-        <p style={{ fontSize:17, color:'#8E8E93', marginTop:8 }}>{logged} sets · Week {wk} · Workout {key}</p>
+    <div style={{ position:'fixed', inset:0, background:'#000',
+      display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:28, padding:'0 32px' }}>
+      <div style={{ width:88, height:88, borderRadius:'50%', background:'rgba(48,209,88,0.15)',
+        display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <Trophy size={44} style={{ color:'#30D158' }} strokeWidth={1.5} />
       </div>
-      <button onClick={() => router.push('/')} className="ios-btn mt-2" style={{ background:c, maxWidth:300 }}>
+      <div style={{ textAlign:'center' }}>
+        <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:8 }}>
+          Workout Complete
+        </p>
+        <h2 style={{ fontSize:34, fontWeight:800, color:'#fff', letterSpacing:'-1px', lineHeight:1.1 }}>
+          Week {wk} · {workout.shortName}
+        </h2>
+        <p style={{ fontSize:17, color:'#8E8E93', marginTop:10 }}>{logged} sets logged</p>
+      </div>
+      <button onClick={()=>router.push('/')}
+        style={{ width:'100%', maxWidth:280, height:54, borderRadius:16, fontSize:17, fontWeight:700,
+          background: accent, color:'#fff', letterSpacing:'-0.3px' }}>
         Back to Home
       </button>
     </div>
   )
 
   return (
-    <div className="min-h-screen pb-tabs" style={{ background:'var(--bg)' }}>
+    <div className="min-h-screen pb-tabs" style={{ background:'#000' }}>
 
-      {/* Nav */}
+      {/* ── Sticky header ── */}
       <div className="pt-safe sticky top-0 z-30" style={{
-        background:'rgba(0,0,0,0.92)', backdropFilter:'saturate(180%) blur(24px)',
-        WebkitBackdropFilter:'saturate(180%) blur(24px)', borderBottom:'0.5px solid rgba(84,84,88,0.8)' }}>
-        <div className="flex items-center gap-3 px-4 pb-3 pt-2">
-          <button onClick={() => router.back()} style={{
-            width:36, height:36, borderRadius:'50%', background:'var(--fill-3)',
-            display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-            <ChevronLeft size={17} strokeWidth={2.5} style={{ color:'var(--accent)' }} />
+        background:'rgba(0,0,0,0.94)',
+        backdropFilter:'saturate(180%) blur(28px)', WebkitBackdropFilter:'saturate(180%) blur(28px)',
+        borderBottom:`0.5px solid rgba(84,84,88,0.6)` }}>
+        <div style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px 10px' }}>
+          <button onClick={()=>router.back()} style={{ width:36, height:36, borderRadius:'50%',
+            background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            <ChevronLeft size={17} strokeWidth={2.5} style={{ color: accent }} />
           </button>
-          <div className="flex-1 min-w-0">
-            <p style={{ fontSize:17, fontWeight:700, color:'var(--label)', letterSpacing:'-0.41px' }} className="truncate">
-              {workout.shortName}
-            </p>
+          <div style={{ flex:1, minWidth:0 }}>
+            <p style={{ fontSize:17, fontWeight:700, color:'#fff', letterSpacing:'-0.5px' }}
+               className="truncate">{workout.shortName}</p>
             <p style={{ fontSize:12, color:'#8E8E93', marginTop:1 }}>
-              Week {wk} · RIR {cfg.rir} · Rest {formatRestTime(getRestSeconds(wk,'primary'))}–{formatRestTime(getRestSeconds(wk,'isolation'))}
+              Week {wk} · {cfg.phase.split('—')[0].trim()} · RIR {cfg.rir}
             </p>
           </div>
-          <div style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px',
-            borderRadius:999, background:'var(--fill-3)' }}>
-            <span style={{ fontSize:17, fontWeight:700, color:c, fontVariantNumeric:'tabular-nums' }}>{logged}</span>
-            <span style={{ fontSize:12, color:'#8E8E93' }}>/ {total} sets</span>
+          <div style={{ display:'flex', alignItems:'center', gap:5, padding:'6px 14px',
+            borderRadius:999, background:'rgba(118,118,128,0.15)', border:'0.5px solid rgba(84,84,88,0.5)' }}>
+            <span style={{ fontSize:18, fontWeight:800, color: accent, fontVariantNumeric:'tabular-nums' }}>{logged}</span>
+            <span style={{ fontSize:12, color:'#8E8E93' }}>/ {total}</span>
           </div>
         </div>
-        <div style={{ margin:'0 16px 12px', height:3, borderRadius:99, background:'rgba(118,118,128,0.24)', overflow:'hidden' }}>
-          <div style={{ height:'100%', borderRadius:99, background:c, width:`${pct*100}%`, transition:'width 0.4s ease' }} />
+        {/* Progress bar */}
+        <div style={{ height:3, background:'rgba(118,118,128,0.2)', margin:'0 0 0' }}>
+          <div style={{ height:'100%', background: accent, width:`${pct*100}%`,
+            transition:'width 0.5s cubic-bezier(0.34,1.56,0.64,1)',
+            boxShadow:`0 0 8px ${accent}88` }} />
         </div>
       </div>
 
-      {/* Exercise list */}
-      <div style={{ padding:'12px 16px', display:'flex', flexDirection:'column', gap:12 }}>
+      {/* ── Exercise list ── */}
+      <div style={{ padding:'14px 14px', display:'flex', flexDirection:'column', gap:10 }}>
         {workout.exercises.map((origEx, idx) => {
           const exSets   = getSetsForWeek(origEx.type, wk)
           const exReps   = getRepsForWeek(origEx.type, wk)
           const exLogged = sets[origEx.name] ?? []
-          const isOpen   = open === origEx.name
           const isComp   = exLogged.length >= exSets
-          const target   = getTarget(origEx)
+          const isOpen   = open === origEx.name
+          const target   = tgt(origEx)
           const smart    = smartMap[origEx.name]
+          const lastWt   = lasts[origEx.name] ?? null
           const isSwap   = !!swapped[origEx.name]
 
           return (
             <div key={origEx.name} style={{
-              background:'var(--bg-2)', borderRadius:16,
-              border:`0.5px solid ${isOpen ? `color-mix(in srgb, ${c} 40%, rgba(84,84,88,0.5))` : 'rgba(84,84,88,0.5)'}`,
-              opacity: isComp && !isOpen ? 0.55 : 1, transition:'opacity 0.2s, border-color 0.2s',
+              borderRadius:18,
+              background: isOpen ? '#13131F' : '#0D0D14',
+              border:`0.5px solid ${isOpen ? `${accent}50` : 'rgba(84,84,88,0.4)'}`,
+              borderLeft: `3px solid ${isComp ? '#30D158' : isOpen ? accent : 'rgba(84,84,88,0.4)'}`,
               overflow:'hidden',
+              transition:'border-color 0.25s, background 0.25s, opacity 0.25s',
+              opacity: isComp && !isOpen ? 0.5 : 1,
             }}>
 
-              {/* Collapsed header row */}
-              <button onClick={() => setOpen(isOpen ? '' : origEx.name)}
-                style={{ width:'100%', padding:'14px 16px', display:'flex', alignItems:'center', gap:12 }}>
-                <div style={{
-                  width:30, height:30, borderRadius:10, flexShrink:0,
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                  background: isComp ? 'rgba(48,209,88,0.2)' : 'rgba(118,118,128,0.2)',
-                  fontSize:12, fontWeight:800, color: isComp ? 'var(--green)' : '#8E8E93' }}>
-                  {isComp ? '✓' : idx+1}
+              {/* ── Header (always visible) ── */}
+              <button onClick={()=>setOpen(isOpen ? '' : origEx.name)}
+                style={{ width:'100%', padding:'14px 14px 14px 14px',
+                  display:'flex', alignItems:'center', gap:10 }}>
+                {/* Set dots */}
+                <div style={{ display:'flex', flexDirection:'column', gap:3, flexShrink:0, width:24 }}>
+                  {Array.from({length:exSets}).map((_,i)=>(
+                    <div key={i} style={{ height:4, borderRadius:99,
+                      background: i<exLogged.length ? '#30D158' : 'rgba(84,84,88,0.4)',
+                      transition:'background 0.3s' }} />
+                  ))}
                 </div>
-                <div className="flex-1 text-left min-w-0">
+
+                {/* Name + muscle */}
+                <div style={{ flex:1, minWidth:0, textAlign:'left' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                    <p style={{ fontSize:15, fontWeight:700, color:'var(--label)' }} className="truncate">
-                      {effectiveName(origEx)}
-                    </p>
-                    {isSwap && <span style={{ fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:6,
-                      background:'rgba(10,132,255,0.2)', color:'var(--blue)', flexShrink:0 }}>swapped</span>}
+                    <p style={{ fontSize:16, fontWeight:700, color:'#fff', letterSpacing:'-0.3px' }}
+                       className="truncate">{effName(origEx)}</p>
+                    {isSwap && <span style={{ fontSize:10, fontWeight:700, padding:'1px 5px', borderRadius:5,
+                      background:'rgba(10,132,255,0.2)', color:'#0A84FF', flexShrink:0 }}>alt</span>}
                   </div>
                   <p style={{ fontSize:12, color:'#8E8E93', marginTop:2 }}>
                     {origEx.muscle}
                     {!origEx.isBodyweight && target > 0 && (
-                      <span style={{ color: smart?.direction==='up' ? 'var(--green)' : smart?.direction==='down' ? 'var(--orange)' : c }}>
+                      <span style={{ color: smart?.direction==='up' ? '#30D158' : smart?.direction==='down' ? '#FF9F0A' : accent }}>
                         {' · '}{target} lbs{smart?.direction==='up' ? ' ↑' : smart?.direction==='down' ? ' ↓' : ''}
                       </span>
                     )}
                   </p>
                 </div>
+
+                {/* Progress + chevron */}
                 <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-                  <span style={{ fontSize:14, fontWeight:700, color: isComp ? 'var(--green)' : c, fontVariantNumeric:'tabular-nums' }}>
-                    {exLogged.length}/{exSets}
+                  <span style={{ fontSize:14, fontWeight:800, color: isComp ? '#30D158' : '#fff',
+                    fontVariantNumeric:'tabular-nums' }}>
+                    {exLogged.length}<span style={{ color:'#8E8E93', fontWeight:500 }}>/{exSets}</span>
                   </span>
-                  <ChevronRight size={14} style={{ color:'#8E8E93',
-                    transform: isOpen ? 'rotate(90deg)' : 'none', transition:'transform 0.2s' }} />
+                  <div style={{ width:22, height:22, borderRadius:'50%', background:'rgba(118,118,128,0.15)',
+                    display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <ChevronRight size={12} strokeWidth={2.5} style={{ color:'#8E8E93',
+                      transform: isOpen ? 'rotate(90deg)' : 'none', transition:'transform 0.2s' }} />
+                  </div>
                 </div>
               </button>
 
-              {/* Expanded content */}
+              {/* ── Expanded ── */}
               {isOpen && (
-                <div style={{ padding:'0 16px 16px' }}>
-                  <div style={{ height:0.5, background:'rgba(84,84,88,0.5)', marginBottom:16 }} />
+                <div style={{ padding:'0 14px 16px' }}>
 
-                  {/* Metrics row */}
-                  <div style={{ display:'flex', gap:8, marginBottom:16 }}>
-                    {[
-                      { label:'SETS',  value: String(exSets)    },
-                      { label:'REPS',  value: exReps            },
-                      { label:'RIR',   value: String(cfg.rir)   },
-                    ].map(m => (
-                      <div key={m.label} style={{
-                        flex:1, padding:'8px 10px', borderRadius:12,
-                        background:'rgba(118,118,128,0.14)', textAlign:'center' }}>
-                        <p style={{ fontSize:10, fontWeight:700, color:'#8E8E93',
-                          textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:3 }}>
-                          {m.label}
-                        </p>
-                        <p style={{ fontSize:17, fontWeight:700, color:'var(--label)', letterSpacing:'-0.41px' }}>
-                          {m.value}
-                        </p>
-                      </div>
-                    ))}
+                  {/* Prescription strip */}
+                  <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 12px',
+                    borderRadius:12, background:'rgba(118,118,128,0.1)', marginBottom:14,
+                    border:'0.5px solid rgba(84,84,88,0.35)' }}>
+                    <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>{exSets} sets</span>
+                    <span style={{ color:'rgba(84,84,88,0.8)', fontSize:13 }}>·</span>
+                    <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>{exReps} reps</span>
+                    <span style={{ color:'rgba(84,84,88,0.8)', fontSize:13 }}>·</span>
+                    <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>RIR {cfg.rir}</span>
+                    {smart?.direction !== 'maintain' && smart && (
+                      <>
+                        <span style={{ color:'rgba(84,84,88,0.8)', fontSize:13 }}>·</span>
+                        <span style={{ fontSize:12, fontWeight:700, padding:'2px 8px', borderRadius:6,
+                          background: smart.direction==='up' ? 'rgba(48,209,88,0.15)' : 'rgba(255,159,10,0.15)',
+                          color: smart.direction==='up' ? '#30D158' : '#FF9F0A' }}>
+                          {smart.direction==='up' ? '↑ Smart' : '↓ Calibrated'}
+                        </span>
+                      </>
+                    )}
                   </div>
 
-                  {/* Target weight */}
-                  {!origEx.isBodyweight && target > 0 && (
-                    <div style={{ marginBottom:16 }}>
-                      <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93',
-                        textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>
-                        Target Weight
-                      </p>
-                      <div style={{ display:'flex', alignItems:'baseline', gap:6 }}>
-                        <span style={{ fontSize:34, fontWeight:800, color:'var(--label)', letterSpacing:'-1px' }}>
-                          {target}
-                        </span>
-                        <span style={{ fontSize:17, color:'#8E8E93' }}>lbs</span>
-                        {smart?.direction !== 'maintain' && smart && (
-                          <span style={{ fontSize:12, fontWeight:600, padding:'2px 8px', borderRadius:6,
-                            background: smart.direction==='up' ? 'rgba(48,209,88,0.15)' : 'rgba(255,159,10,0.15)',
-                            color: smart.direction==='up' ? 'var(--green)' : 'var(--orange)', marginLeft:4 }}>
-                            {smart.direction==='up' ? '↑ Smart adjusted' : '↓ Smart adjusted'}
+                  {/* Target weight + last session */}
+                  {!origEx.isBodyweight && (
+                    <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', marginBottom:16 }}>
+                      <div>
+                        <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93',
+                          textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>Target</p>
+                        <div style={{ display:'flex', alignItems:'baseline', gap:6 }}>
+                          <span style={{ fontSize:42, fontWeight:800, color:'#fff',
+                            letterSpacing:'-2px', lineHeight:1 }}>
+                            {target > 0 ? target : '—'}
                           </span>
-                        )}
+                          {target > 0 && <span style={{ fontSize:16, color:'#8E8E93' }}>lbs</span>}
+                        </div>
                       </div>
-                      {smart?.direction !== 'maintain' && smart && (
-                        <p style={{ fontSize:12, color:'#8E8E93', marginTop:4, lineHeight:1.5 }}>
-                          {smart.reason}
-                        </p>
+                      {lastWt && (
+                        <div style={{ textAlign:'right', paddingBottom:4 }}>
+                          <p style={{ fontSize:11, fontWeight:600, color:'#8E8E93',
+                            textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:3 }}>Last Session</p>
+                          <p style={{ fontSize:18, fontWeight:700, color:'rgba(255,255,255,0.4)',
+                            letterSpacing:'-0.5px' }}>{lastWt} lbs</p>
+                        </div>
                       )}
                     </div>
                   )}
 
-                  {/* Set logger */}
-                  <div style={{ marginBottom:12 }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-                      <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93',
-                        textTransform:'uppercase', letterSpacing:'0.06em' }}>
-                        Log Your Sets
-                      </p>
-                      <p style={{ fontSize:11, color:'#8E8E93' }}>weight · reps</p>
+                  {/* Set table */}
+                  <div style={{ marginBottom:14 }}>
+                    {/* Column headers */}
+                    <div style={{ display:'flex', alignItems:'center', gap:8,
+                      paddingInline:12, marginBottom:6 }}>
+                      <div style={{ width:28, flexShrink:0 }} />
+                      <p style={{ flex:1, fontSize:10, fontWeight:700, color:'#8E8E93',
+                        textTransform:'uppercase', letterSpacing:'0.07em', textAlign:'center' }}>Weight</p>
+                      <div style={{ width:16 }} />
+                      <p style={{ width:56, fontSize:10, fontWeight:700, color:'#8E8E93',
+                        textTransform:'uppercase', letterSpacing:'0.07em', textAlign:'center' }}>Reps</p>
+                      <div style={{ width:60 }} />
                     </div>
-                    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                    {/* Rows */}
+                    <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                       {Array.from({length:exSets},(_,i)=>i+1).map(n => (
-                        <SetRow
-                          key={n}
-                          setNum={n}
-                          targetWeight={target}
-                          repsRange={exReps}
-                          existing={exLogged.find((l:any) => l.set_number===n) ?? null}
-                          isBodyweight={!!origEx.isBodyweight}
-                          onLog={(w,r) => handleLog(origEx, n, w, r)}
-                        />
+                        <SetRow key={n} setNum={n} target={target} repsRange={exReps}
+                          lastWeight={lastWt} isBodyweight={!!origEx.isBodyweight}
+                          existing={exLogged.find((l:any)=>l.set_number===n) ?? null}
+                          onLog={(w,r)=>handleLog(origEx,n,w,r)} />
                       ))}
                     </div>
                   </div>
 
-                  {/* Form cue + swap */}
-                  <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
-                    <p style={{ fontSize:12, color:'#8E8E93', fontStyle:'italic', lineHeight:1.6, flex:1 }}>
-                      {effectiveCue(origEx)}
+                  {/* Cue + swap */}
+                  <div style={{ display:'flex', alignItems:'flex-start',
+                    justifyContent:'space-between', gap:12 }}>
+                    <p style={{ fontSize:12, color:'#8E8E93', fontStyle:'italic',
+                      lineHeight:1.6, flex:1 }}>
+                      {effCue(origEx)}
                     </p>
                     {EXERCISE_ALTS[origEx.name] && (
-                      <button onClick={() => setAltsFor(origEx.name)} style={{
-                        display:'flex', alignItems:'center', gap:4, padding:'6px 10px',
-                        borderRadius:8, background:'var(--fill-3)', flexShrink:0 }}>
-                        <ArrowLeftRight size={12} style={{ color:'var(--blue)' }} />
-                        <span style={{ fontSize:12, fontWeight:600, color:'var(--blue)' }}>Swap</span>
+                      <button onClick={()=>setAltsFor(origEx.name)}
+                        style={{ display:'flex', alignItems:'center', gap:5, padding:'6px 12px',
+                          borderRadius:10, background:'rgba(10,132,255,0.12)',
+                          border:'0.5px solid rgba(10,132,255,0.3)', flexShrink:0 }}>
+                        <ArrowLeftRight size={12} style={{ color:'#0A84FF' }} />
+                        <span style={{ fontSize:12, fontWeight:700, color:'#0A84FF' }}>Swap</span>
                       </button>
                     )}
                   </div>
@@ -500,21 +478,24 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           )
         })}
 
-        {/* Finish */}
+        {/* ── Finish ── */}
         {logged >= total && (
-          <button onClick={async () => { if(sid) await completeSession(sid); setDone(true) }}
-            className="ios-btn" style={{ background:'var(--green)', marginTop:8 }}>
-            <CheckCircle2 size={18} strokeWidth={2.5} /> Complete Workout
+          <button onClick={async()=>{ if(sid) await completeSession(sid); setDone(true) }}
+            style={{ width:'100%', height:56, borderRadius:18, fontSize:17, fontWeight:700,
+              display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+              background:`linear-gradient(135deg, #30D158, #34C759)`,
+              color:'#fff', letterSpacing:'-0.3px', marginTop:4,
+              boxShadow:'0 4px 24px rgba(48,209,88,0.35)' }}>
+            <CheckCircle2 size={20} strokeWidth={2.5} />
+            Complete Workout
           </button>
         )}
       </div>
 
-      {rest   && <RestPill seconds={rest.sec} exName={rest.exName} onDone={() => setRest(null)} />}
-      {altsFor && (
-        <AltsSheet exName={altsFor} equipment={equipment}
-          onSwap={(n,cu) => { setSwapped(p => ({...p,[altsFor]:{name:n,cue:cu}})); setAltsFor(null) }}
-          onClose={() => setAltsFor(null)} />
-      )}
+      {rest    && <RestPill seconds={rest.sec} exName={rest.name} onDone={()=>setRest(null)} />}
+      {altsFor && <AltsSheet exName={altsFor} equipment={equipment}
+        onSwap={(n,c)=>{ setSwapped(p=>({...p,[altsFor]:{name:n,cue:c}})); setAltsFor(null) }}
+        onClose={()=>setAltsFor(null)} />}
     </div>
   )
 }
