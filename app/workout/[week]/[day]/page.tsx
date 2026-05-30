@@ -316,7 +316,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
         // DB Bench Press history so suggestions are based on what they actually lift.
         const effectiveName = prefs[ex.name]?.name ?? ex.name
         // Also check if there's a 1RM stored under the effective name; fall back to original
-        const oneRm = rm[effectiveName] ?? rm[ex.name] ?? 0
+        const oneRm = rm[effectiveName] ?? 0
         const recent = await getRecentSetsForExercise(effectiveName, 15)
         lastMap[ex.name]  = recent[0]?.weight_lbs ?? null
         smartM[ex.name]   = calculateSmartSuggestion(recent, ex.type, wk, oneRm, settings.round_to_lbs)
@@ -340,7 +340,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     const sm = smartMap[ex.name]; if (sm) return sm.weight
     // Check 1RM under effective name (preferred exercise) first, then original
     const effectiveName = progPrefs[ex.name]?.name ?? ex.name
-    const oneRm = rms[effectiveName] ?? rms[ex.name] ?? 0
+    const oneRm = rms[effectiveName] ?? 0
     return getTargetWeight(oneRm, ex.type, wk, round)
   }
 
