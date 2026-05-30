@@ -46,7 +46,14 @@ export default function Dashboard() {
 
   const bumpWeek = async (d: number) => {
     const n = Math.max(1, Math.min(12, week + d))
-    setWeek(n); await updateSettings({ current_week: n })
+    setWeek(n)
+    setDone([])  // clear immediately so UI doesn't flash stale data
+    await updateSettings({ current_week: n })
+    // Refetch sessions and recalculate done for the new week
+    const sessions = await fetchRecentSessions(50)
+    setDone((sessions as any[])
+      .filter((x: any) => x.week_number === n && x.completed_at)
+      .map((x: any) => x.workout_key))
   }
 
   if (!ready) return (
