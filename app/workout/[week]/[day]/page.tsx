@@ -29,7 +29,14 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
   const [tempo, setTempo]= useState<string>('Standard')
   const [busy,  setBusy] = useState(false)
 
-  const TEMPOS = ['Standard','3-0-1','4-0-1','2-1-2','5-0-1']
+  const TEMPOS: { code:string; label:string; purpose:string; hint:string }[] = [
+    { code:'Standard', label:'Standard', purpose:'',           hint:'Controlled movement at natural speed' },
+    { code:'3-0-1',    label:'3-0-1',   purpose:'Hypertrophy', hint:'3-sec lower · no pause · explode up — best for muscle growth' },
+    { code:'4-0-1',    label:'4-0-1',   purpose:'Max Hypertrophy', hint:'4-sec lower · no pause · explode up — peak time-under-tension' },
+    { code:'3-1-1',    label:'3-1-1',   purpose:'Mind-Muscle', hint:'3-sec lower · 1-sec pause at stretch · explode up' },
+    { code:'2-2-1',    label:'2-2-1',   purpose:'Strength',    hint:'2-sec lower · 2-sec pause at sticking point · lift — builds strength at weak angles' },
+    { code:'2-0-2',    label:'2-0-2',   purpose:'Beginner',    hint:'2-sec lower · no pause · 2-sec lift — controlled, safe for learning movement' },
+  ]
 
   const adjust = (field: 'wt'|'reps', delta: number) => {
     if (field === 'wt')   setWt(w  => Math.max(0, w  + delta))
@@ -148,19 +155,26 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
           <span style={{ fontSize:11, color:'rgba(10,132,255,0.7)', background:'rgba(10,132,255,0.1)',
             padding:'2px 7px', borderRadius:6 }}>optional</span>
         </div>
-        <div style={{ display:'flex', gap:6 }}>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
           {TEMPOS.map(t => (
-            <button key={t} onClick={()=>setTempo(t)} style={{ flex:1, height:36, borderRadius:10,
-              background: tempo===t ? accentColor : 'rgba(118,118,128,0.15)',
-              fontSize:11, fontWeight:700, color: tempo===t ? '#fff' : '#8E8E93',
-              transition:'background 0.15s' }}>
-              {t}
+            <button key={t.code} onClick={()=>setTempo(t.code)}
+              style={{ padding:'6px 10px', borderRadius:10,
+                background: tempo===t.code ? accentColor : 'rgba(118,118,128,0.15)',
+                fontSize:12, fontWeight:700, color: tempo===t.code ? '#fff' : '#8E8E93',
+                transition:'background 0.15s',
+                display:'flex', alignItems:'center', gap:5 }}>
+              <span>{t.code}</span>
+              {t.purpose && <span style={{ fontSize:10, fontWeight:500,
+                color: tempo===t.code ? 'rgba(255,255,255,0.7)' : 'rgba(142,142,147,0.7)',
+                background: tempo===t.code ? 'rgba(0,0,0,0.2)' : 'rgba(118,118,128,0.15)',
+                padding:'1px 5px', borderRadius:4 }}>{t.purpose}</span>}
             </button>
           ))}
         </div>
         {tempo !== 'Standard' && (
-          <p style={{ fontSize:11, color:'rgba(10,132,255,0.8)', marginTop:6, textAlign:'center' }}>
-            {tempo.split('-')[0]}-sec lower · {tempo.split('-')[1]==='0'?'no':'1'}-sec pause · {tempo.split('-')[2]}-sec lift
+          <p style={{ fontSize:12, color:'rgba(10,132,255,0.85)', marginTop:8,
+            background:'rgba(10,132,255,0.08)', padding:'8px 12px', borderRadius:10, lineHeight:1.5 }}>
+            💡 {TEMPOS.find(t=>t.code===tempo)?.hint}
           </p>
         )}
       </div>
