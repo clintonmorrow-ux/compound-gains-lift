@@ -331,23 +331,25 @@ function RestPill({ seconds, exName, onDone, onRestPause }: { seconds:number; ex
   const m=Math.floor(rem/60), s=rem%60, pct=(rem/seconds)*100
   return (
     <div className="rest-pill">
-      <svg width="32" height="32" viewBox="0 0 32 32" style={{ transform:'rotate(-90deg)', flexShrink:0 }}>
+      <svg width="30" height="30" viewBox="0 0 32 32" style={{ transform:'rotate(-90deg)', flexShrink:0 }}>
         <circle cx="16" cy="16" r="13" fill="none" strokeWidth="2.5" stroke="rgba(84,84,88,0.4)" />
         <circle cx="16" cy="16" r="13" fill="none" strokeWidth="2.5" strokeLinecap="round"
           style={{ stroke:'#FF9F0A', strokeDasharray:`${2*Math.PI*13}`,
             strokeDashoffset:`${2*Math.PI*13*(1-pct/100)}`, transition:'stroke-dashoffset 1s linear' }} />
       </svg>
-      <span style={{ fontSize:18, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums' }}>
+      <span style={{ fontSize:17, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums', letterSpacing:'-0.3px' }}>
         {m}:{String(s).padStart(2,'0')}
       </span>
-      <span style={{ fontSize:12, color:'#8E8E93' }}>rest</span>
-      <button onClick={onRestPause} title="15-second rest-pause"
-        style={{ padding:'5px 12px', borderRadius:999,
-        background:'rgba(10,132,255,0.2)', fontSize:12, fontWeight:600, color:'#0A84FF' }}>
+      <div style={{ width:0.5, height:18, background:'rgba(84,84,88,0.6)', flexShrink:0 }} />
+      <button onClick={onRestPause} title="Rest-Pause: 15s then log more reps"
+        style={{ padding:'4px 9px', borderRadius:999, flexShrink:0,
+        background:'rgba(10,132,255,0.25)', fontSize:11, fontWeight:700, color:'#0A84FF',
+        border:'0.5px solid rgba(10,132,255,0.4)' }}>
         RP
       </button>
-      <button onClick={onDone} style={{ padding:'5px 12px', borderRadius:999,
-        background:'rgba(118,118,128,0.25)', fontSize:12, fontWeight:600, color:'#8E8E93' }}>
+      <button onClick={onDone}
+        style={{ padding:'4px 9px', borderRadius:999, flexShrink:0,
+        background:'rgba(118,118,128,0.25)', fontSize:11, fontWeight:600, color:'#8E8E93' }}>
         Skip
       </button>
     </div>
