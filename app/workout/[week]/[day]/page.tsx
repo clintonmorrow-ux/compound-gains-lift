@@ -1,91 +1,123 @@
 'use client'
-import { use, useEffect, useState, useCallback } from 'react'
+import { use, useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Zap } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { WORKOUTS, WEEK_CONFIG } from '@/lib/program/data'
 import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/calculator'
 import { fetchAllOneRms, fetchSettings, createSession, completeSession,
-         logSet, getLastWeightForExercise, getRecentSetsForExercise, fetchEquipment } from '@/lib/db'
-import { getRestSeconds, formatRestTime, fireRestCompleteNotification, requestNotificationPermission } from '@/lib/program/restTimes'
+         logSet, getRecentSetsForExercise, fetchEquipment } from '@/lib/db'
+import { getRestSeconds, formatRestTime, fireRestCompleteNotification,
+         requestNotificationPermission } from '@/lib/program/restTimes'
 import { EXERCISE_ALTS, EQUIPMENT_LABELS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { calculateSmartSuggestion, type SmartSuggestion } from '@/lib/program/smartSuggestions'
 import type { Exercise, WorkoutKey } from '@/types'
 
 const WC: Record<string,string> = { A:'var(--wkt-a)', B:'var(--wkt-b)', C:'var(--wkt-c)', D:'var(--wkt-d)' }
+const REST: Record<string,number> = { primary:150, secondary:120, isolation:75 }
 
-/* ── Weight Sheet ───────────────────────────────────────────────── */
-function WeightSheet({ ex, setNum, suggested, smart, onSave, onClose }: {
-  ex: Exercise; setNum: number; suggested: number; smart: SmartSuggestion | null
-  onSave:(w:number,r:number)=>void; onClose:()=>void
+// ── Inline Set Row ────────────────────────────────────────────────
+function SetRow({ setNum, targetWeight, repsRange, existing, onLog, isBodyweight }: {
+  setNum:       number
+  targetWeight: number
+  repsRange:    string
+  existing:     any | null
+  onLog:        (w: number|null, r: number) => Promise<void>
+  isBodyweight: boolean
 }) {
-  const [wt,   setWt]   = useState(suggested || 0)
-  const [reps, setReps] = useState(10)
-  const adj = (d:number) => setWt(w => Math.max(0, w + d))
+  const [wt,     setWt]     = useState(existing?.weight_lbs?.toString() ?? (targetWeight > 0 ? targetWeight.toString() : ''))
+  const [reps,   setReps]   = useState(existing?.reps?.toString() ?? '')
+  const [saving, setSaving] = useState(false)
+  const isDone = !!existing
+  const [minR, maxR] = repsRange.replace('–','-').split('-').map(Number)
+
+  const handleLog = async () => {
+    if (isDone || saving) return
+    const parsedWt   = isBodyweight ? null : (parseFloat(wt) || null)
+    const parsedReps = parseInt(reps) || maxR || 10
+    setSaving(true)
+    await onLog(parsedWt, parsedReps)
+    setSaving(false)
+  }
+
+  const canLog = !isDone && !saving && (isBodyweight || wt) && reps
 
   return (
-    <div className="sheet-scrim" onClick={onClose}>
-      <div className="sheet-panel px-5 pt-3" onClick={e => e.stopPropagation()}>
-        <div className="w-9 h-[5px] rounded-full mx-auto mb-5" style={{ background:'var(--fill)' }} />
-        <p className="t-caption2 sf-semibold mb-0.5" style={{ color:'var(--label-3)', textTransform:'uppercase', letterSpacing:'0.06em' }}>
-          Set {setNum}
-        </p>
-        <p className="t-headline sf-semibold mb-4" style={{ color:'var(--label)' }}>{ex.name}</p>
-
-        {/* Smart suggestion banner */}
-        {smart && smart.direction !== 'maintain' && (
-          <div className="rounded-xl px-3.5 py-2.5 mb-5 flex items-start gap-2"
-               style={{ background: smart.direction==='up' ? 'rgba(48,209,88,0.12)' : 'rgba(255,159,10,0.12)' }}>
-            <span style={{ fontSize:14, flexShrink:0 }}>{smart.direction==='up' ? '📈' : '📉'}</span>
-            <p className="t-footnote" style={{ color: smart.direction==='up' ? 'var(--green)' : 'var(--orange)', lineHeight:1.5 }}>
-              {smart.reason}
-            </p>
-          </div>
-        )}
-
-        {/* Weight display */}
-        <div className="text-center mb-6">
-          <span style={{ fontSize:68, fontWeight:700, letterSpacing:'-2px', color:'var(--label)', fontVariantNumeric:'tabular-nums' }}>
-            {wt}
-          </span>
-          <span className="t-title3" style={{ color:'#8E8E93', marginLeft:8 }}>lbs</span>
-        </div>
-
-        {/* ± adjust buttons */}
-        <div className="grid grid-cols-4 gap-3 mb-10">
-          {([-10,-5,+5,+10] as const).map(d => (
-            <button key={d} onClick={() => adj(d)}
-              className="tap t-headline sf-semibold h-14 rounded-2xl"
-              style={{ background:'var(--bg-3)', color: d < 0 ? 'var(--label-2)' : 'var(--accent)' }}>
-              {d > 0 ? `+${d}` : d}
-            </button>
-          ))}
-        </div>
-
-        {/* ── Divider ── */}
-        <div style={{ height:1, background:'rgba(84,84,88,0.7)', marginBottom:28 }} />
-
-        {/* Reps */}
-        <p className="t-subhead sf-semibold mb-4" style={{ color:'var(--label)' }}>Reps</p>
-        <div className="grid grid-cols-6 gap-2.5 mb-8">
-          {[5,6,8,10,12,15].map(r => (
-            <button key={r} onClick={() => setReps(r)}
-              className="tap h-14 rounded-xl t-callout sf-semibold"
-              style={{ background: reps===r ? 'var(--accent)' : 'var(--bg-3)', color: reps===r ? '#fff' : 'var(--label-2)' }}>
-              {r}
-            </button>
-          ))}
-        </div>
-
-        <button onClick={() => onSave(wt, reps)} className="ios-btn">
-          <Check size={18} strokeWidth={2.5} /> Log Set {setNum}
-        </button>
+    <div className="flex items-center gap-2.5 px-3 rounded-2xl"
+         style={{
+           minHeight:56,
+           background: isDone ? 'rgba(48,209,88,0.1)' : 'var(--bg-3)',
+           border:`0.5px solid ${isDone ? 'rgba(48,209,88,0.4)' : 'rgba(84,84,88,0.5)'}`,
+         }}>
+      {/* Set badge */}
+      <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+           style={{ background: isDone ? 'var(--green)' : 'rgba(84,84,88,0.4)',
+                    fontSize:12, fontWeight:700, color: isDone ? '#000' : '#8E8E93' }}>
+        {isDone ? '✓' : setNum}
       </div>
+
+      {/* Weight */}
+      {!isBodyweight ? (
+        <>
+          <input
+            type="number" inputMode="decimal"
+            placeholder={targetWeight > 0 ? String(targetWeight) : '0'}
+            value={wt}
+            onChange={e => setWt(e.target.value)}
+            onFocus={e => e.target.select()}
+            readOnly={isDone}
+            style={{
+              flex:1, height:38, textAlign:'center', borderRadius:10, outline:'none',
+              fontSize:15, fontWeight:700, letterSpacing:'-0.3px',
+              background: isDone ? 'transparent' : 'rgba(118,118,128,0.18)',
+              color: isDone ? '#8E8E93' : 'var(--label)', border:'none',
+            }}
+          />
+          <span style={{ fontSize:12, color:'#8E8E93', flexShrink:0 }}>lbs</span>
+        </>
+      ) : (
+        <span style={{ flex:1, fontSize:14, color:'#8E8E93', textAlign:'center' }}>Bodyweight</span>
+      )}
+
+      {/* Divider */}
+      <div style={{ width:0.5, height:28, background:'rgba(84,84,88,0.5)', flexShrink:0 }} />
+
+      {/* Reps */}
+      <input
+        type="number" inputMode="numeric"
+        placeholder={String(maxR || 10)}
+        value={reps}
+        onChange={e => setReps(e.target.value)}
+        onFocus={e => e.target.select()}
+        readOnly={isDone}
+        style={{
+          width:52, height:38, textAlign:'center', borderRadius:10, outline:'none',
+          fontSize:15, fontWeight:700, letterSpacing:'-0.3px',
+          background: isDone ? 'transparent' : 'rgba(118,118,128,0.18)',
+          color: isDone ? '#8E8E93' : 'var(--label)', border:'none',
+        }}
+      />
+      <span style={{ fontSize:12, color:'#8E8E93', flexShrink:0 }}>reps</span>
+
+      {/* Log button */}
+      <button
+        onClick={handleLog}
+        disabled={!canLog}
+        style={{
+          width:36, height:36, borderRadius:'50%', flexShrink:0,
+          display:'flex', alignItems:'center', justifyContent:'center',
+          background: isDone ? 'rgba(48,209,88,0.25)' : canLog ? 'var(--accent)' : 'rgba(84,84,88,0.25)',
+          transition:'background 0.15s',
+        }}>
+        {saving
+          ? <div style={{ width:14, height:14, borderRadius:'50%', border:'2px solid transparent', borderTopColor:'#fff', animation:'spin 0.7s linear infinite' }} />
+          : <Check size={15} strokeWidth={3} style={{ color: isDone ? 'var(--green)' : canLog ? '#fff' : '#8E8E93' }} />}
+      </button>
     </div>
   )
 }
 
-/* ── Rest Timer Pill ─────────────────────────────────────────────── */
+// ── Rest Timer Pill ───────────────────────────────────────────────
 function RestPill({ seconds, exName, onDone }: { seconds:number; exName:string; onDone:()=>void }) {
   const [rem, setRem] = useState(seconds)
   useEffect(() => {
@@ -105,20 +137,22 @@ function RestPill({ seconds, exName, onDone }: { seconds:number; exName:string; 
               strokeDashoffset:`${2*Math.PI*13*(1-pct/100)}`, transition:'stroke-dashoffset 1s linear' }} />
         </svg>
       </div>
-      <span className="t-subhead sf-semibold tabular-nums" style={{ color:'var(--label)' }}>
+      <span style={{ fontSize:17, fontWeight:700, color:'var(--label)', fontVariantNumeric:'tabular-nums' }}>
         {m}:{String(s).padStart(2,'0')}
       </span>
-      <span className="t-caption1" style={{ color:'var(--label-2)' }}>rest</span>
-      <button onClick={onDone} className="tap t-caption2 sf-semibold px-3 py-1.5 rounded-full"
-              style={{ background:'var(--fill-3)', color:'var(--label-2)' }}>Skip</button>
+      <span style={{ fontSize:12, color:'#8E8E93' }}>rest</span>
+      <button onClick={onDone} style={{ padding:'6px 12px', borderRadius:999,
+        background:'rgba(118,118,128,0.24)', fontSize:12, fontWeight:600, color:'#8E8E93' }}>
+        Skip
+      </button>
     </div>
   )
 }
 
-/* ── Alternatives Sheet ──────────────────────────────────────────── */
+// ── Alternatives Sheet ────────────────────────────────────────────
 function AltsSheet({ exName, equipment, onSwap, onClose }: {
-  exName: string; equipment: string[]
-  onSwap:(name:string,cue:string)=>void; onClose:()=>void
+  exName:string; equipment:string[]
+  onSwap:(n:string,c:string)=>void; onClose:()=>void
 }) {
   const alts  = EXERCISE_ALTS[exName] ?? {}
   const keys  = Object.keys(alts) as EquipmentKey[]
@@ -128,70 +162,59 @@ function AltsSheet({ exName, equipment, onSwap, onClose }: {
   return (
     <div className="sheet-scrim" onClick={onClose}>
       <div className="sheet-panel" onClick={e => e.stopPropagation()}
-           style={{ maxHeight:'82vh', display:'flex', flexDirection:'column' }}>
+           style={{ maxHeight:'80vh', display:'flex', flexDirection:'column' }}>
         <div className="flex items-center justify-between px-5 pt-4 pb-3 flex-shrink-0">
           <div>
-            <p className="t-caption2 sf-semibold" style={{ color:'var(--label-3)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Alternatives</p>
-            <p className="t-headline sf-semibold mt-0.5" style={{ color:'var(--label)' }}>{exName}</p>
+            <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.06em' }}>Alternatives</p>
+            <p style={{ fontSize:17, fontWeight:700, color:'var(--label)', marginTop:2 }}>{exName}</p>
           </div>
-          <button onClick={onClose} className="tap w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{ background:'var(--fill-3)' }}>
-            <X size={16} style={{ color:'var(--label-3)' }} />
+          <button onClick={onClose} style={{ width:32, height:32, borderRadius:'50%', background:'var(--fill-3)',
+            display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <X size={15} style={{ color:'#8E8E93' }} />
           </button>
         </div>
-        <div className="w-full h-px flex-shrink-0" style={{ background:'var(--sep)' }} />
-
+        <div style={{ height:0.5, background:'var(--sep)' }} />
         <div className="overflow-y-auto flex-1 px-4 py-3 space-y-4">
-          {/* Available equipment first */}
           {avail.length > 0 && (
             <div>
-              <p className="ios-section-label mb-2">Your Equipment</p>
+              <p style={{ fontSize:12, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>Your Equipment</p>
               <div className="ios-group">
-                {avail.flatMap((key, gi) =>
-                  (alts[key] ?? []).map((alt, ai) => (
-                    <button key={`${key}-${ai}`}
-                      onClick={() => onSwap(alt.name, alt.cue)}
-                      className={`ios-row tap w-full ${gi===0&&ai===0?'ios-row-first':''}`}>
-                      <span className="t-caption1 w-6 flex-shrink-0">{EQUIPMENT_ICONS[key]}</span>
-                      <div className="flex-1 text-left">
-                        <p className="t-subhead sf-semibold" style={{ color:'var(--label)' }}>{alt.name}</p>
-                        <p className="t-caption1 mt-0.5" style={{ color:'var(--label-3)', fontStyle:'italic' }}>{alt.cue}</p>
-                      </div>
-                      <ChevronRight size={15} style={{ color:'var(--label-4)', flexShrink:0 }} />
-                    </button>
-                  ))
-                )}
+                {avail.flatMap((key,gi) => (alts[key]??[]).map((alt,ai) => (
+                  <button key={`${key}-${ai}`} onClick={() => onSwap(alt.name,alt.cue)}
+                    className={`ios-row tap w-full ${gi===0&&ai===0?'ios-row-first':''}`}>
+                    <span style={{ fontSize:16, width:24, flexShrink:0 }}>{EQUIPMENT_ICONS[key]}</span>
+                    <div className="flex-1 text-left">
+                      <p style={{ fontSize:15, fontWeight:600, color:'var(--label)' }}>{alt.name}</p>
+                      <p style={{ fontSize:12, color:'#8E8E93', fontStyle:'italic', marginTop:1 }}>{alt.cue}</p>
+                    </div>
+                    <ChevronRight size={14} style={{ color:'#8E8E93', flexShrink:0 }} />
+                  </button>
+                )))}
               </div>
             </div>
           )}
-
-          {/* Other equipment */}
           {other.length > 0 && (
             <div>
-              <p className="ios-section-label mb-2">Other Options</p>
-              <div className="ios-group">
-                {other.flatMap((key, gi) =>
-                  (alts[key] ?? []).map((alt, ai) => (
-                    <button key={`${key}-${ai}`}
-                      onClick={() => onSwap(alt.name, alt.cue)}
-                      className={`ios-row tap w-full ${gi===0&&ai===0?'ios-row-first':''}`}
-                      style={{ opacity:0.65 }}>
-                      <span className="t-caption1 w-6 flex-shrink-0">{EQUIPMENT_ICONS[key]}</span>
-                      <div className="flex-1 text-left">
-                        <p className="t-subhead" style={{ color:'var(--label)' }}>{alt.name}</p>
-                        <p className="t-caption2 mt-0.5" style={{ color:'var(--label-4)', fontStyle:'italic' }}>{alt.cue}</p>
-                      </div>
-                      <ChevronRight size={15} style={{ color:'var(--label-4)', flexShrink:0 }} />
-                    </button>
-                  ))
-                )}
+              <p style={{ fontSize:12, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>Other Options</p>
+              <div className="ios-group" style={{ opacity:0.6 }}>
+                {other.flatMap((key,gi) => (alts[key]??[]).map((alt,ai) => (
+                  <button key={`${key}-${ai}`} onClick={() => onSwap(alt.name,alt.cue)}
+                    className={`ios-row tap w-full ${gi===0&&ai===0?'ios-row-first':''}`}>
+                    <span style={{ fontSize:16, width:24, flexShrink:0 }}>{EQUIPMENT_ICONS[key]}</span>
+                    <div className="flex-1 text-left">
+                      <p style={{ fontSize:15, fontWeight:600, color:'var(--label)' }}>{alt.name}</p>
+                      <p style={{ fontSize:12, color:'#8E8E93', fontStyle:'italic', marginTop:1 }}>{alt.cue}</p>
+                    </div>
+                    <ChevronRight size={14} style={{ color:'#8E8E93', flexShrink:0 }} />
+                  </button>
+                )))}
               </div>
             </div>
           )}
         </div>
-        <div className="px-4 pb-4 pt-2 flex-shrink-0">
-          <button onClick={onClose} className="tap t-subhead sf-semibold w-full py-3.5 rounded-2xl"
-                  style={{ background:'var(--fill-3)', color:'var(--label-2)' }}>
+        <div className="px-4 py-3 flex-shrink-0">
+          <button onClick={onClose} style={{ width:'100%', padding:'14px', borderRadius:14,
+            background:'var(--fill-3)', fontSize:15, fontWeight:600, color:'#8E8E93' }}>
             Keep Original
           </button>
         </div>
@@ -200,7 +223,7 @@ function AltsSheet({ exName, equipment, onSwap, onClose }: {
   )
 }
 
-/* ── Page ────────────────────────────────────────────────────────── */
+// ── Main Page ─────────────────────────────────────────────────────
 export default function WorkoutPage({ params }: { params: Promise<{week:string;day:string}> }) {
   const { week:ws, day } = use(params)
   const wk  = parseInt(ws)
@@ -218,86 +241,74 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const [sets,      setSets]      = useState<Record<string,any[]>>({})
   const [open,      setOpen]      = useState<string>(workout.exercises[0]?.name ?? '')
   const [swapped,   setSwapped]   = useState<Record<string,{name:string;cue:string}>>({})
-  const [smartMap,  setSmartMap]  = useState<Record<string, SmartSuggestion|null>>({})
-  const [modal,     setModal]     = useState<{ex:Exercise;n:number;sug:number}|null>(null)
+  const [smartMap,  setSmartMap]  = useState<Record<string,SmartSuggestion|null>>({})
   const [altsFor,   setAltsFor]   = useState<string|null>(null)
   const [rest,      setRest]      = useState<{sec:number;exName:string}|null>(null)
   const [done,      setDone]      = useState(false)
 
   const init = useCallback(async () => {
-    const sb = createClient()
-    const {data:{session}} = await sb.auth.getSession()
-    if (!session) await sb.auth.signInAnonymously()
-    await requestNotificationPermission()
-
-    const [rmArr, settings, equip] = await Promise.all([fetchAllOneRms(), fetchSettings(), fetchEquipment()])
-    const rm: Record<string,number> = {}
-    rmArr.forEach((x:any) => { rm[x.exercise_name] = x.weight_lbs })
-    setRms(rm); setRound(settings.round_to_lbs); setEquipment(equip)
-
-    // Pre-load smart suggestions for all exercises
-    const smart: Record<string, SmartSuggestion|null> = {}
-    await Promise.all(workout.exercises.map(async ex => {
-      if (ex.isBodyweight) { smart[ex.name] = null; return }
-      const recent = await getRecentSetsForExercise(ex.name, 15)
-      smart[ex.name] = calculateSmartSuggestion(recent, ex.type, wk, rm[ex.name]??0, settings.round_to_lbs)
-    }))
-    setSmartMap(smart)
-
-    const sess = await createSession(wk, key)
-    setSid(sess.id)
+    try {
+      const sb = createClient()
+      const {data:{session}} = await sb.auth.getSession()
+      if (!session) await sb.auth.signInAnonymously()
+      await requestNotificationPermission()
+      const [rmArr, settings, equip] = await Promise.all([fetchAllOneRms(), fetchSettings(), fetchEquipment()])
+      const rm: Record<string,number> = {}
+      rmArr.forEach((x:any) => { rm[x.exercise_name] = x.weight_lbs })
+      setRms(rm); setRound(settings.round_to_lbs); setEquipment(equip)
+      const smart: Record<string,SmartSuggestion|null> = {}
+      await Promise.all(workout.exercises.map(async ex => {
+        if (ex.isBodyweight) { smart[ex.name] = null; return }
+        const recent = await getRecentSetsForExercise(ex.name, 15)
+        smart[ex.name] = calculateSmartSuggestion(recent, ex.type, wk, rm[ex.name]??0, settings.round_to_lbs)
+      }))
+      setSmartMap(smart)
+      const sess = await createSession(wk, key)
+      setSid(sess.id)
+    } catch(e) { console.error('Workout init error:', e) }
   }, [wk, key, workout.exercises])
 
   useEffect(() => { init() }, [init])
 
-  const total  = workout.exercises.reduce((a,ex)=>a+getSetsForWeek(ex.type,wk),0)
-  const logged = Object.values(sets).reduce((a,s)=>a+s.length,0)
+  const total  = workout.exercises.reduce((a,ex) => a+getSetsForWeek(ex.type,wk), 0)
+  const logged = Object.values(sets).reduce((a,s) => a+s.length, 0)
   const pct    = total > 0 ? logged/total : 0
 
-  /** Effective exercise for display (may be swapped) */
-  const effective = (ex: Exercise): Exercise => {
-    const sw = swapped[ex.name]
-    return sw ? { ...ex, name: sw.name, cue: sw.cue } : ex
-  }
+  const effectiveName = (ex: Exercise) => swapped[ex.name]?.name ?? ex.name
+  const effectiveCue  = (ex: Exercise) => swapped[ex.name]?.cue  ?? ex.cue
 
-  /** Suggested weight: smart > 1RM-based > last weight */
-  const sugWeight = (ex: Exercise): number => {
+  const getTarget = (ex: Exercise): number => {
     if (ex.isBodyweight) return 0
     const sm = smartMap[ex.name]
     if (sm) return sm.weight
-    const t = getTargetWeight(rms[ex.name]??0, ex.type, wk, round)
-    return t > 0 ? t : 0
+    return getTargetWeight(rms[ex.name]??0, ex.type, wk, round)
   }
 
-  const handleSave = async (weight:number, reps:number) => {
-    if (!modal || !sid) return
-    const orig = modal.ex
-    const effName = swapped[orig.name]?.name ?? orig.name
-    const row = await logSet(sid, effName, modal.n, weight||null, reps)
-    setSets(p => ({ ...p, [orig.name]: [...(p[orig.name]??[]), row] }))
-    setModal(null)
-
-    // Phase-appropriate rest time
-    const restSec = getRestSeconds(wk, orig.type)
-    setRest({ sec: restSec, exName: effName })
-
-    // Auto-advance to next exercise
-    const nextEx = workout.exercises.find(e => {
+  const handleLog = async (origEx: Exercise, setNum: number, weight: number|null, reps: number) => {
+    if (!sid) return
+    const name = effectiveName(origEx)
+    const row  = await logSet(sid, name, setNum, weight, reps)
+    setSets(p => ({ ...p, [origEx.name]: [...(p[origEx.name]??[]), row] }))
+    setRest({ sec: getRestSeconds(wk, origEx.type), exName: name })
+    // Auto-advance to next incomplete exercise
+    const next = workout.exercises.find(e => {
       const need = getSetsForWeek(e.type, wk)
-      const have = (sets[e.name]?.length ?? 0) + (e.name===orig.name ? 1 : 0)
-      return have < need
+      const have = (sets[e.name]?.length ?? 0) + (e.name===origEx.name ? 1 : 0)
+      return have < need && e.name !== origEx.name
     })
-    if (nextEx) setOpen(nextEx.name)
+    if (next && (sets[origEx.name]?.length ?? 0) + 1 >= getSetsForWeek(origEx.type, wk)) {
+      setOpen(next.name)
+    }
   }
 
   if (done) return (
     <div className="fixed inset-0 flex flex-col items-center justify-center gap-5 px-6" style={{ background:'var(--bg)' }}>
       <CheckCircle2 size={64} style={{ color:'var(--green)' }} strokeWidth={1.5} />
       <div className="text-center">
-        <h2 className="t-title1 sf-bold" style={{ color:'var(--label)' }}>Workout Complete</h2>
-        <p className="t-body mt-2" style={{ color:'var(--label-2)' }}>{logged} sets · Week {wk} · Workout {key}</p>
+        <h2 style={{ fontSize:28, fontWeight:700, color:'var(--label)' }}>Workout Complete</h2>
+        <p style={{ fontSize:17, color:'#8E8E93', marginTop:8 }}>{logged} sets · Week {wk} · Workout {key}</p>
       </div>
-      <button onClick={() => router.push('/')} className="ios-btn mt-2" style={{ background:c }}>
+      <button onClick={() => router.push('/')} className="ios-btn mt-2" style={{ background:c, maxWidth:300 }}>
         Back to Home
       </button>
     </div>
@@ -307,147 +318,183 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     <div className="min-h-screen pb-tabs" style={{ background:'var(--bg)' }}>
 
       {/* Nav */}
-      <div className="pt-safe sticky top-0 z-30"
-        style={{ background:'rgba(0,0,0,0.88)', backdropFilter:'saturate(180%) blur(24px)', WebkitBackdropFilter:'saturate(180%) blur(24px)', borderBottom:'0.5px solid var(--sep)' }}>
+      <div className="pt-safe sticky top-0 z-30" style={{
+        background:'rgba(0,0,0,0.92)', backdropFilter:'saturate(180%) blur(24px)',
+        WebkitBackdropFilter:'saturate(180%) blur(24px)', borderBottom:'0.5px solid rgba(84,84,88,0.8)' }}>
         <div className="flex items-center gap-3 px-4 pb-3 pt-2">
-          <button onClick={() => router.back()} className="tap w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ background:'var(--fill-3)' }}>
-            <ChevronLeft size={17} style={{ color:'var(--accent)' }} strokeWidth={2.5} />
+          <button onClick={() => router.back()} style={{
+            width:36, height:36, borderRadius:'50%', background:'var(--fill-3)',
+            display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            <ChevronLeft size={17} strokeWidth={2.5} style={{ color:'var(--accent)' }} />
           </button>
           <div className="flex-1 min-w-0">
-            <p className="t-headline sf-semibold truncate" style={{ color:'var(--label)' }}>{workout.shortName}</p>
-            <p className="t-caption1 mt-0.5" style={{ color:'var(--label-2)' }}>
-              Week {wk} · RIR {cfg.rir} · Rest {formatRestTime(getRestSeconds(wk,'primary'))} / {formatRestTime(getRestSeconds(wk,'isolation'))}
+            <p style={{ fontSize:17, fontWeight:700, color:'var(--label)', letterSpacing:'-0.41px' }} className="truncate">
+              {workout.shortName}
+            </p>
+            <p style={{ fontSize:12, color:'#8E8E93', marginTop:1 }}>
+              Week {wk} · RIR {cfg.rir} · Rest {formatRestTime(getRestSeconds(wk,'primary'))}–{formatRestTime(getRestSeconds(wk,'isolation'))}
             </p>
           </div>
-          <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-full" style={{ background:'var(--fill-3)' }}>
-            <span className="t-subhead sf-semibold tabular-nums" style={{ color:c }}>{logged}</span>
-            <span className="t-caption1" style={{ color:'var(--label-2)' }}>/{total}</span>
+          <div style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 12px',
+            borderRadius:999, background:'var(--fill-3)' }}>
+            <span style={{ fontSize:17, fontWeight:700, color:c, fontVariantNumeric:'tabular-nums' }}>{logged}</span>
+            <span style={{ fontSize:12, color:'#8E8E93' }}>/ {total} sets</span>
           </div>
         </div>
-        <div className="px-4 pb-2.5">
-          <div className="overflow-hidden rounded-full" style={{ height:3, background:'var(--fill-3)' }}>
-            <div style={{ height:'100%', borderRadius:9999, background:c, width:`${pct*100}%`, transition:'width 0.4s ease' }} />
-          </div>
+        <div style={{ margin:'0 16px 12px', height:3, borderRadius:99, background:'rgba(118,118,128,0.24)', overflow:'hidden' }}>
+          <div style={{ height:'100%', borderRadius:99, background:c, width:`${pct*100}%`, transition:'width 0.4s ease' }} />
         </div>
       </div>
 
-      {/* Exercises */}
-      <div className="px-4 py-4 space-y-3">
+      {/* Exercise list */}
+      <div style={{ padding:'12px 16px', display:'flex', flexDirection:'column', gap:12 }}>
         {workout.exercises.map((origEx, idx) => {
-          const ex       = effective(origEx)
-          const isSwap   = !!swapped[origEx.name]
           const exSets   = getSetsForWeek(origEx.type, wk)
           const exReps   = getRepsForWeek(origEx.type, wk)
           const exLogged = sets[origEx.name] ?? []
           const isOpen   = open === origEx.name
           const isComp   = exLogged.length >= exSets
-          const target   = sugWeight(origEx)
+          const target   = getTarget(origEx)
           const smart    = smartMap[origEx.name]
-          const hasSmartBump = smart && smart.direction !== 'maintain'
+          const isSwap   = !!swapped[origEx.name]
 
           return (
-            <div key={origEx.name} className="ios-group"
-                 style={{ opacity: isComp && !isOpen ? 0.5 : 1, transition:'opacity 0.25s' }}>
+            <div key={origEx.name} style={{
+              background:'var(--bg-2)', borderRadius:16,
+              border:`0.5px solid ${isOpen ? `color-mix(in srgb, ${c} 40%, rgba(84,84,88,0.5))` : 'rgba(84,84,88,0.5)'}`,
+              opacity: isComp && !isOpen ? 0.55 : 1, transition:'opacity 0.2s, border-color 0.2s',
+              overflow:'hidden',
+            }}>
 
-              {/* Header */}
-              <button className="w-full flex items-center gap-3 px-4 py-3.5 tap"
-                      onClick={() => setOpen(isOpen ? '' : origEx.name)}>
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 t-footnote sf-heavy"
-                     style={{ background: isComp ? 'rgba(48,209,88,0.15)' : 'var(--bg-3)',
-                              color:      isComp ? 'var(--green)'         : 'var(--label-2)' }}>
+              {/* Collapsed header row */}
+              <button onClick={() => setOpen(isOpen ? '' : origEx.name)}
+                style={{ width:'100%', padding:'14px 16px', display:'flex', alignItems:'center', gap:12 }}>
+                <div style={{
+                  width:30, height:30, borderRadius:10, flexShrink:0,
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  background: isComp ? 'rgba(48,209,88,0.2)' : 'rgba(118,118,128,0.2)',
+                  fontSize:12, fontWeight:800, color: isComp ? 'var(--green)' : '#8E8E93' }}>
                   {isComp ? '✓' : idx+1}
                 </div>
-                <div className="flex-1 min-w-0 text-left">
-                  <div className="flex items-center gap-1.5">
-                    <p className="t-subhead sf-semibold truncate" style={{ color:'var(--label)' }}>{ex.name}</p>
-                    {isSwap && <span className="t-caption2 px-1.5 py-0.5 rounded" style={{ background:'rgba(10,132,255,0.15)', color:'var(--blue)', flexShrink:0 }}>swapped</span>}
+                <div className="flex-1 text-left min-w-0">
+                  <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                    <p style={{ fontSize:15, fontWeight:700, color:'var(--label)' }} className="truncate">
+                      {effectiveName(origEx)}
+                    </p>
+                    {isSwap && <span style={{ fontSize:10, fontWeight:700, padding:'2px 6px', borderRadius:6,
+                      background:'rgba(10,132,255,0.2)', color:'var(--blue)', flexShrink:0 }}>swapped</span>}
                   </div>
-                  <p className="t-caption1 mt-0.5" style={{ color:'var(--label-2)' }}>
+                  <p style={{ fontSize:12, color:'#8E8E93', marginTop:2 }}>
                     {origEx.muscle}
                     {!origEx.isBodyweight && target > 0 && (
-                      <span style={{ color: hasSmartBump ? (smart!.direction==='up' ? 'var(--green)' : 'var(--orange)') : c }}>
-                        {' · '}{target} lbs{hasSmartBump ? (smart!.direction==='up' ? ' ↑' : ' ↓') : ''}
+                      <span style={{ color: smart?.direction==='up' ? 'var(--green)' : smart?.direction==='down' ? 'var(--orange)' : c }}>
+                        {' · '}{target} lbs{smart?.direction==='up' ? ' ↑' : smart?.direction==='down' ? ' ↓' : ''}
                       </span>
                     )}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="t-subhead sf-semibold tabular-nums"
-                        style={{ color: isComp ? 'var(--green)' : 'var(--label)' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+                  <span style={{ fontSize:14, fontWeight:700, color: isComp ? 'var(--green)' : c, fontVariantNumeric:'tabular-nums' }}>
                     {exLogged.length}/{exSets}
                   </span>
-                  {isOpen ? <ChevronLeft size={14} className="rotate-90" style={{ color:'var(--label-4)' }} />
-                           : <ChevronRight size={14} style={{ color:'var(--label-4)' }} />}
+                  <ChevronRight size={14} style={{ color:'#8E8E93',
+                    transform: isOpen ? 'rotate(90deg)' : 'none', transition:'transform 0.2s' }} />
                 </div>
               </button>
 
-              {/* Expanded */}
+              {/* Expanded content */}
               {isOpen && (
-                <>
-                  {/* Cue + swap row */}
-                  <div className="flex items-start gap-2 mx-4 mb-2.5 px-3.5 py-2.5 rounded-xl"
-                       style={{ background:'var(--bg-3)' }}>
-                    <p className="t-caption1 flex-1" style={{ color:'var(--label-2)', lineHeight:1.6, fontStyle:'italic' }}>
-                      {ex.cue}
-                    </p>
-                    {EXERCISE_ALTS[origEx.name] && (
-                      <button onClick={() => setAltsFor(origEx.name)}
-                        className="tap flex items-center gap-1 px-2.5 py-1 rounded-lg flex-shrink-0"
-                        style={{ background:'var(--fill-3)', color:'var(--blue)' }}>
-                        <ArrowLeftRight size={12} />
-                        <span className="t-caption2 sf-semibold">Alt</span>
-                      </button>
-                    )}
-                  </div>
+                <div style={{ padding:'0 16px 16px' }}>
+                  <div style={{ height:0.5, background:'rgba(84,84,88,0.5)', marginBottom:16 }} />
 
-                  {/* Smart suggestion detail */}
-                  {smart && hasSmartBump && (
-                    <div className="mx-4 mb-2.5 px-3.5 py-2.5 rounded-xl flex items-start gap-2"
-                         style={{ background: smart.direction==='up' ? 'rgba(48,209,88,0.1)' : 'rgba(255,159,10,0.1)' }}>
-                      <span style={{ fontSize:13 }}>{smart.direction==='up' ? '📈' : '📉'}</span>
-                      <div>
-                        <p className="t-caption1 sf-semibold" style={{ color: smart.direction==='up' ? 'var(--green)' : 'var(--orange)' }}>
-                          Smart Suggestion: {smart.weight} lbs
+                  {/* Metrics row */}
+                  <div style={{ display:'flex', gap:8, marginBottom:16 }}>
+                    {[
+                      { label:'SETS',  value: String(exSets)    },
+                      { label:'REPS',  value: exReps            },
+                      { label:'RIR',   value: String(cfg.rir)   },
+                    ].map(m => (
+                      <div key={m.label} style={{
+                        flex:1, padding:'8px 10px', borderRadius:12,
+                        background:'rgba(118,118,128,0.14)', textAlign:'center' }}>
+                        <p style={{ fontSize:10, fontWeight:700, color:'#8E8E93',
+                          textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:3 }}>
+                          {m.label}
                         </p>
-                        <p className="t-caption2 mt-0.5" style={{ color:'var(--label-3)', lineHeight:1.5 }}>
-                          {smart.reason}
+                        <p style={{ fontSize:17, fontWeight:700, color:'var(--label)', letterSpacing:'-0.41px' }}>
+                          {m.value}
                         </p>
                       </div>
+                    ))}
+                  </div>
+
+                  {/* Target weight */}
+                  {!origEx.isBodyweight && target > 0 && (
+                    <div style={{ marginBottom:16 }}>
+                      <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93',
+                        textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>
+                        Target Weight
+                      </p>
+                      <div style={{ display:'flex', alignItems:'baseline', gap:6 }}>
+                        <span style={{ fontSize:34, fontWeight:800, color:'var(--label)', letterSpacing:'-1px' }}>
+                          {target}
+                        </span>
+                        <span style={{ fontSize:17, color:'#8E8E93' }}>lbs</span>
+                        {smart?.direction !== 'maintain' && smart && (
+                          <span style={{ fontSize:12, fontWeight:600, padding:'2px 8px', borderRadius:6,
+                            background: smart.direction==='up' ? 'rgba(48,209,88,0.15)' : 'rgba(255,159,10,0.15)',
+                            color: smart.direction==='up' ? 'var(--green)' : 'var(--orange)', marginLeft:4 }}>
+                            {smart.direction==='up' ? '↑ Smart adjusted' : '↓ Smart adjusted'}
+                          </span>
+                        )}
+                      </div>
+                      {smart?.direction !== 'maintain' && smart && (
+                        <p style={{ fontSize:12, color:'#8E8E93', marginTop:4, lineHeight:1.5 }}>
+                          {smart.reason}
+                        </p>
+                      )}
                     </div>
                   )}
 
-                  {/* Set rows */}
-                  <div className="px-4 pb-4 space-y-2">
-                    {Array.from({length:exSets},(_,i)=>i+1).map(n => {
-                      const l = exLogged.find((x:any) => x.set_number===n)
-                      return (
-                        <button key={n}
-                          onClick={() => !l && setModal({ex:origEx, n, sug:target})}
-                          className="tap w-full flex items-center gap-3 px-4 rounded-2xl"
-                          style={{ minHeight:52,
-                            background: l ? 'rgba(48,209,88,0.1)' : 'var(--bg-3)',
-                            border:`0.5px solid ${l ? 'rgba(48,209,88,0.3)' : 'var(--sep)'}` }}>
-                          <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 t-caption1 sf-bold"
-                               style={{ background: l ? 'var(--green)' : 'var(--fill)', color: l ? '#000' : 'var(--label-3)' }}>
-                            {l ? '✓' : n}
-                          </div>
-                          {l ? (
-                            <p className="flex-1 text-left t-subhead sf-semibold" style={{ color:'var(--label)' }}>
-                              {l.weight_lbs ?? 'BW'} lbs
-                              <span className="t-subhead" style={{ color:'var(--label-3)', fontWeight:400 }}> × {l.reps} reps</span>
-                            </p>
-                          ) : (
-                            <p className="flex-1 text-left t-subhead" style={{ color:'var(--label-2)' }}>
-                              {origEx.isBodyweight ? 'Bodyweight' : target > 0 ? `${target} lbs` : 'Tap to log'}
-                            </p>
-                          )}
-                          <span className="t-caption2 flex-shrink-0" style={{ color:'var(--label-4)' }}>{exReps}</span>
-                        </button>
-                      )
-                    })}
+                  {/* Set logger */}
+                  <div style={{ marginBottom:12 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+                      <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93',
+                        textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                        Log Your Sets
+                      </p>
+                      <p style={{ fontSize:11, color:'#8E8E93' }}>weight · reps</p>
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                      {Array.from({length:exSets},(_,i)=>i+1).map(n => (
+                        <SetRow
+                          key={n}
+                          setNum={n}
+                          targetWeight={target}
+                          repsRange={exReps}
+                          existing={exLogged.find((l:any) => l.set_number===n) ?? null}
+                          isBodyweight={!!origEx.isBodyweight}
+                          onLog={(w,r) => handleLog(origEx, n, w, r)}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </>
+
+                  {/* Form cue + swap */}
+                  <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
+                    <p style={{ fontSize:12, color:'#8E8E93', fontStyle:'italic', lineHeight:1.6, flex:1 }}>
+                      {effectiveCue(origEx)}
+                    </p>
+                    {EXERCISE_ALTS[origEx.name] && (
+                      <button onClick={() => setAltsFor(origEx.name)} style={{
+                        display:'flex', alignItems:'center', gap:4, padding:'6px 10px',
+                        borderRadius:8, background:'var(--fill-3)', flexShrink:0 }}>
+                        <ArrowLeftRight size={12} style={{ color:'var(--blue)' }} />
+                        <span style={{ fontSize:12, fontWeight:600, color:'var(--blue)' }}>Swap</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           )
@@ -456,27 +503,17 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
         {/* Finish */}
         {logged >= total && (
           <button onClick={async () => { if(sid) await completeSession(sid); setDone(true) }}
-            className="ios-btn mt-2 fade-rise" style={{ background:'var(--green)' }}>
+            className="ios-btn" style={{ background:'var(--green)', marginTop:8 }}>
             <CheckCircle2 size={18} strokeWidth={2.5} /> Complete Workout
           </button>
         )}
       </div>
 
-      {/* Modals */}
-      {modal && (
-        <WeightSheet
-          ex={effective(modal.ex)} setNum={modal.n} suggested={modal.sug}
-          smart={smartMap[modal.ex.name] ?? null}
-          onSave={handleSave} onClose={() => setModal(null)}
-        />
-      )}
-      {rest && <RestPill seconds={rest.sec} exName={rest.exName} onDone={() => setRest(null)} />}
+      {rest   && <RestPill seconds={rest.sec} exName={rest.exName} onDone={() => setRest(null)} />}
       {altsFor && (
-        <AltsSheet
-          exName={altsFor} equipment={equipment}
-          onSwap={(name, cue) => { setSwapped(p => ({...p, [altsFor]: {name, cue}})); setAltsFor(null) }}
-          onClose={() => setAltsFor(null)}
-        />
+        <AltsSheet exName={altsFor} equipment={equipment}
+          onSwap={(n,cu) => { setSwapped(p => ({...p,[altsFor]:{name:n,cue:cu}})); setAltsFor(null) }}
+          onClose={() => setAltsFor(null)} />
       )}
     </div>
   )
