@@ -1,7 +1,7 @@
 'use client'
 import { use, useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { WORKOUTS, WEEK_CONFIG } from '@/lib/program/data'
 import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/calculator'
@@ -14,83 +14,166 @@ import type { Exercise, WorkoutKey } from '@/types'
 
 const WC: Record<string,string> = { A:'#0A84FF', B:'#30D158', C:'#BF5AF2', D:'#FF9F0A' }
 
-// ── Inline Set Row ────────────────────────────────────────────────
-function SetRow({ setNum, target, repsRange, lastWeight, existing, onLog, isBodyweight }: {
-  setNum:number; target:number; repsRange:string; lastWeight:number|null
-  existing:any|null; onLog:(w:number|null,r:number)=>Promise<void>; isBodyweight:boolean
+// ── Active Set Card (current set being logged) ────────────────────
+function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBodyweight, accentColor, onLog }: {
+  setNum:number; setCount:number; target:number; repsRange:string
+  lastWeight:number|null; isBodyweight:boolean; accentColor:string
+  onLog:(w:number|null, r:number, rir:number)=>Promise<void>
 }) {
-  const [_, maxR] = repsRange.replace('–','-').split('-').map(Number)
-  const initWt = existing?.weight_lbs?.toString()
-    ?? (target > 0 ? target.toString() : lastWeight ? lastWeight.toString() : '')
-  const initRp = existing?.reps?.toString() ?? ''
+  const parts   = repsRange.replace('–','-').split('-').map(Number)
+  const maxReps = parts[1] || parts[0] || 10
 
-  const [wt,   setWt]   = useState(initWt)
-  const [reps, setReps] = useState(initRp)
+  const [wt,   setWt]   = useState(target > 0 ? target : lastWeight ?? 0)
+  const [reps, setReps] = useState(maxReps)
+  const [rir,  setRir]  = useState(3)
   const [busy, setBusy] = useState(false)
-  const isDone = !!existing
 
-  const ready  = !isDone && !busy && (isBodyweight || wt.length > 0) && reps.length > 0
+  const adjust = (field: 'wt'|'reps', delta: number) => {
+    if (field === 'wt')   setWt(w  => Math.max(0, w  + delta))
+    if (field === 'reps') setReps(r => Math.max(1, r  + delta))
+  }
 
   const commit = async () => {
-    if (!ready) return
+    if (busy) return
     setBusy(true)
-    await onLog(isBodyweight ? null : (parseFloat(wt)||null), parseInt(reps)||(maxR||10))
+    await onLog(isBodyweight ? null : wt || null, reps, rir)
     setBusy(false)
   }
 
-  const rowBg     = isDone ? 'rgba(48,209,88,0.1)'  : 'rgba(118,118,128,0.1)'
-  const rowBorder = isDone ? 'rgba(48,209,88,0.35)' : 'rgba(84,84,88,0.4)'
-  const inputBg   = isDone ? 'transparent'          : 'rgba(118,118,128,0.18)'
-  const inputClr  = isDone ? '#8E8E93'               : 'var(--label)'
-
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:8, height:52, paddingInline:12,
-      borderRadius:14, background:rowBg, border:`0.5px solid ${rowBorder}` }}>
+    <div style={{ borderRadius:16, border:`1px solid ${accentColor}55`,
+      background:`linear-gradient(160deg, rgba(${accentColor==='#0A84FF'?'10,132,255':accentColor==='#30D158'?'48,209,88':accentColor==='#BF5AF2'?'191,90,242':'255,159,10'},0.08) 0%, rgba(13,13,20,0) 100%)`,
+      padding:'16px' }}>
 
-      {/* Badge */}
-      <div style={{ width:28, height:28, borderRadius:'50%', flexShrink:0, display:'flex',
-        alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800,
-        background: isDone ? '#30D158' : 'rgba(84,84,88,0.35)',
-        color: isDone ? '#000' : '#8E8E93' }}>
-        {isDone ? '✓' : setNum}
+      <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase',
+        letterSpacing:'0.1em', marginBottom:14 }}>
+        Set {setNum} of {setCount}
+      </p>
+
+      {/* Weight stepper */}
+      {!isBodyweight && (
+        <div style={{ marginBottom:16 }}>
+          <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase',
+            letterSpacing:'0.08em', marginBottom:8 }}>Weight</p>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <button onClick={()=>adjust('wt',-5)} style={{ width:44, height:44, borderRadius:12,
+              background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <Minus size={18} strokeWidth={2.5} style={{ color:'#fff' }} />
+            </button>
+            <div style={{ flex:1, textAlign:'center' }}>
+              <input type="number" inputMode="decimal"
+                value={wt || ''} onChange={e => setWt(parseFloat(e.target.value)||0)}
+                onFocus={e => e.target.select()}
+                style={{ width:'100%', background:'transparent', border:'none', outline:'none',
+                  fontSize:42, fontWeight:800, color:'#fff', textAlign:'center',
+                  letterSpacing:'-1px' }} />
+              <p style={{ fontSize:13, color:'#8E8E93', marginTop:-4 }}>lbs</p>
+            </div>
+            <button onClick={()=>adjust('wt',+5)} style={{ width:44, height:44, borderRadius:12,
+              background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <Plus size={18} strokeWidth={2.5} style={{ color:accentColor }} />
+            </button>
+          </div>
+          {/* Fine adjust */}
+          <div style={{ display:'flex', gap:8, marginTop:10 }}>
+            {([-10,-5,+5,+10]).map(d => (
+              <button key={d} onClick={()=>adjust('wt',d)} style={{ flex:1, height:36, borderRadius:10,
+                background:'rgba(118,118,128,0.15)', fontSize:13, fontWeight:700,
+                color: d<0 ? '#8E8E93' : accentColor }}>
+                {d>0?`+${d}`:d}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Reps stepper */}
+      <div style={{ marginBottom:16 }}>
+        <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase',
+          letterSpacing:'0.08em', marginBottom:8 }}>Reps</p>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <button onClick={()=>adjust('reps',-1)} style={{ width:44, height:44, borderRadius:12,
+            background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <Minus size={18} strokeWidth={2.5} style={{ color:'#fff' }} />
+          </button>
+          <div style={{ flex:1, textAlign:'center' }}>
+            <p style={{ fontSize:42, fontWeight:800, color:'#fff', letterSpacing:'-1px' }}>{reps}</p>
+            <p style={{ fontSize:13, color:'#8E8E93', marginTop:-4 }}>reps · goal {repsRange}</p>
+          </div>
+          <button onClick={()=>adjust('reps',+1)} style={{ width:44, height:44, borderRadius:12,
+            background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <Plus size={18} strokeWidth={2.5} style={{ color:accentColor }} />
+          </button>
+        </div>
       </div>
 
-      {/* Weight */}
-      {isBodyweight
-        ? <span style={{ flex:1, fontSize:14, color:'#8E8E93', textAlign:'center' }}>Bodyweight</span>
-        : <input type="number" inputMode="decimal"
-            placeholder={target>0 ? String(target) : lastWeight ? String(lastWeight) : '—'}
-            value={wt} onChange={e=>setWt(e.target.value)} onFocus={e=>e.target.select()}
-            readOnly={isDone}
-            style={{ flex:1, height:32, textAlign:'center', borderRadius:8, outline:'none',
-              fontSize:15, fontWeight:700, letterSpacing:'-0.4px',
-              background:inputBg, color:inputClr, border:'none' }} />}
+      {/* RIR picker */}
+      <div style={{ marginBottom:18 }}>
+        <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase',
+          letterSpacing:'0.08em', marginBottom:8 }}>Reps in Reserve (RIR)</p>
+        <div style={{ display:'flex', gap:8 }}>
+          {[0,1,2,3,4].map(v => (
+            <button key={v} onClick={()=>setRir(v)} style={{ flex:1, height:42, borderRadius:12,
+              background: rir===v ? accentColor : 'rgba(118,118,128,0.15)',
+              fontSize:15, fontWeight:800, color: rir===v ? '#fff' : '#8E8E93',
+              transition:'background 0.15s' }}>
+              {v===4?'4+':v}
+            </button>
+          ))}
+        </div>
+        <p style={{ fontSize:11, color:'#8E8E93', marginTop:6, textAlign:'center' }}>
+          {rir===0?'Nothing left — max effort':rir===1?'1 more rep in the tank':rir===2?'2 reps left — on prescription':rir===3?'3 reps left — feeling fresh':'4+ reps left — very easy'}
+        </p>
+      </div>
 
-      <span style={{ fontSize:13, color:'rgba(84,84,88,0.8)', flexShrink:0 }}>×</span>
-
-      {/* Reps */}
-      <input type="number" inputMode="numeric"
-        placeholder={String(maxR||10)}
-        value={reps} onChange={e=>setReps(e.target.value)} onFocus={e=>e.target.select()}
-        readOnly={isDone}
-        style={{ width:56, height:36, textAlign:'center', borderRadius:10, outline:'none',
-          fontSize:16, fontWeight:700, letterSpacing:'-0.5px',
-          background:inputBg, color:inputClr, border:'none' }} />
-
-      <span style={{ fontSize:12, color:'#8E8E93', flexShrink:0, minWidth:28 }}>reps</span>
-
-      {/* CTA */}
-      <button onClick={commit} disabled={!ready && !isDone}
-        style={{ width:36, height:36, borderRadius:'50%', flexShrink:0,
-          display:'flex', alignItems:'center', justifyContent:'center',
-          background: isDone ? 'rgba(48,209,88,0.2)' : ready ? '#FF9F0A' : 'rgba(84,84,88,0.2)',
-          transition:'background 0.15s, transform 0.1s' }}>
+      {/* LOG button */}
+      <button onClick={commit} disabled={busy}
+        style={{ width:'100%', height:54, borderRadius:14, fontSize:17, fontWeight:800,
+          display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+          background: busy ? 'rgba(118,118,128,0.3)' : accentColor,
+          color:'#fff', letterSpacing:'-0.3px',
+          boxShadow: busy ? 'none' : `0 4px 20px ${accentColor}55`,
+          transition:'background 0.15s, box-shadow 0.15s' }}>
         {busy
-          ? <div style={{ width:13, height:13, borderRadius:'50%', border:'2px solid transparent',
+          ? <div style={{ width:20, height:20, borderRadius:'50%', border:'2.5px solid transparent',
               borderTopColor:'#fff', animation:'spin 0.7s linear infinite' }} />
-          : <Check size={15} strokeWidth={3}
-              style={{ color: isDone ? '#30D158' : ready ? '#fff' : '#8E8E93' }} />}
+          : <><Check size={20} strokeWidth={3} /> Log Set {setNum}</>}
       </button>
+    </div>
+  )
+}
+
+// ── Logged set row (compact) ──────────────────────────────────────
+function LoggedRow({ setNum, weight, reps, rir }: { setNum:number; weight:number|null; reps:number; rir?:number }) {
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:12, height:44, paddingInline:14,
+      borderRadius:12, background:'rgba(48,209,88,0.1)', border:'0.5px solid rgba(48,209,88,0.35)' }}>
+      <div style={{ width:24, height:24, borderRadius:'50%', background:'#30D158',
+        display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+        <Check size={13} strokeWidth={3} style={{ color:'#000' }} />
+      </div>
+      <span style={{ fontSize:13, fontWeight:700, color:'#fff' }}>Set {setNum}</span>
+      <span style={{ fontSize:13, color:'#8E8E93', flex:1 }}>
+        {weight ? `${weight} lbs` : 'BW'} × {reps} reps
+        {rir !== undefined && <span style={{ color:'rgba(48,209,88,0.8)' }}> · RIR {rir}</span>}
+      </span>
+    </div>
+  )
+}
+
+// ── Pending set row (future) ──────────────────────────────────────
+function PendingRow({ setNum, target }: { setNum:number; target:number }) {
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:12, height:40, paddingInline:14,
+      borderRadius:12, background:'rgba(118,118,128,0.06)', border:'0.5px solid rgba(84,84,88,0.25)',
+      opacity:0.5 }}>
+      <div style={{ width:24, height:24, borderRadius:'50%', background:'rgba(84,84,88,0.3)',
+        display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+        <span style={{ fontSize:11, fontWeight:700, color:'#8E8E93' }}>{setNum}</span>
+      </div>
+      <span style={{ fontSize:13, color:'#8E8E93' }}>
+        {target > 0 ? `${target} lbs · upcoming` : 'Upcoming'}
+      </span>
     </div>
   )
 }
@@ -112,7 +195,7 @@ function RestPill({ seconds, exName, onDone }: { seconds:number; exName:string; 
           style={{ stroke:'#FF9F0A', strokeDasharray:`${2*Math.PI*13}`,
             strokeDashoffset:`${2*Math.PI*13*(1-pct/100)}`, transition:'stroke-dashoffset 1s linear' }} />
       </svg>
-      <span style={{ fontSize:18, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums', letterSpacing:'-0.5px' }}>
+      <span style={{ fontSize:18, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums' }}>
         {m}:{String(s).padStart(2,'0')}
       </span>
       <span style={{ fontSize:12, color:'#8E8E93' }}>rest</span>
@@ -124,7 +207,7 @@ function RestPill({ seconds, exName, onDone }: { seconds:number; exName:string; 
   )
 }
 
-// ── Alts Sheet ────────────────────────────────────────────────────
+// ── Alternatives Sheet ────────────────────────────────────────────
 function AltsSheet({ exName, equipment, onSwap, onClose }: {
   exName:string; equipment:string[]; onSwap:(n:string,c:string)=>void; onClose:()=>void
 }) {
@@ -133,16 +216,16 @@ function AltsSheet({ exName, equipment, onSwap, onClose }: {
   const avail = keys.filter(k=>equipment.includes(k))
   const other = keys.filter(k=>!equipment.includes(k))
   const Section = ({ title, items, dim=false }: { title:string; items:EquipmentKey[]; dim?:boolean }) => (
-    <div style={{ opacity: dim ? 0.55 : 1 }}>
+    <div style={{ opacity: dim?0.55:1 }}>
       <p style={{ fontSize:11, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>{title}</p>
       <div className="ios-group">
         {items.flatMap((k,gi)=>(alts[k]??[]).map((alt,ai)=>(
           <button key={`${k}-${ai}`} onClick={()=>onSwap(alt.name,alt.cue)}
             className={`ios-row tap w-full ${gi===0&&ai===0?'ios-row-first':''}`}>
-            <span style={{ fontSize:18, width:28, textAlign:'center', flexShrink:0 }}>{EQUIPMENT_ICONS[k]}</span>
+            <span style={{ fontSize:18, width:28, flexShrink:0 }}>{EQUIPMENT_ICONS[k]}</span>
             <div className="flex-1 text-left">
               <p style={{ fontSize:15, fontWeight:600, color:'var(--label)' }}>{alt.name}</p>
-              <p style={{ fontSize:12, color:'#8E8E93', fontStyle:'italic', marginTop:2, lineHeight:1.4 }}>{alt.cue}</p>
+              <p style={{ fontSize:12, color:'#8E8E93', fontStyle:'italic', marginTop:2 }}>{alt.cue}</p>
             </div>
             <ChevronRight size={14} style={{ color:'#8E8E93', flexShrink:0 }} />
           </button>
@@ -159,18 +242,18 @@ function AltsSheet({ exName, equipment, onSwap, onClose }: {
             <p style={{ fontSize:11, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.06em' }}>Alternatives</p>
             <p style={{ fontSize:18, fontWeight:700, color:'var(--label)', marginTop:2 }}>{exName}</p>
           </div>
-          <button onClick={onClose} style={{ width:32, height:32, borderRadius:'50%', background:'rgba(118,118,128,0.2)',
-            display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <button onClick={onClose} style={{ width:32, height:32, borderRadius:'50%',
+            background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
             <X size={15} style={{ color:'#8E8E93' }} />
           </button>
         </div>
         <div style={{ height:0.5, background:'rgba(84,84,88,0.6)' }} />
-        <div className="overflow-y-auto flex-1" style={{ padding:'16px', display:'flex', flexDirection:'column', gap:20 }}>
+        <div className="overflow-y-auto flex-1" style={{ padding:16, display:'flex', flexDirection:'column', gap:16 }}>
           {avail.length>0 && <Section title="Your Equipment" items={avail} />}
           {other.length>0 && <Section title="Other Options" items={other} dim />}
         </div>
         <div style={{ padding:'12px 16px 4px' }}>
-          <button onClick={onClose} style={{ width:'100%', padding:'14px', borderRadius:14,
+          <button onClick={onClose} style={{ width:'100%', padding:14, borderRadius:14,
             background:'rgba(118,118,128,0.18)', fontSize:15, fontWeight:600, color:'#8E8E93' }}>
             Keep Original
           </button>
@@ -210,9 +293,9 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       if (!session) await sb.auth.signInAnonymously()
       await requestNotificationPermission()
       const [rmArr, settings, equip] = await Promise.all([fetchAllOneRms(), fetchSettings(), fetchEquipment()])
-      const rm:Record<string,number>={}; rmArr.forEach((x:any)=>{rm[x.exercise_name]=x.weight_lbs})
+      const rm:Record<string,number>={}
+      rmArr.forEach((x:any)=>{rm[x.exercise_name]=x.weight_lbs})
       setRms(rm); setRound(settings.round_to_lbs); setEquipment(equip)
-      // Load recent performance for each exercise
       const lastMap:Record<string,number|null>={}, smartM:Record<string,SmartSuggestion|null>={}
       await Promise.all(workout.exercises.map(async ex=>{
         if (ex.isBodyweight) { smartM[ex.name]=null; lastMap[ex.name]=null; return }
@@ -223,7 +306,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       setLasts(lastMap); setSmartMap(smartM)
       const sess = await createSession(wk, key)
       setSid(sess.id)
-    } catch(e){ console.error('Init error:',e) }
+    } catch(e){ console.error('Init:',e) }
   }, [wk, key, workout.exercises])
 
   useEffect(()=>{ init() }, [init])
@@ -240,39 +323,33 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     return getTargetWeight(rms[ex.name]??0, ex.type, wk, round)
   }
 
-  const handleLog = async (origEx:Exercise, setNum:number, weight:number|null, reps:number) => {
+  const handleLog = async (origEx:Exercise, setNum:number, weight:number|null, reps:number, rir:number) => {
     if (!sid) return
     const row = await logSet(sid, effName(origEx), setNum, weight, reps)
-    const newSets = {...sets, [origEx.name]: [...(sets[origEx.name]??[]), row]}
+    const newLogged = [...(sets[origEx.name]??[]), {...row, rir}]
+    const newSets   = {...sets, [origEx.name]: newLogged}
     setSets(newSets)
     setRest({ sec: getRestSeconds(wk, origEx.type), name: effName(origEx) })
-    const allDoneNow = getSetsForWeek(origEx.type, wk) <= (newSets[origEx.name]?.length??0)
-    if (allDoneNow) {
+    if (newLogged.length >= getSetsForWeek(origEx.type, wk)) {
       const next = workout.exercises.find(e => (newSets[e.name]?.length??0) < getSetsForWeek(e.type,wk))
-      if (next) setTimeout(()=>setOpen(next.name), 400)
+      if (next) setTimeout(()=>setOpen(next.name), 500)
     }
   }
 
-  // ── Complete screen ──
   if (done) return (
-    <div style={{ position:'fixed', inset:0, background:'#000',
-      display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:28, padding:'0 32px' }}>
+    <div style={{ position:'fixed', inset:0, background:'#000', display:'flex', flexDirection:'column',
+      alignItems:'center', justifyContent:'center', gap:28, padding:'0 32px' }}>
       <div style={{ width:88, height:88, borderRadius:'50%', background:'rgba(48,209,88,0.15)',
         display:'flex', alignItems:'center', justifyContent:'center' }}>
         <Trophy size={44} style={{ color:'#30D158' }} strokeWidth={1.5} />
       </div>
       <div style={{ textAlign:'center' }}>
-        <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:8 }}>
-          Workout Complete
-        </p>
-        <h2 style={{ fontSize:34, fontWeight:800, color:'#fff', letterSpacing:'-1px', lineHeight:1.1 }}>
-          Week {wk} · {workout.shortName}
-        </h2>
-        <p style={{ fontSize:17, color:'#8E8E93', marginTop:10 }}>{logged} sets logged</p>
+        <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:8 }}>Workout Complete</p>
+        <h2 style={{ fontSize:34, fontWeight:800, color:'#fff', letterSpacing:'-1px' }}>{workout.shortName}</h2>
+        <p style={{ fontSize:17, color:'#8E8E93', marginTop:8 }}>Week {wk} · {logged} sets logged</p>
       </div>
-      <button onClick={()=>router.push('/')}
-        style={{ width:'100%', maxWidth:280, height:54, borderRadius:16, fontSize:17, fontWeight:700,
-          background: accent, color:'#fff', letterSpacing:'-0.3px' }}>
+      <button onClick={()=>router.push('/')} style={{ width:'100%', maxWidth:280, height:54,
+        borderRadius:16, fontSize:17, fontWeight:700, background:accent, color:'#fff' }}>
         Back to Home
       </button>
     </div>
@@ -281,39 +358,33 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   return (
     <div className="min-h-screen pb-tabs" style={{ background:'#000' }}>
 
-      {/* ── Sticky header ── */}
+      {/* Nav */}
       <div className="pt-safe sticky top-0 z-30" style={{
-        background:'rgba(0,0,0,0.94)',
-        backdropFilter:'saturate(180%) blur(28px)', WebkitBackdropFilter:'saturate(180%) blur(28px)',
-        borderBottom:`0.5px solid rgba(84,84,88,0.6)` }}>
+        background:'rgba(0,0,0,0.94)', backdropFilter:'saturate(180%) blur(28px)',
+        WebkitBackdropFilter:'saturate(180%) blur(28px)', borderBottom:'0.5px solid rgba(84,84,88,0.6)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px 10px' }}>
           <button onClick={()=>router.back()} style={{ width:36, height:36, borderRadius:'50%',
             background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-            <ChevronLeft size={17} strokeWidth={2.5} style={{ color: accent }} />
+            <ChevronLeft size={17} strokeWidth={2.5} style={{ color:accent }} />
           </button>
-          <div style={{ flex:1, minWidth:0 }}>
-            <p style={{ fontSize:17, fontWeight:700, color:'#fff', letterSpacing:'-0.5px' }}
-               className="truncate">{workout.shortName}</p>
-            <p style={{ fontSize:12, color:'#8E8E93', marginTop:1 }}>
-              Week {wk} · {cfg.phase.split('—')[0].trim()} · RIR {cfg.rir}
-            </p>
+          <div style={{ flex:1 }}>
+            <p style={{ fontSize:17, fontWeight:700, color:'#fff', letterSpacing:'-0.5px' }}>{workout.shortName}</p>
+            <p style={{ fontSize:12, color:'#8E8E93' }}>Week {wk} · {cfg.phase.split('—')[0].trim()} · RIR {cfg.rir}</p>
           </div>
-          <div style={{ display:'flex', alignItems:'center', gap:5, padding:'6px 14px',
-            borderRadius:999, background:'rgba(118,118,128,0.15)', border:'0.5px solid rgba(84,84,88,0.5)' }}>
-            <span style={{ fontSize:18, fontWeight:800, color: accent, fontVariantNumeric:'tabular-nums' }}>{logged}</span>
-            <span style={{ fontSize:12, color:'#8E8E93' }}>/ {total}</span>
+          <div style={{ padding:'6px 14px', borderRadius:999, background:'rgba(118,118,128,0.15)',
+            border:'0.5px solid rgba(84,84,88,0.5)' }}>
+            <span style={{ fontSize:18, fontWeight:800, color:accent }}>{logged}</span>
+            <span style={{ fontSize:12, color:'#8E8E93' }}> / {total}</span>
           </div>
         </div>
-        {/* Progress bar */}
-        <div style={{ height:3, background:'rgba(118,118,128,0.2)', margin:'0 0 0' }}>
-          <div style={{ height:'100%', background: accent, width:`${pct*100}%`,
-            transition:'width 0.5s cubic-bezier(0.34,1.56,0.64,1)',
-            boxShadow:`0 0 8px ${accent}88` }} />
+        <div style={{ height:3, background:'rgba(118,118,128,0.2)' }}>
+          <div style={{ height:'100%', background:accent, width:`${pct*100}%`,
+            transition:'width 0.5s cubic-bezier(0.34,1.56,0.64,1)', boxShadow:`0 0 8px ${accent}88` }} />
         </div>
       </div>
 
-      {/* ── Exercise list ── */}
-      <div style={{ padding:'14px 14px', display:'flex', flexDirection:'column', gap:8 }}>
+      {/* Exercise list */}
+      <div style={{ padding:'12px 14px', display:'flex', flexDirection:'column', gap:10 }}>
         {workout.exercises.map((origEx, idx) => {
           const exSets   = getSetsForWeek(origEx.type, wk)
           const exReps   = getRepsForWeek(origEx.type, wk)
@@ -323,138 +394,90 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           const target   = tgt(origEx)
           const smart    = smartMap[origEx.name]
           const lastWt   = lasts[origEx.name] ?? null
-          const isSwap   = !!swapped[origEx.name]
+          const nextSet  = exLogged.length + 1  // which set is active
 
           return (
             <div key={origEx.name} style={{
-              borderRadius:18,
-              background: isOpen ? '#13131F' : '#0D0D14',
-              border:`0.5px solid ${isOpen ? `${accent}50` : 'rgba(84,84,88,0.4)'}`,
-              borderLeft: `3px solid ${isComp ? '#30D158' : isOpen ? accent : 'rgba(84,84,88,0.4)'}`,
-              overflow:'hidden',
-              transition:'border-color 0.25s, background 0.25s, opacity 0.25s',
-              opacity: isComp && !isOpen ? 0.5 : 1,
-            }}>
+              borderRadius:18, overflow:'hidden',
+              background: isOpen ? '#0D0D18' : '#0A0A12',
+              border:`0.5px solid ${isOpen ? `${accent}55` : 'rgba(84,84,88,0.35)'}`,
+              borderLeft:`3px solid ${isComp ? '#30D158' : isOpen ? accent : 'rgba(84,84,88,0.3)'}`,
+              opacity: isComp && !isOpen ? 0.5 : 1, transition:'all 0.2s' }}>
 
-              {/* ── Header (always visible) ── */}
+              {/* Header */}
               <button onClick={()=>setOpen(isOpen ? '' : origEx.name)}
-                style={{ width:'100%', padding:'11px 14px',
-                  display:'flex', alignItems:'center', gap:8 }}>
-                {/* Set dots */}
-                <div style={{ display:'flex', flexDirection:'column', gap:3, flexShrink:0, width:24 }}>
-                  {Array.from({length:exSets}).map((_,i)=>(
-                    <div key={i} style={{ height:4, borderRadius:99,
-                      background: i<exLogged.length ? '#30D158' : 'rgba(84,84,88,0.4)',
-                      transition:'background 0.3s' }} />
+                style={{ width:'100%', padding:'13px 14px', display:'flex', alignItems:'center', gap:10 }}>
+                <div style={{ display:'flex', flexDirection:'column', gap:3, width:22, flexShrink:0 }}>
+                  {Array.from({length:exSets}).map((_,i) => (
+                    <div key={i} style={{ height:4, borderRadius:99, transition:'background 0.3s',
+                      background: i<exLogged.length ? '#30D158' : 'rgba(84,84,88,0.35)' }} />
                   ))}
                 </div>
-
-                {/* Name + muscle */}
                 <div style={{ flex:1, minWidth:0, textAlign:'left' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                    <p style={{ fontSize:16, fontWeight:700, color:'#fff', letterSpacing:'-0.3px' }}
-                       className="truncate">{effName(origEx)}</p>
-                    {isSwap && <span style={{ fontSize:10, fontWeight:700, padding:'1px 5px', borderRadius:5,
-                      background:'rgba(10,132,255,0.2)', color:'#0A84FF', flexShrink:0 }}>alt</span>}
-                  </div>
+                  <p style={{ fontSize:16, fontWeight:700, color:'#fff', letterSpacing:'-0.3px' }}
+                     className="truncate">{effName(origEx)}</p>
                   <p style={{ fontSize:12, color:'#8E8E93', marginTop:2 }}>
                     {origEx.muscle}
-                    {!origEx.isBodyweight && target > 0 && (
-                      <span style={{ color: smart?.direction==='up' ? '#30D158' : smart?.direction==='down' ? '#FF9F0A' : accent }}>
-                        {' · '}{target} lbs{smart?.direction==='up' ? ' ↑' : smart?.direction==='down' ? ' ↓' : ''}
+                    {!origEx.isBodyweight && target>0 && (
+                      <span style={{ color: smart?.direction==='up'?'#30D158':smart?.direction==='down'?'#FF9F0A':accent }}>
+                        {` · ${target} lbs`}{smart?.direction==='up'?' ↑':smart?.direction==='down'?' ↓':''}
                       </span>
                     )}
                   </p>
                 </div>
-
-                {/* Progress + chevron */}
-                <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-                  <span style={{ fontSize:14, fontWeight:800, color: isComp ? '#30D158' : '#fff',
-                    fontVariantNumeric:'tabular-nums' }}>
-                    {exLogged.length}<span style={{ color:'#8E8E93', fontWeight:500 }}>/{exSets}</span>
-                  </span>
-                  <div style={{ width:22, height:22, borderRadius:'50%', background:'rgba(118,118,128,0.15)',
-                    display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    <ChevronRight size={12} strokeWidth={2.5} style={{ color:'#8E8E93',
-                      transform: isOpen ? 'rotate(90deg)' : 'none', transition:'transform 0.2s' }} />
-                  </div>
-                </div>
+                <span style={{ fontSize:14, fontWeight:800, color:isComp?'#30D158':'#fff' }}>
+                  {exLogged.length}<span style={{ color:'#8E8E93', fontWeight:500 }}>/{exSets}</span>
+                </span>
               </button>
 
-              {/* ── Expanded ── */}
+              {/* Expanded */}
               {isOpen && (
-                <div style={{ padding:'0 12px 12px' }}>
+                <div style={{ padding:'0 14px 14px', display:'flex', flexDirection:'column', gap:8 }}>
 
-                  {/* Prescription strip */}
-                  <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 12px',
-                    borderRadius:12, background:'rgba(118,118,128,0.1)', marginBottom:14,
-                    border:'0.5px solid rgba(84,84,88,0.35)' }}>
+                  {/* Info strip */}
+                  <div style={{ display:'flex', gap:6, padding:'8px 12px', borderRadius:10,
+                    background:'rgba(118,118,128,0.1)', border:'0.5px solid rgba(84,84,88,0.3)', marginBottom:4 }}>
                     <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>{exSets} sets</span>
-                    <span style={{ color:'rgba(84,84,88,0.8)', fontSize:13 }}>·</span>
+                    <span style={{ color:'#8E8E93' }}>·</span>
                     <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>{exReps} reps</span>
-                    <span style={{ color:'rgba(84,84,88,0.8)', fontSize:13 }}>·</span>
+                    <span style={{ color:'#8E8E93' }}>·</span>
                     <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>RIR {cfg.rir}</span>
-                    {smart?.direction !== 'maintain' && smart && (
-                      <>
-                        <span style={{ color:'rgba(84,84,88,0.8)', fontSize:13 }}>·</span>
-                        <span style={{ fontSize:12, fontWeight:700, padding:'2px 8px', borderRadius:6,
-                          background: smart.direction==='up' ? 'rgba(48,209,88,0.15)' : 'rgba(255,159,10,0.15)',
-                          color: smart.direction==='up' ? '#30D158' : '#FF9F0A' }}>
-                          {smart.direction==='up' ? '↑ Smart' : '↓ Calibrated'}
-                        </span>
-                      </>
-                    )}
+                    {lastWt && <>
+                      <span style={{ color:'#8E8E93', marginLeft:'auto' }}>·</span>
+                      <span style={{ fontSize:12, color:'#8E8E93' }}>Last: {lastWt} lbs</span>
+                    </>}
                   </div>
 
-                  {/* Target weight + last session */}
-                  {!origEx.isBodyweight && (
-                    <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', marginBottom:10 }}>
-                      <div>
-                        <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93',
-                          textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:2 }}>Target</p>
-                        <div style={{ display:'flex', alignItems:'baseline', gap:6 }}>
-                          <span style={{ fontSize:42, fontWeight:800, color:'#fff',
-                            letterSpacing:'-2px', lineHeight:1 }}>
-                            {target > 0 ? target : '—'}
-                          </span>
-                          {target > 0 && <span style={{ fontSize:16, color:'#8E8E93' }}>lbs</span>}
-                        </div>
-                      </div>
-                      {lastWt && (
-                        <div style={{ textAlign:'right', paddingBottom:4 }}>
-                          <p style={{ fontSize:11, fontWeight:600, color:'#8E8E93',
-                            textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:3 }}>Last Session</p>
-                          <p style={{ fontSize:18, fontWeight:700, color:'rgba(255,255,255,0.4)',
-                            letterSpacing:'-0.5px' }}>{lastWt} lbs</p>
-                        </div>
-                      )}
-                    </div>
+                  {/* Logged sets */}
+                  {exLogged.map((l:any, i:number) => (
+                    <LoggedRow key={i} setNum={i+1} weight={l.weight_lbs} reps={l.reps} rir={l.rir} />
+                  ))}
+
+                  {/* Active set card */}
+                  {!isComp && (
+                    <ActiveSetCard
+                      setNum={nextSet} setCount={exSets}
+                      target={target} repsRange={exReps}
+                      lastWeight={lastWt} isBodyweight={!!origEx.isBodyweight}
+                      accentColor={accent}
+                      onLog={(w,r,rir) => handleLog(origEx, nextSet, w, r, rir)}
+                    />
                   )}
 
-                  {/* Set table */}
-                  <div style={{ marginBottom:10 }}>
-                    <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
-                      {Array.from({length:exSets},(_,i)=>i+1).map(n => (
-                        <SetRow key={n} setNum={n} target={target} repsRange={exReps}
-                          lastWeight={lastWt} isBodyweight={!!origEx.isBodyweight}
-                          existing={exLogged.find((l:any)=>l.set_number===n) ?? null}
-                          onLog={(w,r)=>handleLog(origEx,n,w,r)} />
-                      ))}
-                    </div>
-                  </div>
+                  {/* Pending sets */}
+                  {!isComp && Array.from({length: exSets - nextSet}, (_,i) => (
+                    <PendingRow key={i} setNum={nextSet+1+i} target={target} />
+                  ))}
 
                   {/* Cue + swap */}
-                  <div style={{ display:'flex', alignItems:'flex-start',
-                    justifyContent:'space-between', gap:10, marginTop:6 }}>
-                    <p style={{ fontSize:12, color:'#8E8E93', fontStyle:'italic',
-                      lineHeight:1.6, flex:1 }}>
+                  <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginTop:4 }}>
+                    <p style={{ fontSize:12, color:'#8E8E93', fontStyle:'italic', lineHeight:1.6, flex:1 }}>
                       {effCue(origEx)}
                     </p>
                     {EXERCISE_ALTS[origEx.name] && (
-                      <button onClick={()=>setAltsFor(origEx.name)}
-                        style={{ display:'flex', alignItems:'center', gap:5, padding:'6px 12px',
-                          borderRadius:10, background:'rgba(10,132,255,0.12)',
-                          border:'0.5px solid rgba(10,132,255,0.3)', flexShrink:0 }}>
+                      <button onClick={()=>setAltsFor(origEx.name)} style={{ display:'flex',
+                        alignItems:'center', gap:5, padding:'6px 12px', borderRadius:10,
+                        background:'rgba(10,132,255,0.12)', border:'0.5px solid rgba(10,132,255,0.3)', flexShrink:0 }}>
                         <ArrowLeftRight size={12} style={{ color:'#0A84FF' }} />
                         <span style={{ fontSize:12, fontWeight:700, color:'#0A84FF' }}>Swap</span>
                       </button>
@@ -466,16 +489,13 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           )
         })}
 
-        {/* ── Finish ── */}
         {logged >= total && (
           <button onClick={async()=>{ if(sid) await completeSession(sid); setDone(true) }}
             style={{ width:'100%', height:56, borderRadius:18, fontSize:17, fontWeight:700,
               display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-              background:`linear-gradient(135deg, #30D158, #34C759)`,
-              color:'#fff', letterSpacing:'-0.3px', marginTop:4,
-              boxShadow:'0 4px 24px rgba(48,209,88,0.35)' }}>
-            <CheckCircle2 size={20} strokeWidth={2.5} />
-            Complete Workout
+              background:'linear-gradient(135deg, #30D158, #34C759)',
+              color:'#fff', marginTop:4, boxShadow:'0 4px 24px rgba(48,209,88,0.35)' }}>
+            <CheckCircle2 size={20} strokeWidth={2.5} /> Complete Workout
           </button>
         )}
       </div>
