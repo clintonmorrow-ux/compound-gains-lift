@@ -209,3 +209,29 @@ export async function deleteLoggedSet(setId: string) {
     .eq('id', setId)
   if (error) throw error
 }
+
+// ── Exercise preferences (whole-program customization) ───────────────
+export async function fetchExercisePreferences(): Promise<Record<string,{name:string;cue:string}>> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('user_settings')
+    .select('exercise_preferences')
+    .single()
+  if (error || !data?.exercise_preferences) return {}
+  return data.exercise_preferences as Record<string,{name:string;cue:string}>
+}
+
+export async function saveExercisePreference(
+  originalName: string,
+  preferred: { name: string; cue: string } | null   // null = reset to default
+): Promise<void> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  const current = await fetchExercisePreferences()
+  const updated = { ...current }
+  if (preferred) updated[originalName] = preferred
+  else delete updated[originalName]
+  await supabase.from('user_settings')
+    .upsert({ id: user.id, exercise_preferences: updated }, { onConflict:'id' })
+}

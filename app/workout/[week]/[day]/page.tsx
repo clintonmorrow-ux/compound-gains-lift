@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { WORKOUTS, WEEK_CONFIG } from '@/lib/program/data'
 import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/calculator'
 import { fetchAllOneRms, fetchSettings, createSession, completeSession,
-         logSet, getRecentSetsForExercise, fetchEquipment } from '@/lib/db'
+         logSet, getRecentSetsForExercise, fetchEquipment, fetchExercisePreferences } from '@/lib/db'
 import { getRestSeconds, fireRestCompleteNotification, requestNotificationPermission } from '@/lib/program/restTimes'
 import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { calculateSmartSuggestion, type SmartSuggestion } from '@/lib/program/smartSuggestions'
@@ -282,6 +282,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const [smartMap,  setSmartMap]  = useState<Record<string,SmartSuggestion|null>>({})
   const [open,      setOpen]      = useState<string>(workout.exercises[0]?.name ?? '')
   const [swapped,   setSwapped]   = useState<Record<string,{name:string;cue:string}>>({})
+  const [progPrefs, setProgPrefs] = useState<Record<string,{name:string;cue:string}>>({})
   const [altsFor,   setAltsFor]   = useState<string|null>(null)
   const [rest,      setRest]      = useState<{sec:number;name:string}|null>(null)
   const [done,      setDone]      = useState(false)
@@ -292,7 +293,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       const {data:{session}} = await sb.auth.getSession()
       if (!session) await sb.auth.signInAnonymously()
       await requestNotificationPermission()
-      const [rmArr, settings, equip] = await Promise.all([fetchAllOneRms(), fetchSettings(), fetchEquipment()])
+      const [rmArr, settings, equip, prefs] = await Promise.all([fetchAllOneRms(), fetchSettings(), fetchEquipment(), fetchExercisePreferences()])
+      setProgPrefs(prefs)
       const rm:Record<string,number>={}
       rmArr.forEach((x:any)=>{rm[x.exercise_name]=x.weight_lbs})
       setRms(rm); setRound(settings.round_to_lbs); setEquipment(equip)
@@ -315,8 +317,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const logged = Object.values(sets).reduce((a,s)=>a+s.length, 0)
   const pct    = total>0 ? logged/total : 0
 
-  const effName = (ex:Exercise) => swapped[ex.name]?.name ?? ex.name
-  const effCue  = (ex:Exercise) => swapped[ex.name]?.cue  ?? ex.cue
+  const effName = (ex:Exercise) => swapped[ex.name]?.name ?? progPrefs[ex.name]?.name ?? ex.name
+  const effCue  = (ex:Exercise) => swapped[ex.name]?.cue  ?? progPrefs[ex.name]?.cue  ?? ex.cue
   const tgt     = (ex:Exercise) => {
     if (ex.isBodyweight) return 0
     const sm=smartMap[ex.name]; if (sm) return sm.weight

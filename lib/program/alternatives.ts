@@ -85,8 +85,8 @@ export const EXERCISE_ALTS: Record<string, AltsMap> = {
   },
 
   'Tricep Rope Pushdown': {
-    dumbbells:       [{ name:'DB Overhead Tricep Extension', cue:'One or two hands · elbows close · full stretch overhead' },
-                      { name:'DB Kickback',                  cue:'Hinge forward · upper arm parallel to floor · extend' }],
+    dumbbells:       [{ name:'Lying DB Tricep Extension', cue:'Lie flat · lower DBs to ears · elbows close · press to full lockout — great ROM' },
+                      { name:'DB Overhead Tricep Extension', cue:'One or two hands · elbows close · full stretch overhead' }],
     bands:           [{ name:'Band Pushdown',                cue:'Anchor band overhead · elbows fixed · full extension' }],
     machines:        [{ name:'Machine Tricep Extension',     cue:'Adjust pad to upper arm · push down through full ROM' }],
     hammer_strength: [{ name:'Hammer Strength Dip',          cue:'Narrow grip · lean slightly forward · deep at bottom' }],
@@ -98,6 +98,8 @@ export const EXERCISE_ALTS: Record<string, AltsMap> = {
   'Overhead DB Tricep Extension': {
     barbell:         [{ name:'EZ-Bar Skull Crusher',     cue:'Slight elbow flare — bar to forehead then extend' },
                       { name:'EZ-Bar Overhead Extension',cue:'Grip inside knurling · elbows close to ears' }],
+    dumbbells:       [{ name:'Lying DB Tricep Extension', cue:'Lie flat · lower DBs to ears · elbows close · press to full lockout' },
+                      { name:'DB Overhead Extension (seated)', cue:'Both hands grip one DB overhead · elbows close · full stretch' }],
     cables:          [{ name:'Cable Overhead Extension', cue:'Face away from stack · pull attachment behind head' }],
     bands:           [{ name:'Band Overhead Extension',  cue:'Stand on band · both hands overhead · press up' }],
     machines:        [{ name:'Machine Overhead Extension',cue:'Adjust seat for full overhead stretch' }],

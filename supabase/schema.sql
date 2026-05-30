@@ -102,3 +102,7 @@ create trigger on_auth_user_created
 alter table public.user_settings
   add column if not exists equipment_types text[]
   default array['barbell','dumbbells','cables','machines']::text[];
+
+-- ── Exercise preferences (run to upgrade) ─────────────────────────
+alter table public.user_settings
+  add column if not exists exercise_preferences jsonb default '{}'::jsonb;

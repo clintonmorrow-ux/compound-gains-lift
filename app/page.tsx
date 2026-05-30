@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, CheckCircle2, Settings2, Clock, ChartLine } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CheckCircle2, Settings2, Clock, ChartLine, LayoutList } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
 import { WORKOUTS, WEEK_CONFIG, PHASE_LABELS } from '@/lib/program/data'
@@ -70,6 +70,11 @@ export default function Dashboard() {
             <h1 className="t-large-title sf-heavy" style={{ lineHeight:1.1, marginTop:1 }}>Lift</h1>
           </div>
           <div className="flex items-center gap-4">
+            <button onClick={() => router.push('/program')}
+              className="tap w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ background:'var(--fill-3)' }}>
+              <LayoutList size={18} strokeWidth={1.8} style={{ color:'#8E8E93' }} />
+            </button>
             <button onClick={() => router.push('/insights')}
               className="tap w-10 h-10 rounded-full flex items-center justify-center"
               style={{ background:'var(--fill-3)' }}>
