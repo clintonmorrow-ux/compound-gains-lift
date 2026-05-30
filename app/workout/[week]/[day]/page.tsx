@@ -62,8 +62,8 @@ function SetRow({ setNum, target, repsRange, lastWeight, existing, onLog, isBody
             placeholder={target>0 ? String(target) : lastWeight ? String(lastWeight) : '—'}
             value={wt} onChange={e=>setWt(e.target.value)} onFocus={e=>e.target.select()}
             readOnly={isDone}
-            style={{ flex:1, height:36, textAlign:'center', borderRadius:10, outline:'none',
-              fontSize:16, fontWeight:700, letterSpacing:'-0.5px',
+            style={{ flex:1, height:32, textAlign:'center', borderRadius:8, outline:'none',
+              fontSize:15, fontWeight:700, letterSpacing:'-0.4px',
               background:inputBg, color:inputClr, border:'none' }} />}
 
       <span style={{ fontSize:13, color:'rgba(84,84,88,0.8)', flexShrink:0 }}>×</span>
@@ -313,7 +313,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       </div>
 
       {/* ── Exercise list ── */}
-      <div style={{ padding:'14px 14px', display:'flex', flexDirection:'column', gap:10 }}>
+      <div style={{ padding:'14px 14px', display:'flex', flexDirection:'column', gap:8 }}>
         {workout.exercises.map((origEx, idx) => {
           const exSets   = getSetsForWeek(origEx.type, wk)
           const exReps   = getRepsForWeek(origEx.type, wk)
@@ -338,8 +338,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
               {/* ── Header (always visible) ── */}
               <button onClick={()=>setOpen(isOpen ? '' : origEx.name)}
-                style={{ width:'100%', padding:'14px 14px 14px 14px',
-                  display:'flex', alignItems:'center', gap:10 }}>
+                style={{ width:'100%', padding:'11px 14px',
+                  display:'flex', alignItems:'center', gap:8 }}>
                 {/* Set dots */}
                 <div style={{ display:'flex', flexDirection:'column', gap:3, flexShrink:0, width:24 }}>
                   {Array.from({length:exSets}).map((_,i)=>(
@@ -383,7 +383,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
               {/* ── Expanded ── */}
               {isOpen && (
-                <div style={{ padding:'0 14px 16px' }}>
+                <div style={{ padding:'0 12px 12px' }}>
 
                   {/* Prescription strip */}
                   <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 12px',
@@ -408,10 +408,10 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
                   {/* Target weight + last session */}
                   {!origEx.isBodyweight && (
-                    <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', marginBottom:16 }}>
+                    <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', marginBottom:10 }}>
                       <div>
                         <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93',
-                          textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>Target</p>
+                          textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:2 }}>Target</p>
                         <div style={{ display:'flex', alignItems:'baseline', gap:6 }}>
                           <span style={{ fontSize:42, fontWeight:800, color:'#fff',
                             letterSpacing:'-2px', lineHeight:1 }}>
@@ -432,20 +432,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                   )}
 
                   {/* Set table */}
-                  <div style={{ marginBottom:14 }}>
-                    {/* Column headers */}
-                    <div style={{ display:'flex', alignItems:'center', gap:8,
-                      paddingInline:12, marginBottom:6 }}>
-                      <div style={{ width:28, flexShrink:0 }} />
-                      <p style={{ flex:1, fontSize:10, fontWeight:700, color:'#8E8E93',
-                        textTransform:'uppercase', letterSpacing:'0.07em', textAlign:'center' }}>Weight</p>
-                      <div style={{ width:16 }} />
-                      <p style={{ width:56, fontSize:10, fontWeight:700, color:'#8E8E93',
-                        textTransform:'uppercase', letterSpacing:'0.07em', textAlign:'center' }}>Reps</p>
-                      <div style={{ width:60 }} />
-                    </div>
-                    {/* Rows */}
-                    <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                  <div style={{ marginBottom:10 }}>
+                    <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
                       {Array.from({length:exSets},(_,i)=>i+1).map(n => (
                         <SetRow key={n} setNum={n} target={target} repsRange={exReps}
                           lastWeight={lastWt} isBodyweight={!!origEx.isBodyweight}
@@ -457,7 +445,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
                   {/* Cue + swap */}
                   <div style={{ display:'flex', alignItems:'flex-start',
-                    justifyContent:'space-between', gap:12 }}>
+                    justifyContent:'space-between', gap:10, marginTop:6 }}>
                     <p style={{ fontSize:12, color:'#8E8E93', fontStyle:'italic',
                       lineHeight:1.6, flex:1 }}>
                       {effCue(origEx)}
