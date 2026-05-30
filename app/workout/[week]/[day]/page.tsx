@@ -445,7 +445,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const [swapped,   setSwapped]   = useState<Record<string,{name:string;cue:string}>>({})
   const [progPrefs, setProgPrefs] = useState<Record<string,{name:string;cue:string}>>({})
   const [altsFor,   setAltsFor]   = useState<string|null>(null)
-  const [rest,      setRest]      = useState<{sec:number;name:string}|null>(null)
+  const [rest,      setRest]      = useState<{sec:number;name:string;startedAt:number}|null>(null)
   const [done,      setDone]      = useState(false)
 
   const init = useCallback(async () => {
@@ -522,7 +522,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     const newLogged = [...(sets[origEx.name]??[]), {...row, rir}]
     const newSets   = {...sets, [origEx.name]: newLogged}
     setSets(newSets)
-    setRest({ sec: getRestSeconds(wk, origEx.type), name: effName(origEx) })
+    setRest({ sec: getRestSeconds(wk, origEx.type), name: effName(origEx), startedAt: Date.now() })
     if (newLogged.length >= getSetsForWeek(origEx.type, wk)) {
       const next = workout.exercises.find(e => (newSets[e.name]?.length??0) < getSetsForWeek(e.type,wk))
       if (next) setTimeout(()=>setOpen(next.name), 500)
@@ -693,7 +693,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
         )}
       </div>
 
-      {rest    && <RestPill seconds={rest.sec} exName={rest.name} onDone={()=>setRest(null)} onRestPause={()=>setRest(p=>p?{...p,sec:15}:null)} />}
+      {rest    && <RestPill key={rest.startedAt} seconds={rest.sec} exName={rest.name} onDone={()=>setRest(null)} onRestPause={()=>setRest(p=>p?{...p,sec:15,startedAt:Date.now()}:null)} />}
       {altsFor && <AltsSheet exName={altsFor} equipment={equipment}
         onSwap={(n,c)=>{ setSwapped(p=>({...p,[altsFor]:{name:n,cue:c}})); setAltsFor(null) }}
         onClose={()=>setAltsFor(null)} />}
