@@ -240,6 +240,15 @@ export const EXERCISE_ALTS: Record<string, AltsMap> = {
     bodyweight:      [{ name:'Underhand Inverted Row',    cue:'Supinated grip · curling motion — compound bicep work' }],
   },
 
+  'Hammer Curl': {
+    barbell:         [{ name:'Cross-Body Hammer Curl',    cue:'DB crosses midline to opposite shoulder · long head emphasis' }],
+    cables:          [{ name:'Rope Hammer Curl',          cue:'Rope attachment · neutral grip · full extension at bottom' }],
+    machines:        [{ name:'Machine Neutral Curl',      cue:'Neutral grip handles if available · smooth resistance curve' }],
+    bands:           [{ name:'Band Hammer Curl',          cue:'Stand on band · neutral grip · squeeze at top' }],
+    kettlebells:     [{ name:'KB Hammer Curl',            cue:'Hold by handle · neutral wrist · curl to shoulder' }],
+    bodyweight:      [{ name:'Chin-Up (neutral grip)',    cue:'Neutral/parallel grip bar · compound hammer curl pattern' }],
+  },
+
   'DB Lateral Raise': {
     cables:          [{ name:'Cable Lateral Raise',       cue:'Low pulley · constant tension entire arc' }],
     bands:           [{ name:'Band Lateral Raise',        cue:'Doubled band for higher resistance · slow and controlled' }],

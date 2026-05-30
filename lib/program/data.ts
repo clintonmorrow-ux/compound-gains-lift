@@ -49,7 +49,7 @@ export const WORKOUTS: Workout[] = [
       { name: 'Face Pull',                     muscle: 'Rear Delts', type: 'primary',   cue: 'Pull to forehead · externally rotate at end position' },
       { name: 'DB Rear Delt Fly',              muscle: 'Rear Delts', type: 'isolation', cue: 'Near-parallel torso · lead with elbows · no momentum' },
       { name: 'Barbell Curl',                  muscle: 'Biceps',     type: 'primary',   cue: 'Elbows pinned · supinate at the top · slow eccentric' },
-      { name: 'DB Lateral Raise',              muscle: 'Side Delts', type: 'isolation', cue: 'Lead with elbow · slight lean forward · control eccentric' },
+      { name: 'Hammer Curl',                   muscle: 'Biceps',     type: 'isolation', cue: 'Neutral grip · curl to shoulder · 2-sec squeeze · slow eccentric' },
     ],
   },
   {
