@@ -480,6 +480,27 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
   useEffect(()=>{ init() }, [init])
 
+  // ── Keep screen awake during workouts ─────────────────────────
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('wakeLock' in navigator)) return
+    let lock: WakeLockSentinel | null = null
+
+    const acquire = async () => {
+      try { lock = await (navigator as any).wakeLock.request('screen') }
+      catch { /* silently ignore — not all browsers/iOS versions support it */ }
+    }
+
+    // Re-acquire if page becomes visible again (lock releases on hide)
+    const onVisible = () => { if (document.visibilityState === 'visible') acquire() }
+
+    acquire()
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      lock?.release()
+    }
+  }, [])
+
   const total  = workout.exercises.reduce((a,ex)=>a+getSetsForWeek(ex.type,wk), 0)
   const logged = Object.values(sets).reduce((a,s)=>a+s.length, 0)
   const pct    = total>0 ? logged/total : 0
