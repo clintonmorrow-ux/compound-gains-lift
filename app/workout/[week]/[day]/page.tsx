@@ -23,10 +23,13 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
   const parts   = repsRange.replace('–','-').split('-').map(Number)
   const maxReps = parts[1] || parts[0] || 10
 
-  const [wt,   setWt]   = useState(isBodyweight ? 0 : (target > 0 ? target : lastWeight ?? 0))
-  const [reps, setReps] = useState(maxReps)
-  const [rir,  setRir]  = useState(3)
-  const [busy, setBusy] = useState(false)
+  const [wt,    setWt]   = useState(isBodyweight ? 0 : (target > 0 ? target : lastWeight ?? 0))
+  const [reps,  setReps] = useState(maxReps)
+  const [rir,   setRir]  = useState(3)
+  const [tempo, setTempo]= useState<string>('Standard')
+  const [busy,  setBusy] = useState(false)
+
+  const TEMPOS = ['Standard','3-0-1','4-0-1','2-1-2','5-0-1']
 
   const adjust = (field: 'wt'|'reps', delta: number) => {
     if (field === 'wt')   setWt(w  => Math.max(0, w  + delta))
@@ -136,6 +139,32 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
         </p>
       </div>
 
+      {/* Tempo selector */}
+      <div style={{ marginBottom:16 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
+          <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.08em' }}>
+            Eccentric Tempo
+          </p>
+          <span style={{ fontSize:11, color:'rgba(10,132,255,0.7)', background:'rgba(10,132,255,0.1)',
+            padding:'2px 7px', borderRadius:6 }}>optional</span>
+        </div>
+        <div style={{ display:'flex', gap:6 }}>
+          {TEMPOS.map(t => (
+            <button key={t} onClick={()=>setTempo(t)} style={{ flex:1, height:36, borderRadius:10,
+              background: tempo===t ? accentColor : 'rgba(118,118,128,0.15)',
+              fontSize:11, fontWeight:700, color: tempo===t ? '#fff' : '#8E8E93',
+              transition:'background 0.15s' }}>
+              {t}
+            </button>
+          ))}
+        </div>
+        {tempo !== 'Standard' && (
+          <p style={{ fontSize:11, color:'rgba(10,132,255,0.8)', marginTop:6, textAlign:'center' }}>
+            {tempo.split('-')[0]}-sec lower · {tempo.split('-')[1]==='0'?'no':'1'}-sec pause · {tempo.split('-')[2]}-sec lift
+          </p>
+        )}
+      </div>
+
       {/* LOG button */}
       <button onClick={commit} disabled={busy}
         style={{ width:'100%', height:54, borderRadius:14, fontSize:17, fontWeight:800,
@@ -188,8 +217,97 @@ function PendingRow({ setNum, target }: { setNum:number; target:number }) {
   )
 }
 
+// ── Drop Set Row ─────────────────────────────────────────────────
+function DropSetRow({ lastWeight, repsRange, accentColor, onLog }: {
+  lastWeight:number; repsRange:string; accentColor:string
+  onLog:(w:number,r:number)=>Promise<void>
+}) {
+  const suggestedWt = Math.round(lastWeight * 0.80 / 5) * 5  // 80% rounded to 5
+  const [_, maxR]   = repsRange.replace('–','-').split('-').map(Number)
+  const [wt,   setWt]   = useState(suggestedWt)
+  const [reps, setReps] = useState(maxR + 2)  // drop sets typically allow more reps
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [done, setDone] = useState(false)
+
+  const commit = async () => {
+    if (busy || done) return
+    setBusy(true)
+    await onLog(wt, reps)
+    setBusy(false)
+    setDone(true)
+  }
+
+  if (done) return (
+    <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px',
+      borderRadius:12, background:'rgba(48,209,88,0.1)', border:'0.5px solid rgba(48,209,88,0.35)',
+      marginBottom:8 }}>
+      <Check size={14} strokeWidth={3} style={{ color:'#30D158' }} />
+      <span style={{ fontSize:13, color:'#30D158', fontWeight:600 }}>Drop set logged · {wt} lbs × {reps}</span>
+    </div>
+  )
+
+  return (
+    <div style={{ marginBottom:8 }}>
+      {!open ? (
+        <button onClick={()=>setOpen(true)} style={{ width:'100%', padding:'10px 14px',
+          borderRadius:12, background:'rgba(255,159,10,0.08)',
+          border:`0.5px solid rgba(255,159,10,0.3)`,
+          display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ fontSize:14 }}>🔽</span>
+          <div style={{ flex:1, textAlign:'left' }}>
+            <p style={{ fontSize:13, fontWeight:700, color:'#FF9F0A' }}>Add Drop Set</p>
+            <p style={{ fontSize:11, color:'#8E8E93' }}>Suggested: {suggestedWt} lbs (−20%) · to failure</p>
+          </div>
+        </button>
+      ) : (
+        <div style={{ padding:'12px 14px', borderRadius:12,
+          background:'rgba(255,159,10,0.08)', border:'0.5px solid rgba(255,159,10,0.35)' }}>
+          <p style={{ fontSize:11, fontWeight:700, color:'#FF9F0A', textTransform:'uppercase',
+            letterSpacing:'0.08em', marginBottom:10 }}>Drop Set — reduce weight · push to failure</p>
+          <div style={{ display:'flex', gap:10, alignItems:'center', marginBottom:10 }}>
+            <div style={{ flex:1 }}>
+              <p style={{ fontSize:10, color:'#8E8E93', marginBottom:4 }}>WEIGHT</p>
+              <div style={{ display:'flex', gap:6 }}>
+                {([-10,-5,+5,+10]).map(d => (
+                  <button key={d} onClick={()=>setWt(w=>Math.max(0,w+d))} style={{ flex:1,
+                    height:34, borderRadius:8, background:'rgba(118,118,128,0.2)',
+                    fontSize:12, fontWeight:700, color: d<0?'#8E8E93':accentColor }}>
+                    {d>0?`+${d}`:d}
+                  </button>
+                ))}
+              </div>
+              <p style={{ fontSize:24, fontWeight:800, color:'#fff', textAlign:'center',
+                marginTop:4, letterSpacing:'-0.5px' }}>{wt} <span style={{ fontSize:13, color:'#8E8E93' }}>lbs</span></p>
+            </div>
+            <div style={{ width:1, height:60, background:'rgba(84,84,88,0.4)' }} />
+            <div style={{ width:80 }}>
+              <p style={{ fontSize:10, color:'#8E8E93', marginBottom:4 }}>REPS</p>
+              <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+                <button onClick={()=>setReps(r=>r+1)} style={{ height:28, borderRadius:7,
+                  background:'rgba(118,118,128,0.2)', fontSize:14, color:accentColor }}>+</button>
+                <p style={{ fontSize:24, fontWeight:800, color:'#fff', textAlign:'center',
+                  letterSpacing:'-0.5px' }}>{reps}</p>
+                <button onClick={()=>setReps(r=>Math.max(1,r-1))} style={{ height:28, borderRadius:7,
+                  background:'rgba(118,118,128,0.2)', fontSize:14, color:'#8E8E93' }}>−</button>
+              </div>
+            </div>
+          </div>
+          <button onClick={commit} disabled={busy} style={{ width:'100%', height:44, borderRadius:12,
+            background:'#FF9F0A', color:'#fff', fontSize:14, fontWeight:800,
+            display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+            {busy ? <div style={{ width:16, height:16, borderRadius:'50%', border:'2px solid transparent',
+              borderTopColor:'#fff', animation:'spin 0.7s linear infinite' }} />
+              : <><Check size={15} strokeWidth={3} /> Log Drop Set</>}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Rest Timer ────────────────────────────────────────────────────
-function RestPill({ seconds, exName, onDone }: { seconds:number; exName:string; onDone:()=>void }) {
+function RestPill({ seconds, exName, onDone, onRestPause }: { seconds:number; exName:string; onDone:()=>void; onRestPause:()=>void }) {
   const [rem, setRem] = useState(seconds)
   useEffect(() => {
     if (rem<=0) { fireRestCompleteNotification(exName); onDone(); return }
@@ -209,6 +327,11 @@ function RestPill({ seconds, exName, onDone }: { seconds:number; exName:string; 
         {m}:{String(s).padStart(2,'0')}
       </span>
       <span style={{ fontSize:12, color:'#8E8E93' }}>rest</span>
+      <button onClick={onRestPause} title="15-second rest-pause"
+        style={{ padding:'5px 12px', borderRadius:999,
+        background:'rgba(10,132,255,0.2)', fontSize:12, fontWeight:600, color:'#0A84FF' }}>
+        RP
+      </button>
       <button onClick={onDone} style={{ padding:'5px 12px', borderRadius:999,
         background:'rgba(118,118,128,0.25)', fontSize:12, fontWeight:600, color:'#8E8E93' }}>
         Skip
@@ -521,7 +644,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
         )}
       </div>
 
-      {rest    && <RestPill seconds={rest.sec} exName={rest.name} onDone={()=>setRest(null)} />}
+      {rest    && <RestPill seconds={rest.sec} exName={rest.name} onDone={()=>setRest(null)} onRestPause={()=>setRest(p=>p?{...p,sec:15}:null)} />}
       {altsFor && <AltsSheet exName={altsFor} equipment={equipment}
         onSwap={(n,c)=>{ setSwapped(p=>({...p,[altsFor]:{name:n,cue:c}})); setAltsFor(null) }}
         onClose={()=>setAltsFor(null)} />}

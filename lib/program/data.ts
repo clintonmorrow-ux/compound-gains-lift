@@ -9,7 +9,7 @@ export const WORKOUTS: Workout[] = [
     focus: 'Chest · Front/Side Delts · Triceps',
     restTimes: 'Compounds: 2–3 min · Isolation: 60–90 sec',
     exercises: [
-      { name: 'Barbell Bench Press',          muscle: 'Chest',     type: 'primary',   cue: 'Retract scapula · arch · drive feet through floor' },
+      { name: 'Barbell Bench Press',          muscle: 'Chest',     type: 'primary',   cue: 'Retract scapula · arch · drive feet through floor · pause at full chest stretch — long muscle length = greater hypertrophy' },
       { name: 'Incline Dumbbell Press',        muscle: 'Chest',     type: 'secondary', cue: '30–45° incline · full ROM · no elbow flare' },
       { name: 'Cable Chest Fly',               muscle: 'Chest',     type: 'isolation', cue: 'Slight elbow bend · feel the stretch at the bottom' },
       { name: 'Overhead Press (Barbell)',      muscle: 'Shoulders', type: 'primary',   cue: 'Brace core · bar path directly over traps at top' },
@@ -45,11 +45,11 @@ export const WORKOUTS: Workout[] = [
     restTimes: 'Compounds: 2–3 min · Isolation: 60–90 sec',
     exercises: [
       { name: 'Barbell Bent-Over Row',         muscle: 'Back',       type: 'primary',   cue: 'Flat back · pull to navel · hard scapula squeeze' },
-      { name: 'Lat Pulldown',                 muscle: 'Back',       type: 'primary',   cue: 'Wide overhand grip · pull to upper chest · full stretch at top · controlled descent' },
+      { name: 'Lat Pulldown',                 muscle: 'Back',       type: 'primary',   cue: 'Wide overhand grip · pull to chest · full arm extension at top · pause in stretch — emphasise the lengthened position' },
       { name: 'Seated Cable Row (Wide Grip)',  muscle: 'Back',       type: 'secondary', cue: 'Neutral spine · drive elbows back · chest tall' },
       { name: 'Face Pull',                     muscle: 'Rear Delts', type: 'primary',   cue: 'Pull to forehead · externally rotate at end position' },
       { name: 'DB Rear Delt Fly',              muscle: 'Rear Delts', type: 'isolation', cue: 'Near-parallel torso · lead with elbows · no momentum' },
-      { name: 'Barbell Curl',                  muscle: 'Biceps',     type: 'primary',   cue: 'Elbows pinned · supinate at the top · slow eccentric' },
+      { name: 'Barbell Curl',                  muscle: 'Biceps',     type: 'primary',   cue: 'Elbows pinned · full extension at bottom · pause in stretched position · supinate at top — long muscle length = peak hypertrophy stimulus' },
       { name: 'Hammer Curl',                   muscle: 'Biceps',     type: 'isolation', cue: 'Neutral grip · curl to shoulder · 2-sec squeeze · slow eccentric' },
     ],
   },
