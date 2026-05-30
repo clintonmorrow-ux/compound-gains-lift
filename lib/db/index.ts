@@ -86,12 +86,14 @@ export async function logSet(
   setNumber: number,
   weightLbs: number | null,
   reps: number | null,
-  skipped = false
+  skipped = false,
+  rir: number | null = null,
+  tempo: string | null = null
 ) {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('logged_sets')
-    .insert({ session_id: sessionId, exercise_name: exerciseName, set_number: setNumber, weight_lbs: weightLbs, reps, skipped })
+    .insert({ session_id: sessionId, exercise_name: exerciseName, set_number: setNumber, weight_lbs: weightLbs, reps, skipped, rir, tempo })
     .select()
     .single()
   if (error) throw error
@@ -156,12 +158,13 @@ export async function saveEquipment(types: string[]): Promise<void> {
 
 // ── Analytics: fetch ALL logged sets joined with session dates ──────
 export async function fetchAllLoggedSets(): Promise<{
-  exercise_name: string; weight_lbs: number|null; reps: number|null; completed_at: string
+  exercise_name: string; weight_lbs: number|null; reps: number|null;
+  completed_at: string; rir: number|null; set_number: number; session_id: string
 }[]> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('logged_sets')
-    .select('exercise_name, weight_lbs, reps, completed_at')
+    .select('exercise_name, weight_lbs, reps, completed_at, rir, set_number, session_id')
     .not('reps', 'is', null)
     .order('completed_at', { ascending: true })
   if (error) { console.error(error); return [] }
@@ -255,4 +258,24 @@ export async function saveExercisePreference(
       updated_at:     new Date().toISOString(),
     }, { onConflict: 'user_id,original_name' })
   if (error) throw error
+}
+
+// ── Coaching preferences ─────────────────────────────────────────────
+export async function fetchCoachPrefs(): Promise<{rirTrend:boolean;deloadAlerts:boolean;setFatigue:boolean}> {
+  const def = { rirTrend:true, deloadAlerts:true, setFatigue:true }
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('user_settings')
+    .select('coaching_prefs')
+    .single()
+  if (error || !data?.coaching_prefs) return def
+  return { ...def, ...(data.coaching_prefs as any) }
+}
+
+export async function saveCoachPrefs(prefs: {rirTrend:boolean;deloadAlerts:boolean;setFatigue:boolean}): Promise<void> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  await supabase.from('user_settings')
+    .upsert({ id: user.id, coaching_prefs: prefs }, { onConflict: 'id' })
 }

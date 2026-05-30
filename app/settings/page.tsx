@@ -6,7 +6,8 @@ import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
 import { WORKOUTS } from '@/lib/program/data'
 import { fetchAllOneRms, upsertOneRm, fetchSettings, updateSettings,
-         fetchEquipment, saveEquipment } from '@/lib/db'
+         fetchEquipment, saveEquipment, fetchCoachPrefs, saveCoachPrefs } from '@/lib/db'
+import { DEFAULT_COACH_PREFS } from '@/lib/program/coach'
 import { EQUIPMENT_LABELS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import type { UserOneRm } from '@/types'
 
@@ -23,15 +24,17 @@ export default function SettingsPage() {
   const [saved,   setSaved]   = useState<string|null>(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(false)
+  const [coachPrefs, setCoachPrefs] = useState(DEFAULT_COACH_PREFS)
 
   const init = useCallback(async () => {
     try {
       const sb = createClient()
       const { data:{ session } } = await sb.auth.getSession()
       if (!session) await sb.auth.signInAnonymously()
-      const [r, s, eq] = await Promise.all([
-        fetchAllOneRms(), fetchSettings(), fetchEquipment()
+      const [r, s, eq, cp] = await Promise.all([
+        fetchAllOneRms(), fetchSettings(), fetchEquipment(), fetchCoachPrefs()
       ])
+      setCoachPrefs(cp)
       const m: Record<string,string> = {}
       r.forEach((x: UserOneRm) => { m[x.exercise_name] = String(x.weight_lbs) })
       setRms(m); setRound(s.round_to_lbs); setEquip(eq)
@@ -44,6 +47,12 @@ export default function SettingsPage() {
   }, [])
 
   useEffect(() => { init() }, [init])
+
+  const toggleCoach = async (key: 'rirTrend'|'deloadAlerts'|'setFatigue') => {
+    const next = { ...coachPrefs, [key]: !coachPrefs[key] }
+    setCoachPrefs(next)
+    try { await saveCoachPrefs(next) } catch {}
+  }
 
   const save = async (name: string, val: string) => {
     const n = parseFloat(val)
@@ -246,6 +255,40 @@ export default function SettingsPage() {
           </div>
           <p className="ios-section-footer mt-2">
             Workout alternatives will show your available equipment first.
+          </p>
+        </div>
+
+        {/* ── Coaching Intelligence ── */}
+        <div>
+          <p className="ios-section-label mb-2">Coaching Intelligence</p>
+          <div className="ios-group">
+            {([
+              { key:'rirTrend'    as const, title:'Fatigue Tracking',   desc:'Flags when a lift feels harder at the same weight over time' },
+              { key:'deloadAlerts' as const, title:'Smart Deload Alerts', desc:'Warns when performance signals suggest a recovery week' },
+              { key:'setFatigue'  as const, title:'Set Fatigue Analysis', desc:'Suggests rep vs load progression from your set drop-off' },
+            ]).map((row, i) => {
+              const on = coachPrefs[row.key]
+              return (
+                <button key={row.key} onClick={()=>toggleCoach(row.key)}
+                  className={`ios-row w-full ${i===0?'ios-row-first':''}`}
+                  style={{ textAlign:'left' }}>
+                  <div style={{ flex:1, minWidth:0, paddingRight:12 }}>
+                    <p className="t-body" style={{ color:'var(--label)', fontWeight:600 }}>{row.title}</p>
+                    <p className="t-caption" style={{ color:'#8E8E93', marginTop:2, lineHeight:1.4 }}>{row.desc}</p>
+                  </div>
+                  {/* iOS toggle */}
+                  <div style={{ width:51, height:31, borderRadius:999, flexShrink:0, position:'relative',
+                    background: on ? '#30D158' : 'rgba(118,118,128,0.32)', transition:'background 0.2s' }}>
+                    <div style={{ position:'absolute', top:2, left: on ? 22 : 2, width:27, height:27,
+                      borderRadius:'50%', background:'#fff', transition:'left 0.2s',
+                      boxShadow:'0 1px 3px rgba(0,0,0,0.3)' }} />
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+          <p className="t-caption" style={{ color:'#8E8E93', marginTop:8, paddingInline:4, lineHeight:1.5 }}>
+            Signals appear in Insights and only when there's something actionable — your screen stays clean.
           </p>
         </div>
 

@@ -5,7 +5,9 @@ import { ChevronLeft, TrendingUp, Flame, Award, AlertTriangle } from 'lucide-rea
 import BottomNav from '@/components/BottomNav'
 import BodyHeatmap from '@/components/BodyHeatmap'
 import { createClient } from '@/lib/supabase/client'
-import { fetchAllLoggedSets } from '@/lib/db'
+import { fetchAllLoggedSets, fetchCoachPrefs } from '@/lib/db'
+import CoachSignals from '@/components/CoachSignals'
+import { detectRirTrends, detectDeloadReadiness, analyzeIntraSetFatigue, DEFAULT_COACH_PREFS, type CoachSet } from '@/lib/program/coach'
 import { WORKOUTS } from '@/lib/program/data'
 import {
   e1rmSeries, weeklyVolume, regionIntensity, muscleVolume,
@@ -43,6 +45,7 @@ function Sparkline({ data, color }: { data:number[]; color:string }) {
 export default function InsightsPage() {
   const router = useRouter()
   const [sets,    setSets]    = useState<RawSet[]>([])
+  const [coachPrefs, setCoachPrefs] = useState(DEFAULT_COACH_PREFS)
   const [loading, setLoading] = useState(true)
 
   const init = useCallback(async () => {
@@ -50,7 +53,8 @@ export default function InsightsPage() {
       const sb = createClient()
       const { data:{ session } } = await sb.auth.getSession()
       if (!session) await sb.auth.signInAnonymously()
-      setSets(await fetchAllLoggedSets())
+      const [allSets, cp] = await Promise.all([fetchAllLoggedSets(), fetchCoachPrefs()])
+      setSets(allSets); setCoachPrefs(cp)
     } catch(e) { console.error(e) }
     finally { setLoading(false) }
   }, [])
@@ -103,6 +107,11 @@ export default function InsightsPage() {
 
   // Compute analytics
   const idx       = trainingIndex(sets)
+  // Coach signals (computed from RIR + set order data)
+  const coachSets   = sets as unknown as CoachSet[]
+  const rirTrends   = detectRirTrends(coachSets)
+  const deloadSig   = detectDeloadReadiness(coachSets)
+  const intraSet    = analyzeIntraSetFatigue(coachSets)
   const regions   = regionIntensity(sets, 30)
   const mv         = muscleVolume(sets, 30)
   const prs       = personalRecords(sets).slice(0, 6)
@@ -125,6 +134,9 @@ export default function InsightsPage() {
     <div className="min-h-screen pb-tabs" style={{ background:'var(--bg)' }}>
       {Header}
       <div className="px-4 pt-5 space-y-7">
+
+        {/* ── Coach Signals ── */}
+        <CoachSignals rirTrends={rirTrends} deload={deloadSig} intraSet={intraSet} prefs={coachPrefs} />
 
         {/* ── Training Index ── */}
         <div style={{ borderRadius:18, padding:'20px', textAlign:'center',

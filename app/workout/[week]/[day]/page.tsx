@@ -18,7 +18,7 @@ const WC: Record<string,string> = { A:'#0A84FF', B:'#30D158', C:'#BF5AF2', D:'#F
 function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBodyweight, accentColor, onLog }: {
   setNum:number; setCount:number; target:number; repsRange:string
   lastWeight:number|null; isBodyweight:boolean; accentColor:string
-  onLog:(w:number|null, r:number, rir:number)=>Promise<void>
+  onLog:(w:number|null, r:number, rir:number, tempo:string)=>Promise<void>
 }) {
   const parts   = repsRange.replace('–','-').split('-').map(Number)
   const maxReps = parts[1] || parts[0] || 10
@@ -46,7 +46,7 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
   const commit = async () => {
     if (busy) return
     setBusy(true)
-    await onLog(wt > 0 ? wt : null, reps, rir)
+    await onLog(wt > 0 ? wt : null, reps, rir, tempo)
     setBusy(false)
   }
 
@@ -516,9 +516,9 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     return getTargetWeight(oneRm, ex.type, wk, round)
   }
 
-  const handleLog = async (origEx:Exercise, setNum:number, weight:number|null, reps:number, rir:number) => {
+  const handleLog = async (origEx:Exercise, setNum:number, weight:number|null, reps:number, rir:number, tempo:string='Standard') => {
     if (!sid) return
-    const row = await logSet(sid, effName(origEx), setNum, weight, reps)
+    const row = await logSet(sid, effName(origEx), setNum, weight, reps, false, rir, tempo)
     const newLogged = [...(sets[origEx.name]??[]), {...row, rir}]
     const newSets   = {...sets, [origEx.name]: newLogged}
     setSets(newSets)
@@ -653,7 +653,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                       target={target} repsRange={exReps}
                       lastWeight={lastWt} isBodyweight={!!origEx.isBodyweight}
                       accentColor={accent}
-                      onLog={(w,r,rir) => handleLog(origEx, nextSet, w, r, rir)}
+                      onLog={(w,r,rir,tempo) => handleLog(origEx, nextSet, w, r, rir, tempo)}
                     />
                   )}
 

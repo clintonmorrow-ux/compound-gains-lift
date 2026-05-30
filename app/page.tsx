@@ -6,7 +6,9 @@ import { ChevronLeft, ChevronRight, CheckCircle2, Settings2, Clock, ChartLine, L
 import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
 import { WORKOUTS, WEEK_CONFIG, PHASE_LABELS } from '@/lib/program/data'
-import { fetchSettings, updateSettings, fetchRecentSessions, fetchAllOneRms } from '@/lib/db'
+import { fetchSettings, updateSettings, fetchRecentSessions, fetchAllOneRms, fetchAllLoggedSets, fetchCoachPrefs } from '@/lib/db'
+import { detectDeloadReadiness, type CoachSet } from '@/lib/program/coach'
+import { Battery } from 'lucide-react'
 
 const WC: Record<string,string> = { A:'var(--wkt-a)', B:'var(--wkt-b)', C:'var(--wkt-c)', D:'var(--wkt-d)' }
 const PC: Record<number,string>  = {
@@ -22,19 +24,28 @@ export default function Dashboard() {
   const [hasRms,  setHasRms]  = useState(true)
   const [ready,   setReady]   = useState(false)
 
+  const [deloadReasons, setDeloadReasons] = useState<string[]>([])
+  const [deloadDismissed, setDeloadDismissed] = useState(false)
+
   const init = useCallback(async () => {
     try {
       const sb = createClient()
       const { data:{session} } = await sb.auth.getSession()
       if (!session) await sb.auth.signInAnonymously()
-      const [s, sessions, rms] = await Promise.all([
-        fetchSettings(), fetchRecentSessions(20), fetchAllOneRms()
+      const [s, sessions, rms, allSets, cp] = await Promise.all([
+        fetchSettings(), fetchRecentSessions(20), fetchAllOneRms(),
+        fetchAllLoggedSets(), fetchCoachPrefs()
       ])
       setWeek(s.current_week)
       setHasRms(rms.length > 0)
       setDone((sessions as any[])
         .filter(x => x.week_number===s.current_week && x.completed_at)
         .map((x:any) => x.workout_key))
+      // Deload readiness — only surface if the user keeps the alert on
+      if (cp.deloadAlerts) {
+        const d = detectDeloadReadiness(allSets as unknown as CoachSet[])
+        if (d.triggered) setDeloadReasons(d.reasons)
+      }
     } catch(e) {
       console.error('Dashboard error:', e)
     } finally {
@@ -188,6 +199,39 @@ export default function Dashboard() {
             <p style={{ fontSize:36, marginBottom:8 }}>🏆</p>
             <p className="t-headline sf-semibold" style={{ color:'var(--label)' }}>Week {week} Complete</p>
             <p className="t-subhead mt-1" style={{ color:'var(--label-2)' }}>All 4 workouts done</p>
+          </div>
+        )}
+
+        {/* ── Deload alert (only when triggered) ── */}
+        {deloadReasons.length > 0 && !deloadDismissed && (
+          <div className="fade-rise" style={{ animationDelay:'0.04s', display:'flex', gap:12,
+            padding:'14px 16px', borderRadius:16, background:'rgba(255,159,10,0.1)',
+            border:'0.5px solid rgba(255,159,10,0.35)' }}>
+            <div style={{ width:36, height:36, borderRadius:11, flexShrink:0,
+              display:'flex', alignItems:'center', justifyContent:'center',
+              background:'rgba(255,159,10,0.18)' }}>
+              <Battery size={18} strokeWidth={2} style={{ color:'#FF9F0A' }} />
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <p style={{ fontSize:10, fontWeight:800, color:'#FF9F0A', textTransform:'uppercase',
+                letterSpacing:'0.08em', marginBottom:3 }}>Recovery Signal</p>
+              <p style={{ fontSize:14, fontWeight:700, color:'#fff', marginBottom:2 }}>
+                Your body may need a deload
+              </p>
+              <p style={{ fontSize:13, color:'#8E8E93', lineHeight:1.45 }}>
+                {deloadReasons.join(' · ')}.
+              </p>
+              <button onClick={()=>router.push('/insights')}
+                style={{ marginTop:8, fontSize:13, fontWeight:700, color:'#FF9F0A',
+                  background:'none', border:'none', padding:0, cursor:'pointer' }}>
+                View details →
+              </button>
+            </div>
+            <button onClick={()=>setDeloadDismissed(true)}
+              style={{ alignSelf:'flex-start', fontSize:18, color:'#8E8E93',
+                background:'none', border:'none', cursor:'pointer', lineHeight:1, padding:2 }}>
+              ×
+            </button>
           </div>
         )}
 
