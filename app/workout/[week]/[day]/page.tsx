@@ -322,12 +322,24 @@ function DropSetRow({ lastWeight, repsRange, accentColor, onLog }: {
 
 // ── Rest Timer ────────────────────────────────────────────────────
 function RestPill({ seconds, exName, onDone, onRestPause }: { seconds:number; exName:string; onDone:()=>void; onRestPause:()=>void }) {
+  // Absolute end timestamp so the timer recovers correctly after
+  // the iPhone screen locks (JS setTimeout freezes while screen is off)
+  const [endTime] = useState(() => Date.now() + seconds * 1000)
   const [rem, setRem] = useState(seconds)
+
   useEffect(() => {
-    if (rem<=0) { fireRestCompleteNotification(exName); onDone(); return }
-    const t = setTimeout(()=>setRem(r=>r-1), 1000)
-    return ()=>clearTimeout(t)
-  }, [rem, exName, onDone])
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000))
+      setRem(remaining)
+      if (remaining <= 0) {
+        fireRestCompleteNotification(exName)
+        onDone()
+      }
+    }
+    const id = setInterval(tick, 500)
+    return () => clearInterval(id)
+  }, [endTime, exName, onDone])
+
   const m=Math.floor(rem/60), s=rem%60, pct=(rem/seconds)*100
   return (
     <div className="rest-pill">
