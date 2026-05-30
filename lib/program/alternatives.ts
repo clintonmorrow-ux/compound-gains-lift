@@ -187,15 +187,17 @@ export const EXERCISE_ALTS: Record<string, AltsMap> = {
     bodyweight:      [{ name:'Inverted Row (TRX/Bar)',    cue:'Body plank · pull chest to bar · retract scapulae' }],
   },
 
-  'Pull-Up / Lat Pulldown': {
-    cables:          [{ name:'Lat Pulldown (Cable)',      cue:'Wide overhand grip · pull bar to upper chest · stretch at top' },
-                      { name:'Close-Grip Lat Pulldown',  cue:'Supinated narrow grip — strong bicep assist' }],
-    machines:        [{ name:'Assisted Pull-Up Machine',  cue:'Select assistance weight · full dead hang each rep' }],
-    hammer_strength: [{ name:'Hammer Strength Lat Pulldown', cue:'Lean back slightly · elbows drive to hips' }],
-    bands:           [{ name:'Band-Assisted Pull-Up',    cue:'Band around knee — reduces body weight · full ROM' }],
-    dumbbells:       [{ name:'DB Pullover',               cue:'Lie across bench · arms wide arc · feel lat stretch' }],
-    kettlebells:     [{ name:'KB Pullover',               cue:'Same arc pattern as DB pullover using single bell' }],
-    bodyweight:      [{ name:'Negative Pull-Up',          cue:'Jump to top · lower yourself over 5 sec — eccentric focus' }],
+  'Lat Pulldown': {
+    cables:          [{ name:'Close-Grip Lat Pulldown',     cue:'Supinated narrow grip · pull to chin · strong bicep assist' },
+                      { name:'Single-Arm Lat Pulldown',     cue:'One arm at a time · better mind-muscle connection · full stretch' }],
+    machines:        [{ name:'Hammer Strength Lat Pulldown', cue:'Lean back slightly · elbows drive down and back to hips' },
+                      { name:'Assisted Pull-Up Machine',     cue:'Select counterweight · full dead hang each rep · chin clears bar' }],
+    hammer_strength: [{ name:'Hammer Strength Pulldown',    cue:'Adjust seat height · elbows track straight down · full ROM' }],
+    bands:           [{ name:'Band Lat Pulldown',           cue:'Anchor band overhead · kneel or sit · mimic cable path' }],
+    bodyweight:      [{ name:'Pull-Up',                     cue:'Dead hang start · chin clears bar · full extension at bottom · no kipping' },
+                      { name:'Negative Pull-Up',            cue:'Jump to top position · lower over 5 sec · builds strength toward full reps' }],
+    dumbbells:       [{ name:'DB Pullover',                 cue:'Lie across bench · arms wide arc · feel lat stretch at the bottom' }],
+    kettlebells:     [{ name:'KB Pullover',                 cue:'Same arc pattern as DB pullover · single bell' }],
   },
 
   'Seated Cable Row (Wide Grip)': {

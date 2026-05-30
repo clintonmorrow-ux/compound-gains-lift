@@ -45,7 +45,7 @@ export const WORKOUTS: Workout[] = [
     restTimes: 'Compounds: 2–3 min · Isolation: 60–90 sec',
     exercises: [
       { name: 'Barbell Bent-Over Row',         muscle: 'Back',       type: 'primary',   cue: 'Flat back · pull to navel · hard scapula squeeze' },
-      { name: 'Pull-Up / Lat Pulldown',        muscle: 'Back',       type: 'primary',   cue: 'Dead hang start · chin over bar · full extension at bottom' },
+      { name: 'Lat Pulldown',                 muscle: 'Back',       type: 'primary',   cue: 'Wide overhand grip · pull to upper chest · full stretch at top · controlled descent' },
       { name: 'Seated Cable Row (Wide Grip)',  muscle: 'Back',       type: 'secondary', cue: 'Neutral spine · drive elbows back · chest tall' },
       { name: 'Face Pull',                     muscle: 'Rear Delts', type: 'primary',   cue: 'Pull to forehead · externally rotate at end position' },
       { name: 'DB Rear Delt Fly',              muscle: 'Rear Delts', type: 'isolation', cue: 'Near-parallel torso · lead with elbows · no momentum' },
