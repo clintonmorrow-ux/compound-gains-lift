@@ -213,25 +213,46 @@ export async function deleteLoggedSet(setId: string) {
 // ── Exercise preferences (whole-program customization) ───────────────
 export async function fetchExercisePreferences(): Promise<Record<string,{name:string;cue:string}>> {
   const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return {}
   const { data, error } = await supabase
-    .from('user_settings')
-    .select('exercise_preferences')
-    .single()
-  if (error || !data?.exercise_preferences) return {}
-  return data.exercise_preferences as Record<string,{name:string;cue:string}>
+    .from('user_exercise_preferences')
+    .select('original_name, preferred_name, preferred_cue')
+    .eq('user_id', user.id)
+  if (error) { console.error('fetchExercisePreferences error:', error); return {} }
+  const map: Record<string,{name:string;cue:string}> = {}
+  ;(data ?? []).forEach((r: any) => { map[r.original_name] = { name: r.preferred_name, cue: r.preferred_cue } })
+  return map
 }
 
 export async function saveExercisePreference(
   originalName: string,
-  preferred: { name: string; cue: string } | null   // null = reset to default
+  preferred: { name: string; cue: string } | null  // null = reset to default
 ): Promise<void> {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return
-  const current = await fetchExercisePreferences()
-  const updated = { ...current }
-  if (preferred) updated[originalName] = preferred
-  else delete updated[originalName]
-  await supabase.from('user_settings')
-    .upsert({ id: user.id, exercise_preferences: updated }, { onConflict:'id' })
+  if (!user) throw new Error('Not authenticated')
+
+  if (!preferred) {
+    // Delete the preference row
+    const { error } = await supabase
+      .from('user_exercise_preferences')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('original_name', originalName)
+    if (error) throw error
+    return
+  }
+
+  // Upsert by (user_id, original_name)
+  const { error } = await supabase
+    .from('user_exercise_preferences')
+    .upsert({
+      user_id:        user.id,
+      original_name:  originalName,
+      preferred_name: preferred.name,
+      preferred_cue:  preferred.cue,
+      updated_at:     new Date().toISOString(),
+    }, { onConflict: 'user_id,original_name' })
+  if (error) throw error
 }

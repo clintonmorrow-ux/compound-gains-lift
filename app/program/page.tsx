@@ -111,6 +111,7 @@ export default function ProgramPage() {
   const [loading,   setLoading]   = useState(true)
   const [swapEx,    setSwapEx]    = useState<Exercise|null>(null)
   const [saved,     setSaved]     = useState<string|null>(null)
+  const [saveErr,   setSaveErr]   = useState<string|null>(null)
 
   const init = useCallback(async () => {
     try {
@@ -126,20 +127,36 @@ export default function ProgramPage() {
   useEffect(() => { init() }, [init])
 
   const handleSwap = async (origEx: Exercise, name: string, cue: string) => {
+    // Optimistic update
     const updated = { ...prefs, [origEx.name]: { name, cue } }
     setPrefs(updated)
-    await saveExercisePreference(origEx.name, { name, cue })
     setSwapEx(null)
-    setSaved(origEx.name)
-    setTimeout(() => setSaved(null), 2000)
+    setSaveErr(null)
+    try {
+      await saveExercisePreference(origEx.name, { name, cue })
+      setSaved(origEx.name)
+      setTimeout(() => setSaved(null), 2500)
+    } catch(e: any) {
+      // Revert on failure
+      setPrefs(prev => { const r={...prev}; delete r[origEx.name]; return r })
+      setSaveErr(e?.message ?? 'Save failed — check Supabase table exists')
+      setTimeout(() => setSaveErr(null), 5000)
+    }
   }
 
   const handleReset = async (origEx: Exercise) => {
+    const prev = { ...prefs }
     const updated = { ...prefs }
     delete updated[origEx.name]
     setPrefs(updated)
-    await saveExercisePreference(origEx.name, null)
     setSwapEx(null)
+    try {
+      await saveExercisePreference(origEx.name, null)
+    } catch(e: any) {
+      setPrefs(prev)
+      setSaveErr(e?.message ?? 'Reset failed')
+      setTimeout(() => setSaveErr(null), 5000)
+    }
   }
 
   const displayName = (ex: Exercise) => prefs[ex.name]?.name ?? ex.name
@@ -304,6 +321,20 @@ export default function ProgramPage() {
         {/* Bottom spacing for nav */}
         <div style={{ height:8 }} />
       </div>
+
+      {/* Save error toast */}
+      {saveErr && (
+        <div style={{ position:'fixed', bottom:'calc(var(--safe-bottom) + 72px)', left:16, right:16, zIndex:100,
+          padding:'12px 16px', borderRadius:14, background:'rgba(255,69,58,0.95)',
+          border:'0.5px solid rgba(255,69,58,0.5)', display:'flex', alignItems:'center', gap:10 }}>
+          <span style={{ fontSize:18 }}>⚠️</span>
+          <p style={{ fontSize:13, color:'#fff', lineHeight:1.5, flex:1 }}>
+            {saveErr.includes('does not exist') || saveErr.includes('relation')
+              ? 'Table missing — run the SQL migration in Supabase first'
+              : saveErr}
+          </p>
+        </div>
+      )}
 
       {swapEx && (
         <SwapSheet
