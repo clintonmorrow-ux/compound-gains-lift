@@ -167,3 +167,45 @@ export async function fetchAllLoggedSets(): Promise<{
   if (error) { console.error(error); return [] }
   return (data ?? []) as any[]
 }
+
+// ── Session detail + editing ────────────────────────────────────────
+export async function fetchSessionWithSets(sessionId: string) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('sessions')
+    .select('*, logged_sets(*)')
+    .eq('id', sessionId)
+    .single()
+  if (error) throw error
+  // Sort sets by exercise name then set_number
+  if (data?.logged_sets) {
+    data.logged_sets.sort((a: any, b: any) =>
+      a.exercise_name.localeCompare(b.exercise_name) || a.set_number - b.set_number
+    )
+  }
+  return data
+}
+
+export async function updateLoggedSet(
+  setId: string,
+  updates: { weight_lbs?: number | null; reps?: number | null }
+) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('logged_sets')
+    .update(updates)
+    .eq('id', setId)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deleteLoggedSet(setId: string) {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('logged_sets')
+    .delete()
+    .eq('id', setId)
+  if (error) throw error
+}

@@ -77,7 +77,9 @@ export default function HistoryPage() {
               const d    = dur(s.started_at, s.completed_at)
               const sets = s.logged_sets?.length ?? 0
               return (
-                <div key={s.id} className={`ios-row fade-rise ${i===0?'ios-row-first':''}`} style={{ animationDelay:`${i*0.03}s` }}>
+                <div key={s.id} className={`ios-row fade-rise ${i===0?'ios-row-first':''}`}
+                   style={{ animationDelay:`${i*0.03}s`, cursor:'pointer' }}
+                   onClick={() => router.push(`/history/${s.id}`)}>
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 t-footnote sf-heavy"
                        style={{ background:`color-mix(in srgb, ${c} 18%, transparent)`, color: c }}>
                     {s.workout_key}
