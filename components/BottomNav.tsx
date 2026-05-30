@@ -13,23 +13,50 @@ const TABS = [
 export default function BottomNav() {
   const path = usePathname()
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-50" style={{
-      background:'rgba(18,18,22,0.97)', backdropFilter:'saturate(180%) blur(20px)',
-      WebkitBackdropFilter:'saturate(180%) blur(20px)', borderTop:'1px solid rgba(84,84,88,0.9)',
-      paddingBottom:'var(--safe-bottom)' }}>
-      <div className="flex" style={{ height:52 }}>
-        {TABS.map(({ href, label, Icon }) => {
-          const on = path === href
-          return (
-            <Link key={href} href={href} className="tap flex flex-1 flex-col items-center justify-center" style={{ gap:4 }}>
-              <Icon size={23} strokeWidth={on ? 2.4 : 1.8} style={{ color: on ? 'var(--accent)' : '#8E8E93' }} />
-              <span style={{ fontSize:10, fontWeight: on?700:500, letterSpacing:'-0.02em', color: on ? 'var(--accent)' : '#8E8E93' }}>
-                {label}
-              </span>
-            </Link>
-          )
-        })}
-      </div>
-    </nav>
+    <>
+      {/* Spacer so content doesn't hide behind nav */}
+      <div style={{ height: 'calc(80px + var(--safe-bottom))' }} />
+
+      <nav style={{
+        position:'fixed', bottom:0, left:0, right:0, zIndex:50,
+        paddingBottom:'var(--safe-bottom)',
+        background:'rgba(12,12,18,0.96)',
+        backdropFilter:'saturate(180%) blur(24px)',
+        WebkitBackdropFilter:'saturate(180%) blur(24px)',
+        borderTop:'0.5px solid rgba(84,84,88,0.5)',
+      }}>
+        <div style={{
+          display:'flex', alignItems:'stretch',
+          height:60, paddingInline:8,
+        }}>
+          {TABS.map(({ href, label, Icon }) => {
+            const on = path === href
+            return (
+              <Link key={href} href={href} style={{
+                flex:1, display:'flex', flexDirection:'column',
+                alignItems:'center', justifyContent:'center', gap:4,
+                borderRadius:14, margin:'6px 3px',
+                background: on ? 'rgba(255,159,10,0.12)' : 'transparent',
+                transition:'background 0.2s',
+                textDecoration:'none',
+              }}>
+                <Icon
+                  size={22}
+                  strokeWidth={on ? 2.4 : 1.7}
+                  style={{ color: on ? '#FF9F0A' : '#8E8E93' }}
+                />
+                <span style={{
+                  fontSize:10, fontWeight: on ? 700 : 500,
+                  letterSpacing:'-0.01em',
+                  color: on ? '#FF9F0A' : '#8E8E93',
+                }}>
+                  {label}
+                </span>
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
+    </>
   )
 }
