@@ -1,5 +1,5 @@
 'use client'
-import { use, useEffect, useState, useCallback } from 'react'
+import { use, useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -28,6 +28,15 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
   const [rir,   setRir]  = useState(3)
   const [tempo, setTempo]= useState<string>('Standard')
   const [busy,  setBusy] = useState(false)
+
+  // Smart suggestions load async — if wt is still 0 when target arrives, sync it
+  const didSync = useRef(false)
+  useEffect(() => {
+    if (!isBodyweight && !didSync.current && target > 0 && wt === 0) {
+      setWt(target)
+      didSync.current = true
+    }
+  }, [target, isBodyweight, wt])
 
   const TEMPOS: { code:string; label:string; purpose:string; hint:string }[] = [
     { code:'Standard', label:'Standard', purpose:'',           hint:'Controlled movement at natural speed' },
