@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, TrendingUp, Flame, Award, AlertTriangle } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
-import BodyHeatmap from '@/components/BodyHeatmap'
+import MuscleVolumeChart from '@/components/MuscleVolumeChart'
 import { createClient } from '@/lib/supabase/client'
 import { fetchAllLoggedSets, fetchCoachPrefs } from '@/lib/db'
 import CoachSignals from '@/components/CoachSignals'
@@ -154,7 +154,7 @@ export default function InsightsPage() {
           </div>
         </div>
 
-        {/* ── Muscle Heatmap ── */}
+        {/* ── Muscle Volume Chart ── */}
         <div>
           <p className="ios-section-label mb-1">Muscle Volume · Last 30 Days</p>
           <p className="t-footnote mb-3" style={{ color:'#8E8E93' }}>
@@ -162,7 +162,7 @@ export default function InsightsPage() {
           </p>
           <div style={{ borderRadius:18, padding:'16px', background:'#0D0D14',
             border:'0.5px solid rgba(84,84,88,0.4)' }}>
-            <BodyHeatmap regions={regions} />
+            <MuscleVolumeChart sets={sets} />
             {muscleSorted.length > 0 && (
               <div style={{ marginTop:12, paddingTop:12, borderTop:'0.5px solid rgba(84,84,88,0.4)',
                 display:'flex', flexWrap:'wrap', gap:6 }}>
