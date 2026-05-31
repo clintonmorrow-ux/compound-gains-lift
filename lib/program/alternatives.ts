@@ -251,6 +251,17 @@ export const EXERCISE_ALTS: Record<string, AltsMap> = {
     bodyweight:      [{ name:'Chin-Up (neutral grip)',    cue:'Neutral/parallel grip bar · compound hammer curl pattern' }],
   },
 
+  'Leaning Cable Lateral Raise': {
+    cables:          [{ name:'Cable Lateral Raise',              cue:'Standard cable lateral if leaning version unavailable' },
+                      { name:'Single-Arm Cable Lateral (High)',  cue:'Pull cable across body downward — reverse-lengthened stimulus' }],
+    dumbbells:       [{ name:'DB Lateral Raise (Lying)',         cue:'Lie on side on bench · raise top arm to ceiling · maximises stretch at bottom' },
+                      { name:'DB Lateral Raise',                 cue:'Standard DB lateral — lead with elbow, thumb down at top' }],
+    machines:        [{ name:'Machine Lateral Raise',            cue:'Pad on upper forearm · full ROM · slow eccentric' }],
+    bands:           [{ name:'Band Lateral Raise',               cue:'Stand on band · bilateral or single-arm' }],
+    kettlebells:     [{ name:'KB Lateral Raise',                 cue:'Same arc as DB — control the eccentric phase' }],
+    bodyweight:      [{ name:'Wall Lateral Raise',               cue:'Stand facing wall · raise arm along wall — isolates delt without momentum' }],
+  },
+
   'DB Lateral Raise': {
     cables:          [{ name:'Cable Lateral Raise',       cue:'Low pulley · constant tension entire arc' }],
     bands:           [{ name:'Band Lateral Raise',        cue:'Doubled band for higher resistance · slow and controlled' }],
@@ -301,6 +312,15 @@ export const EXERCISE_ALTS: Record<string, AltsMap> = {
                       { name:'KB Deadlift',               cue:'Slower and controlled — matches pull-through stimulus' }],
     bodyweight:      [{ name:'Hip Hinge (BW Good Morning)', cue:'Hands on hips · sit back · feel hamstring load · RDL pattern' }],
     machines:        [{ name:'Glute Kickback Machine',    cue:'Different angle but similar posterior chain activation' }],
+  },
+
+  'Single-Leg Calf Raise': {
+    dumbbells:       [{ name:'Single-Leg DB Calf Raise',         cue:'Hold DB in same-side hand · stand on edge · full ROM' }],
+    machines:        [{ name:'Leg Press Calf Raise (Single-Leg)', cue:'One foot on platform · full plantarflexion · controlled return' }],
+    cables:          [{ name:'Cable Single-Leg Calf Raise',      cue:'Low cable attachment · slight forward lean · full stretch' }],
+    bands:           [{ name:'Band Single-Leg Calf Raise',       cue:'Stand on band with one foot · use wall for balance' }],
+    barbell:         [{ name:'Single-Leg Barbell Calf Raise',    cue:'Bar on traps · stand on elevated surface · one foot at a time' }],
+    bodyweight:      [{ name:'Bodyweight Single-Leg Calf Raise', cue:'Pure bodyweight · stand on a step · slow eccentric · high reps' }],
   },
 
   'Seated Calf Raise': {
