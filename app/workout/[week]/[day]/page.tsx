@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { WORKOUTS, WEEK_CONFIG } from '@/lib/program/data'
 import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/calculator'
 import { fetchAllOneRms, fetchSettings, createSession, completeSession,
-         logSet, getRecentSetsForExercise, fetchEquipment, fetchExercisePreferences } from '@/lib/db'
+         logSet, getRecentSetsForExercise, fetchEquipment, fetchExercisePreferences, deleteSession } from '@/lib/db'
 import { getRestSeconds, fireRestCompleteNotification, requestNotificationPermission } from '@/lib/program/restTimes'
 import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { calculateSmartSuggestion, type SmartSuggestion } from '@/lib/program/smartSuggestions'
@@ -252,6 +252,7 @@ function DropSetRow({ lastWeight, repsRange, accentColor, onLog }: {
     setDone(true)
   }
 
+
   if (done) return (
     <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px',
       borderRadius:12, background:'rgba(48,209,88,0.1)', border:'0.5px solid rgba(48,209,88,0.35)',
@@ -446,6 +447,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const [progPrefs, setProgPrefs] = useState<Record<string,{name:string;cue:string}>>({})
   const [altsFor,   setAltsFor]   = useState<string|null>(null)
   const [rest,      setRest]      = useState<{sec:number;name:string;startedAt:number}|null>(null)
+  const [showExitSheet, setShowExitSheet] = useState(false)
   const [done,      setDone]      = useState(false)
 
   const init = useCallback(async () => {
@@ -473,8 +475,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
         smartM[ex.name]   = calculateSmartSuggestion(recent, ex.type, wk, oneRm, settings.round_to_lbs)
       }))
       setLasts(lastMap); setSmartMap(smartM)
-      const sess = await createSession(wk, key)
-      setSid(sess.id)
+      // Session is created lazily on first set logged — prevents ghost sessions
+      // when user browses to workout page without actually training
     } catch(e){ console.error('Init:',e) }
   }, [wk, key, workout.exercises])
 
@@ -501,6 +503,34 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     }
   }, [])
 
+  // ── Exit handlers ────────────────────────────────────────────────
+  const hasProgress = Object.values(sets).some(s => s.length > 0)
+
+  const handleDiscard = async () => {
+    if (sid) { try { await deleteSession(sid) } catch {} }
+    router.replace('/')
+  }
+  const handleSaveExit = () => router.replace('/')
+
+  // ── Intercept back button when workout has progress ────────────
+
+  useEffect(() => {
+    // Push a dummy history entry so the first swipe-back / back-button
+    // hits our interceptor rather than immediately navigating away
+    window.history.pushState({ workout: true }, '')
+    const onPop = () => {
+      if (hasProgress) {
+        // Re-push so the user can't just tap back again without confirming
+        window.history.pushState({ workout: true }, '')
+        setShowExitSheet(true)
+      } else {
+        router.replace('/')
+      }
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [hasProgress, router])
+
   const total  = workout.exercises.reduce((a,ex)=>a+getSetsForWeek(ex.type,wk), 0)
   const logged = Object.values(sets).reduce((a,s)=>a+s.length, 0)
   const pct    = total>0 ? logged/total : 0
@@ -517,8 +547,14 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   }
 
   const handleLog = async (origEx:Exercise, setNum:number, weight:number|null, reps:number, rir:number, tempo:string='Standard') => {
-    if (!sid) return
-    const row = await logSet(sid, effName(origEx), setNum, weight, reps, false, rir, tempo)
+    // Lazy session creation — only hit the DB when user actually logs a set
+    let sessionId = sid
+    if (!sessionId) {
+      const sess = await createSession(wk, key)
+      sessionId = sess.id
+      setSid(sessionId)
+    }
+    const row = await logSet(sessionId!, effName(origEx), setNum, weight, reps, false, rir, tempo)
     const newLogged = [...(sets[origEx.name]??[]), {...row, rir}]
     const newSets   = {...sets, [origEx.name]: newLogged}
     setSets(newSets)
@@ -528,6 +564,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       if (next) setTimeout(()=>setOpen(next.name), 500)
     }
   }
+
 
   if (done) return (
     <div style={{ position:'fixed', inset:0, background:'#000', display:'flex', flexDirection:'column',

@@ -2,7 +2,7 @@
 import { use, useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, Check, Trash2, Plus } from 'lucide-react'
-import { fetchSessionWithSets, updateLoggedSet, deleteLoggedSet, logSet } from '@/lib/db'
+import { fetchSessionWithSets, updateLoggedSet, deleteLoggedSet, deleteSession } from '@/lib/db'
 import { WORKOUTS } from '@/lib/program/data'
 import type { WorkoutKey } from '@/types'
 
@@ -117,7 +117,9 @@ export default function SessionEditPage({ params }: { params: Promise<{sessionId
 
   const [session,  setSession]  = useState<any>(null)
   const [sets,     setSets]     = useState<any[]>([])
-  const [loading,  setLoading]  = useState(true)
+  const [loading,       setLoading]  = useState(true)
+  const [confirmDelete,   setConfirmDelete] = useState(false)
+  const [deleting,        setDeleting]     = useState(false)
 
   const init = useCallback(async () => {
     try {
@@ -136,6 +138,15 @@ export default function SessionEditPage({ params }: { params: Promise<{sessionId
 
   const handleDeleted = (id: string) => {
     setSets(prev => prev.filter(s => s.id !== id))
+  }
+
+  const handleDeleteSession = async () => {
+    if (!confirmDelete) { setConfirmDelete(true); return }
+    setDeleting(true)
+    try {
+      await deleteSession(sessionId)
+      router.replace('/history')
+    } catch(e) { setDeleting(false); setConfirmDelete(false) }
   }
 
   // Group sets by exercise name (preserving workout order)
@@ -187,10 +198,23 @@ export default function SessionEditPage({ params }: { params: Promise<{sessionId
               {' · '}{sets.length} sets
             </p>
           </div>
-          <div style={{ padding:'5px 12px', borderRadius:8,
-            background:`color-mix(in srgb, ${accent} 15%, transparent)`,
-            border:`0.5px solid ${accent}44` }}>
-            <span style={{ fontSize:12, fontWeight:700, color: accent }}>Editing</span>
+          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+            <div style={{ padding:'5px 12px', borderRadius:8,
+              background:`color-mix(in srgb, ${accent} 15%, transparent)`,
+              border:`0.5px solid ${accent}44` }}>
+              <span style={{ fontSize:12, fontWeight:700, color: accent }}>Editing</span>
+            </div>
+            <button onClick={handleDeleteSession} disabled={deleting}
+              style={{ padding:'5px 12px', borderRadius:8, border:'none', cursor:'pointer',
+                background: confirmDelete ? 'rgba(255,69,58,0.25)' : 'rgba(255,69,58,0.1)',
+                transition:'background 0.2s' }}>
+              {deleting
+                ? <div style={{ width:14,height:14,borderRadius:'50%',border:'2px solid transparent',
+                    borderTopColor:'#FF453A',animation:'spin 0.7s linear infinite' }} />
+                : <span style={{ fontSize:12, fontWeight:700, color:'#FF453A' }}>
+                    {confirmDelete ? 'Confirm' : 'Delete'}
+                  </span>}
+            </button>
           </div>
         </div>
       </div>

@@ -279,3 +279,14 @@ export async function saveCoachPrefs(prefs: {rirTrend:boolean;deloadAlerts:boole
   await supabase.from('user_settings')
     .upsert({ id: user.id, coaching_prefs: prefs }, { onConflict: 'id' })
 }
+
+// ── Session management ────────────────────────────────────────────────
+export async function deleteSession(sessionId: string): Promise<void> {
+  const supabase = createClient()
+  // logged_sets cascade deletes automatically via FK constraint
+  const { error } = await supabase
+    .from('sessions')
+    .delete()
+    .eq('id', sessionId)
+  if (error) throw error
+}
