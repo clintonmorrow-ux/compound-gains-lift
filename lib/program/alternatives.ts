@@ -75,7 +75,7 @@ export const EXERCISE_ALTS: Record<string, AltsMap> = {
     bodyweight:      [{ name:'Pike Push-Up',            cue:'Hips high, head toward floor · forehead nearly touches ground' }],
   },
 
-  'Cable Lateral Raise': {
+  'Behind-the-Back Cable Lateral Raise': {
     dumbbells:       [{ name:'DB Lateral Raise',         cue:'Lead with elbow · slight lean forward · 3-sec eccentric' },
                       { name:'DB Incline Lateral Raise', cue:'Lie sideways on incline bench — removes momentum' }],
     bands:           [{ name:'Band Lateral Raise',       cue:'Anchor band under feet · slow and controlled' }],
@@ -252,7 +252,7 @@ export const EXERCISE_ALTS: Record<string, AltsMap> = {
   },
 
   'Leaning Cable Lateral Raise': {
-    cables:          [{ name:'Cable Lateral Raise',              cue:'Standard cable lateral if leaning version unavailable' },
+    cables:          [{ name:'Behind-the-Back Cable Lateral Raise', cue:'Cable behind back — constant tension through full ROM' },
                       { name:'Single-Arm Cable Lateral (High)',  cue:'Pull cable across body downward — reverse-lengthened stimulus' }],
     dumbbells:       [{ name:'DB Lateral Raise (Lying)',         cue:'Lie on side on bench · raise top arm to ceiling · maximises stretch at bottom' },
                       { name:'DB Lateral Raise',                 cue:'Standard DB lateral — lead with elbow, thumb down at top' }],

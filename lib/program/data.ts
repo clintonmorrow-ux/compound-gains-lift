@@ -13,7 +13,7 @@ export const WORKOUTS: Workout[] = [
       { name: 'Incline Dumbbell Press',        muscle: 'Chest',     type: 'secondary', cue: '30–45° incline · full ROM · no elbow flare' },
       { name: 'Cable Chest Fly',               muscle: 'Chest',     type: 'isolation', cue: 'Slight elbow bend · feel the stretch at the bottom' },
       { name: 'Overhead Press (Barbell)',      muscle: 'Shoulders', type: 'primary',   cue: 'Brace core · bar path directly over traps at top' },
-      { name: 'Cable Lateral Raise',           muscle: 'Side Delts',type: 'isolation', cue: 'Lead with elbow · slight forward lean · control eccentric' },
+      { name: 'Behind-the-Back Cable Lateral Raise', muscle: 'Side Delts',type: 'isolation', cue: 'Cable behind back · arm crosses low in front · lead with elbow · keeps constant tension through full ROM' },
       { name: 'DB Lateral Raise',              muscle: 'Side Delts',type: 'isolation', cue: '3-sec eccentric · slight lean forward · thumb down at top · no momentum' },
       { name: 'Leaning Cable Lateral Raise',  muscle: 'Side Delts',type: 'isolation', cue: 'Hold cable low · lean away from stack · lead elbow up · pause at stretch — lengthened position maximises side delt stimulus (Wolf & Schoenfeld 2025)' },
       { name: 'Tricep Rope Pushdown',          muscle: 'Triceps',   type: 'primary',   cue: 'Elbows fixed · split rope at bottom · full extension' },
