@@ -15,14 +15,21 @@ export interface SmartSuggestion {
 interface RecentSet {
   weight_lbs: number
   reps:       number
+  rir?:       number | null   // included when available; improves e1RM accuracy
 }
 
 /**
- * Epley 1RM estimate: w × (1 + r/30)
- * Used by both Galpin and Norton for load progression calculations.
+ * Epley 1RM estimate.
+ * When RIR is known, use reps + RIR (= reps to failure) for a true e1RM.
+ * Without RIR, logged reps alone underestimate 1RM — e.g. 120 lbs × 12 reps
+ * gives e1RM 168 lbs, but if those reps were done at RIR 3 the true e1RM
+ * is 120 × (1 + 15/30) = 180 lbs, shifting the prescribed weight from
+ * 115 lbs back up to 120 lbs. When RIR is unknown, default to 2 (reasonable
+ * assumption for Phase 1 training rather than assuming sets were done to failure).
  */
-function epleyOneRm(weight: number, reps: number): number {
-  return weight * (1 + reps / 30)
+function epleyOneRm(weight: number, reps: number, rir?: number | null): number {
+  const repsToFailure = reps + (rir ?? 2)
+  return weight * (1 + repsToFailure / 30)
 }
 
 /**
@@ -32,7 +39,7 @@ function weightedAvgOneRm(sets: RecentSet[]): number {
   if (sets.length === 0) return 0
   const weights = sets.map((_, i) => Math.max(sets.length - i, 1))
   const total   = weights.reduce((a, b) => a + b, 0)
-  const sum     = sets.reduce((acc, s, i) => acc + epleyOneRm(s.weight_lbs, s.reps) * weights[i], 0)
+  const sum     = sets.reduce((acc, s, i) => acc + epleyOneRm(s.weight_lbs, s.reps, s.rir) * weights[i], 0)
   return sum / total
 }
 

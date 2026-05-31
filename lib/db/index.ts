@@ -129,14 +129,14 @@ export async function getRecentSetsForExercise(exerciseName: string, limit = 15)
   const supabase = createClient()
   const { data, error } = await supabase
     .from('logged_sets')
-    .select('weight_lbs, reps, completed_at')
+    .select('weight_lbs, reps, completed_at, rir')
     .eq('exercise_name', exerciseName)
     .not('weight_lbs', 'is', null)
     .not('reps', 'is', null)
     .order('completed_at', { ascending: false })
     .limit(limit)
   if (error) throw error
-  return (data ?? []) as { weight_lbs: number; reps: number; completed_at: string }[]
+  return (data ?? []) as { weight_lbs: number; reps: number; completed_at: string; rir: number | null }[]
 }
 
 export async function fetchEquipment(): Promise<string[]> {
