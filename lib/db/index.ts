@@ -159,16 +159,23 @@ export async function saveEquipment(types: string[]): Promise<void> {
 // ── Analytics: fetch ALL logged sets joined with session dates ──────
 export async function fetchAllLoggedSets(): Promise<{
   exercise_name: string; weight_lbs: number|null; reps: number|null;
-  completed_at: string; rir: number|null; set_number: number; session_id: string
+  completed_at: string; rir: number|null; set_number: number;
+  session_id: string; week_number: number|null
 }[]> {
   const supabase = createClient()
-  const { data, error } = await supabase
-    .from('logged_sets')
-    .select('exercise_name, weight_lbs, reps, completed_at, rir, set_number, session_id')
-    .not('reps', 'is', null)
-    .order('completed_at', { ascending: true })
+  // Fetch sets + sessions in parallel; merge week_number onto each set
+  // so the volume chart groups by program week (not calendar week)
+  const [{ data: setsData, error }, { data: sessData }] = await Promise.all([
+    supabase.from('logged_sets')
+      .select('exercise_name, weight_lbs, reps, completed_at, rir, set_number, session_id')
+      .not('reps', 'is', null)
+      .order('completed_at', { ascending: true }),
+    supabase.from('sessions').select('id, week_number'),
+  ])
   if (error) { console.error(error); return [] }
-  return (data ?? []) as any[]
+  const weekMap: Record<string, number> = {}
+  ;(sessData ?? []).forEach((s: any) => { weekMap[s.id] = s.week_number })
+  return (setsData ?? []).map((s: any) => ({ ...s, week_number: weekMap[s.session_id] ?? null })) as any[]
 }
 
 // ── Session detail + editing ────────────────────────────────────────
