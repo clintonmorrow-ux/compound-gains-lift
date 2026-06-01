@@ -151,7 +151,8 @@ export const EXERCISE_ALTS: Record<string, AltsMap> = {
   },
 
   'Standing Calf Raise': {
-    machines:        [{ name:'Seated Calf Raise',        cue:'Different angle targets soleus more — do both when possible' },
+    machines:        [{ name:'Leg Press Calf Raise',      cue:'Feet low on platform · toes hanging off edge · full plantarflexion · slow eccentric · knees slightly bent' },
+                      { name:'Seated Calf Raise',        cue:'Different angle targets soleus more — do both when possible' },
                       { name:'Donkey Calf Raise',        cue:'Hinge forward 90° — maximizes gastrocnemius stretch' }],
     dumbbells:       [{ name:'Single-Leg DB Calf Raise', cue:'Hold DB on same-side hand · full stretch at bottom' }],
     kettlebells:     [{ name:'KB Single-Leg Calf Raise', cue:'Hold KB for loading · free hand for light balance only' }],
@@ -324,7 +325,8 @@ export const EXERCISE_ALTS: Record<string, AltsMap> = {
   },
 
   'Seated Calf Raise': {
-    machines:        [{ name:'Standing Calf Raise',       cue:'Gastroc dominant — different muscle emphasis than seated' },
+    machines:        [{ name:'Leg Press Calf Raise',      cue:'Feet low on platform · toes off edge · full ROM · targets gastroc similarly to standing — great machine option' },
+                      { name:'Standing Calf Raise',       cue:'Gastroc dominant — different muscle emphasis than seated' },
                       { name:'Donkey Calf Raise',         cue:'Best gastrocnemius stretch of any calf exercise' }],
     dumbbells:       [{ name:'DB Seated Calf Raise',      cue:'DB on quads · slow full-ROM reps · feel the stretch' }],
     bands:           [{ name:'Seated Band Calf Raise',    cue:'Band around arch of foot · extend against resistance' }],
