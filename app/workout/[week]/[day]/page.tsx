@@ -29,14 +29,21 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
   const [tempo, setTempo]= useState<string>('Standard')
   const [busy,  setBusy] = useState(false)
 
-  // Smart suggestions load async — if wt is still 0 when target arrives, sync it
-  const didSync = useRef(false)
+  // Smart suggestions load async after mount.
+  // Two failure cases:
+  //  1. wt=0 (no lastWeight, target not loaded yet) — original bug
+  //  2. wt=lastWeight (fallback), target arrives with a different value — this bug
+  // Fix: sync to target whenever it first arrives positive, unless user already edited.
+  const didSync    = useRef(false)
+  const userEdited = useRef(false)
+
   useEffect(() => {
-    if (!isBodyweight && !didSync.current && target > 0 && wt === 0) {
+    if (isBodyweight || didSync.current || userEdited.current) return
+    if (target > 0) {
       setWt(target)
       didSync.current = true
     }
-  }, [target, isBodyweight, wt])
+  }, [target, isBodyweight])
 
   const TEMPOS: { code:string; label:string; purpose:string; hint:string }[] = [
     { code:'Standard', label:'Standard', purpose:'',           hint:'Controlled movement at natural speed' },
@@ -48,7 +55,7 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
   ]
 
   const adjust = (field: 'wt'|'reps', delta: number) => {
-    if (field === 'wt')   setWt(w  => Math.max(0, w  + delta))
+    if (field === 'wt')   { userEdited.current = true; setWt(w  => Math.max(0, w  + delta)) }
     if (field === 'reps') setReps(r => Math.max(1, r  + delta))
   }
 
@@ -90,7 +97,7 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
           </button>
           <div style={{ flex:1, textAlign:'center' }}>
             <input type="number" inputMode="decimal"
-              value={wt || ''} onChange={e => setWt(parseFloat(e.target.value)||0)}
+              value={wt || ''} onChange={e => { userEdited.current = true; setWt(parseFloat(e.target.value)||0) }}
               onFocus={e => e.target.select()}
               placeholder={isBodyweight ? '0' : ''}
               style={{ width:'100%', background:'transparent', border:'none', outline:'none',
