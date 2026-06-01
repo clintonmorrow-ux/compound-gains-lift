@@ -297,3 +297,21 @@ export async function deleteSession(sessionId: string): Promise<void> {
     .eq('id', sessionId)
   if (error) throw error
 }
+
+// ── Session resume ────────────────────────────────────────────────────
+export async function findIncompleteSession(weekNumber: number, workoutKey: string) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data } = await supabase
+    .from('sessions')
+    .select('id, started_at, logged_sets(id, exercise_name, set_number, weight_lbs, reps, rir, completed_at)')
+    .eq('user_id', user.id)
+    .eq('week_number', weekNumber)
+    .eq('workout_key', workoutKey)
+    .is('completed_at', null)
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  return data as { id:string; started_at:string; logged_sets: any[] } | null
+}

@@ -6,7 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { WORKOUTS, WEEK_CONFIG } from '@/lib/program/data'
 import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/calculator'
 import { fetchAllOneRms, fetchSettings, createSession, completeSession,
-         logSet, getRecentSetsForExercise, fetchEquipment, fetchExercisePreferences, deleteSession } from '@/lib/db'
+         logSet, getRecentSetsForExercise, fetchEquipment, fetchExercisePreferences,
+         deleteSession, findIncompleteSession } from '@/lib/db'
 import { getRestSeconds, fireRestCompleteNotification, requestNotificationPermission } from '@/lib/program/restTimes'
 import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { calculateSmartSuggestion, type SmartSuggestion } from '@/lib/program/smartSuggestions'
@@ -463,7 +464,9 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const [progPrefs, setProgPrefs] = useState<Record<string,{name:string;cue:string}>>({})
   const [altsFor,   setAltsFor]   = useState<string|null>(null)
   const [rest,      setRest]      = useState<{sec:number;name:string;startedAt:number}|null>(null)
-  const [showExitSheet, setShowExitSheet] = useState(false)
+  const [showExitSheet,   setShowExitSheet]   = useState(false)
+  const [resumeCandidate, setResumeCandidate] = useState<{id:string;started_at:string;logged_sets:any[]}|null>(null)
+  const [syncErrors,      setSyncErrors]      = useState<string[]>([])
   const [done,      setDone]      = useState(false)
 
   const init = useCallback(async () => {
@@ -491,6 +494,11 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
         smartM[ex.name]   = calculateSmartSuggestion(recent, ex.type, wk, oneRm, settings.round_to_lbs)
       }))
       setLasts(lastMap); setSmartMap(smartM)
+      // Check for an incomplete session from a previous interrupted workout
+      const incomplete = await findIncompleteSession(wk, key)
+      if (incomplete && incomplete.logged_sets?.length > 0) {
+        setResumeCandidate(incomplete)
+      }
       // Session is created lazily on first set logged — prevents ghost sessions
       // when user browses to workout page without actually training
     } catch(e){ console.error('Init:',e) }
@@ -518,6 +526,24 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       lock?.release()
     }
   }, [])
+
+  // ── Resume handler ───────────────────────────────────────────────
+  const handleResume = () => {
+    if (!resumeCandidate) return
+    setSid(resumeCandidate.id)
+    // Rebuild local sets state from the DB-stored sets
+    const rebuilt: Record<string, any[]> = {}
+    resumeCandidate.logged_sets.forEach((s: any) => {
+      if (!rebuilt[s.exercise_name]) rebuilt[s.exercise_name] = []
+      rebuilt[s.exercise_name].push(s)
+    })
+    // Sort each exercise's sets by set_number
+    Object.values(rebuilt).forEach(arr => arr.sort((a, b) => a.set_number - b.set_number))
+    setSets(rebuilt)
+    setResumeCandidate(null)
+  }
+
+  const handleStartFresh = () => setResumeCandidate(null)
 
   // ── Exit handlers ────────────────────────────────────────────────
   const hasProgress = Object.values(sets).some(s => s.length > 0)
@@ -562,6 +588,17 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     return getTargetWeight(oneRm, ex.type, wk, round)
   }
 
+  // Retry wrapper — 3 attempts with 800ms/1600ms backoff
+  const logWithRetry = async (...args: Parameters<typeof logSet>) => {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try { return await logSet(...args) }
+      catch (e) {
+        if (attempt === 2) throw e
+        await new Promise(r => setTimeout(r, 800 * (attempt + 1)))
+      }
+    }
+  }
+
   const handleLog = async (origEx:Exercise, setNum:number, weight:number|null, reps:number, rir:number, tempo:string='Standard') => {
     // Lazy session creation — only hit the DB when user actually logs a set
     let sessionId = sid
@@ -570,8 +607,35 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       sessionId = sess.id
       setSid(sessionId)
     }
-    const row = await logSet(sessionId!, effName(origEx), setNum, weight, reps, false, rir, tempo)
-    const newLogged = [...(sets[origEx.name]??[]), {...row, rir}]
+
+    // Optimistic update — advance UI immediately so the workout never freezes
+    const tempId = `pending-${Date.now()}`
+    const tempSet = { id: tempId, exercise_name: effName(origEx), set_number: setNum,
+                      weight_lbs: weight, reps, rir, pending: true }
+    setSets(prev => ({...prev, [origEx.name]: [...(prev[origEx.name]??[]), tempSet]}))
+
+    // Sync to Supabase in background with retry
+    logWithRetry(sessionId!, effName(origEx), setNum, weight, reps, false, rir, tempo)  // 3 retries
+      .then(row => {
+        // Replace temp set with confirmed row
+        setSets(prev => ({
+          ...prev,
+          [origEx.name]: (prev[origEx.name]??[]).map(s => s.id === tempId ? {...row, rir} : s)
+        }))
+        // Clear any sync error for this exercise
+        setSyncErrors(prev => prev.filter(e => e !== origEx.name))
+      })
+      .catch(() => {
+        // Mark as failed — user can see it and the set stays logged locally
+        setSyncErrors(prev => [...new Set([...prev, origEx.name])])
+        setSets(prev => ({
+          ...prev,
+          [origEx.name]: (prev[origEx.name]??[]).map(s =>
+            s.id === tempId ? {...s, pending: false, syncFailed: true} : s)
+        }))
+      })
+
+    const newLogged = [...(sets[origEx.name]??[]), tempSet]
     const newSets   = {...sets, [origEx.name]: newLogged}
     setSets(newSets)
     setRest({ sec: getRestSeconds(wk, origEx.type), name: effName(origEx), startedAt: Date.now() })
@@ -750,6 +814,107 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       {altsFor && <AltsSheet exName={altsFor} equipment={equipment}
         onSwap={(n,c)=>{ setSwapped(p=>({...p,[altsFor]:{name:n,cue:c}})); setAltsFor(null) }}
         onClose={()=>setAltsFor(null)} />}
+
+      {/* ── Resume session sheet ── */}
+      {resumeCandidate && (
+        <div className="sheet-scrim">
+          <div className="sheet-panel" onClick={e=>e.stopPropagation()}
+               style={{ padding:'24px 20px 20px' }}>
+            <div style={{ width:36, height:4, borderRadius:99, background:'rgba(84,84,88,0.5)', margin:'0 auto 20px' }} />
+            <div style={{ display:'flex', gap:12, alignItems:'flex-start', marginBottom:20 }}>
+              <div style={{ width:44, height:44, borderRadius:14, flexShrink:0,
+                display:'flex', alignItems:'center', justifyContent:'center',
+                background:`color-mix(in srgb, ${accent} 18%, transparent)`,
+                fontSize:22 }}>⚡</div>
+              <div>
+                <h3 style={{ fontSize:19, fontWeight:800, color:'#fff', letterSpacing:'-0.4px', marginBottom:4 }}>
+                  Continue your workout?
+                </h3>
+                <p style={{ fontSize:14, color:'#8E8E93', lineHeight:1.5 }}>
+                  You have <strong style={{color:'#fff'}}>{resumeCandidate.logged_sets.length} set{resumeCandidate.logged_sets.length===1?'':'s'}</strong> saved from a session
+                  {' '}started {new Date(resumeCandidate.started_at).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}.
+                </p>
+              </div>
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              <button onClick={handleResume}
+                style={{ width:'100%', height:54, borderRadius:16, fontSize:17, fontWeight:700,
+                  background:`color-mix(in srgb, ${accent} 20%, transparent)`,
+                  border:`0.5px solid ${accent}55`, color: accent }}>
+                Continue from set {resumeCandidate.logged_sets.length + 1}
+              </button>
+              <button onClick={handleStartFresh}
+                style={{ width:'100%', height:54, borderRadius:16, fontSize:17, fontWeight:700,
+                  background:'rgba(118,118,128,0.18)',
+                  border:'0.5px solid rgba(84,84,88,0.4)', color:'#8E8E93' }}>
+                Start fresh
+                <span style={{ display:'block', fontSize:12, fontWeight:500, marginTop:1 }}>
+                  Previous session stays in History
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Sync error banner ── */}
+      {syncErrors.length > 0 && (
+        <div style={{ position:'fixed', bottom:'calc(var(--safe-bottom) + 72px)',
+          left:16, right:16, zIndex:99, padding:'12px 16px', borderRadius:14,
+          background:'rgba(255,159,10,0.97)', display:'flex', gap:10, alignItems:'center',
+          boxShadow:'0 4px 24px rgba(0,0,0,0.4)' }}>
+          <span style={{ fontSize:16, flexShrink:0 }}>⚠️</span>
+          <p style={{ fontSize:13, color:'#fff', fontWeight:600, flex:1, lineHeight:1.4 }}>
+            Connection issue — sets are saved locally and will sync when you're back online.
+          </p>
+          <button onClick={()=>setSyncErrors([])}
+            style={{ fontSize:20, color:'rgba(255,255,255,0.8)', background:'none',
+              border:'none', cursor:'pointer', lineHeight:1, padding:'0 4px' }}>×</button>
+        </div>
+      )}
+
+      {/* ── Exit confirmation sheet ── */}
+      {showExitSheet && (
+        <div className="sheet-scrim" onClick={()=>setShowExitSheet(false)}>
+          <div className="sheet-panel" onClick={e=>e.stopPropagation()}
+               style={{ padding:'24px 20px 20px' }}>
+            <div style={{ width:36, height:4, borderRadius:99, background:'rgba(84,84,88,0.5)',
+              margin:'0 auto 20px' }} />
+            <h3 style={{ fontSize:20, fontWeight:800, color:'#fff', letterSpacing:'-0.5px',
+              marginBottom:6 }}>Leave workout?</h3>
+            <p style={{ fontSize:15, color:'#8E8E93', lineHeight:1.5, marginBottom:24 }}>
+              You've logged {Object.values(sets).reduce((n,s)=>n+s.length,0)} set
+              {Object.values(sets).reduce((n,s)=>n+s.length,0)===1?'':'s'} so far.
+              What would you like to do?
+            </p>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              <button onClick={()=>setShowExitSheet(false)}
+                style={{ width:'100%', height:54, borderRadius:16, fontSize:17, fontWeight:700,
+                  background:`color-mix(in srgb, ${accent} 20%, transparent)`,
+                  border:`0.5px solid ${accent}55`, color: accent }}>
+                Continue Workout
+              </button>
+              <button onClick={handleSaveExit}
+                style={{ width:'100%', height:54, borderRadius:16, fontSize:17, fontWeight:700,
+                  background:'rgba(118,118,128,0.18)',
+                  border:'0.5px solid rgba(84,84,88,0.4)', color:'#fff' }}>
+                Save & Exit
+                <span style={{ display:'block', fontSize:12, fontWeight:500,
+                  color:'#8E8E93', marginTop:1 }}>Resume from History later</span>
+              </button>
+              <button onClick={handleDiscard}
+                style={{ width:'100%', height:54, borderRadius:16, fontSize:17, fontWeight:700,
+                  background:'rgba(255,69,58,0.1)',
+                  border:'0.5px solid rgba(255,69,58,0.3)', color:'#FF453A' }}>
+                Discard Session
+                <span style={{ display:'block', fontSize:12, fontWeight:500,
+                  color:'rgba(255,69,58,0.6)', marginTop:1 }}>Removes all logged sets</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
