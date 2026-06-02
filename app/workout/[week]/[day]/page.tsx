@@ -461,7 +461,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const [smartMap,  setSmartMap]  = useState<Record<string,SmartSuggestion|null>>({})
   const [open,      setOpen]      = useState<string>(workout.exercises[0]?.name ?? '')
   const [swapped,   setSwapped]   = useState<Record<string,{name:string;cue:string}>>({})
-  const [progPrefs, setProgPrefs] = useState<Record<string,{name:string;cue:string}>>({})
+  const [progPrefs,   setProgPrefs]   = useState<Record<string,{name:string;cue:string}>>({})
+  const [cycleNumber, setCycleNumber] = useState(1)
   const [altsFor,   setAltsFor]   = useState<string|null>(null)
   const [rest,      setRest]      = useState<{sec:number;name:string;startedAt:number}|null>(null)
   const [showExitSheet,   setShowExitSheet]   = useState(false)
@@ -603,7 +604,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     // Lazy session creation — only hit the DB when user actually logs a set
     let sessionId = sid
     if (!sessionId) {
-      const sess = await createSession(wk, key)
+      const sess = await createSession(wk, key, cycleNumber)
       sessionId = sess.id
       setSid(sessionId)
     }

@@ -38,6 +38,7 @@ export interface UserOneRm {
 
 export interface UserSettings {
   program_format?: ProgramFormat
+  cycle_number?: number
   current_week: number
   round_to_lbs: number
 }

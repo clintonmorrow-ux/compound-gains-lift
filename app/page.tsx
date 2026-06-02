@@ -7,8 +7,9 @@ import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
 import { WORKOUTS, WEEK_CONFIG, PHASE_LABELS, getWorkouts } from '@/lib/program/data'
 import type { ProgramFormat } from '@/types'
-import { fetchSettings, updateSettings, fetchRecentSessions, fetchAllOneRms, fetchAllLoggedSets, fetchCoachPrefs } from '@/lib/db'
+import { fetchSettings, updateSettings, fetchRecentSessions, fetchAllOneRms, fetchAllLoggedSets, fetchCoachPrefs, fetchCycleStats } from '@/lib/db'
 import { detectDeloadReadiness, type CoachSet } from '@/lib/program/coach'
+import CycleComplete from '@/components/CycleComplete'
 import { Battery, Zap } from 'lucide-react'
 
 const WC: Record<string,string> = { A:'var(--wkt-a)', B:'var(--wkt-b)', C:'var(--wkt-c)', D:'var(--wkt-d)' }
@@ -31,7 +32,10 @@ export default function Dashboard() {
 
   const [deloadReasons, setDeloadReasons] = useState<string[]>([])
   const [deloadDismissed, setDeloadDismissed] = useState(false)
-  const [programFormat, setProgramFormat] = useState<ProgramFormat>('4day')
+  const [programFormat,   setProgramFormat]   = useState<ProgramFormat>('4day')
+  const [cycleNumber,     setCycleNumber]     = useState(1)
+  const [showCycleEnd,    setShowCycleEnd]    = useState(false)
+  const [cycleStats,      setCycleStats]      = useState<any>(null)
 
   const init = useCallback(async () => {
     try {
@@ -42,6 +46,7 @@ export default function Dashboard() {
         fetchSettings(), fetchRecentSessions(20), fetchAllOneRms(),
         fetchAllLoggedSets(), fetchCoachPrefs()
       ])
+      setCycleNumber(s.cycle_number ?? 1)
       setWeek(s.current_week)
       // Only update localStorage once the DB has confirmed the real week.
       // Avoids caching the default '1' when user_settings row is missing.
@@ -76,16 +81,32 @@ export default function Dashboard() {
   useEffect(() => { init() }, [init])
 
   const bumpWeek = async (d: number) => {
+    // Advancing past Week 12 → trigger cycle complete
+    if (d > 0 && week >= 12) {
+      const stats = await fetchCycleStats(cycleNumber)
+      setCycleStats(stats)
+      setShowCycleEnd(true)
+      return
+    }
     const n = Math.max(1, Math.min(12, week + d))
     setWeek(n)
-    localStorage.setItem('cg_week', String(n))  // always trust user-driven changes
-    setDone([])  // clear immediately so UI doesn't flash stale data
+    localStorage.setItem('cg_week', String(n))
+    setDone([])
     await updateSettings({ current_week: n })
-    // Refetch sessions and recalculate done for the new week
     const sessions = await fetchRecentSessions(50)
     setDone((sessions as any[])
       .filter((x: any) => x.week_number === n && x.completed_at)
       .map((x: any) => x.workout_key))
+  }
+
+  const handleBeginNextCycle = async () => {
+    const next = cycleNumber + 1
+    setCycleNumber(next)
+    setWeek(1)
+    setDone([])
+    setShowCycleEnd(false)
+    localStorage.setItem('cg_week', '1')
+    await updateSettings({ current_week: 1, cycle_number: next })
   }
 
   if (!ready) return (
@@ -115,6 +136,12 @@ export default function Dashboard() {
           </div>
           <div style={{ textAlign:'right' }}>
             <div style={{ display:'flex', alignItems:'center', gap:6, justifyContent:'flex-end' }}>
+              {cycleNumber > 1 && (
+                <span style={{ fontSize:9, fontWeight:700, color:'rgba(255,159,10,0.5)',
+                  background:'rgba(255,159,10,0.1)', padding:'1px 6px', borderRadius:5 }}>
+                  C{cycleNumber}
+                </span>
+              )}
               <span style={{ fontSize:13, fontWeight:800, color:'var(--accent)', letterSpacing:'-0.3px' }}>
                 Week {week}
               </span>
@@ -284,6 +311,19 @@ export default function Dashboard() {
         </div>
 
       </div>
+      {/* ── Cycle complete celebration ── */}
+      {showCycleEnd && cycleStats && (
+        <CycleComplete
+          cycleNumber={cycleNumber}
+          workoutsCompleted={cycleStats.workoutsCompleted}
+          totalSets={cycleStats.totalSets}
+          sets={cycleStats.sets}
+          firstDate={cycleStats.firstDate}
+          lastDate={cycleStats.lastDate}
+          onBeginNextCycle={handleBeginNextCycle}
+        />
+      )}
+
       <BottomNav />
     </div>
   )

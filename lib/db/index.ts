@@ -43,7 +43,7 @@ export async function fetchSettings(): Promise<UserSettings> {
 
   const { data, error } = await supabase
     .from('user_settings')
-    .select('current_week, round_to_lbs, program_format')
+    .select('current_week, round_to_lbs, program_format, cycle_number')
     .eq('id', user.id)   // explicit filter — don't rely solely on RLS
     .maybeSingle()        // returns null (not error) when 0 rows exist
 
@@ -63,6 +63,7 @@ export async function fetchSettings(): Promise<UserSettings> {
     current_week:   data.current_week   ?? 1,
     round_to_lbs:   data.round_to_lbs   ?? 5,
     program_format: data.program_format,
+    cycle_number:   data.cycle_number   ?? 1,
   }
 }
 
@@ -78,13 +79,13 @@ export async function updateSettings(settings: Partial<UserSettings>): Promise<v
 
 // ── Sessions ─────────────────────────────────────────────────────────────
 
-export async function createSession(weekNumber: number, workoutKey: string) {
+export async function createSession(weekNumber: number, workoutKey: string, cycleNumber: number = 1) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
   const { data, error } = await supabase
     .from('sessions')
-    .insert({ user_id: user.id, week_number: weekNumber, workout_key: workoutKey })
+    .insert({ user_id: user.id, week_number: weekNumber, workout_key: workoutKey, cycle_number: cycleNumber })
     .select()
     .single()
   if (error) throw error
@@ -343,4 +344,44 @@ export async function saveProgramFormat(format: '4day' | '5day'): Promise<void> 
   if (!user) return
   await supabase.from('user_settings')
     .upsert({ id: user.id, program_format: format }, { onConflict: 'id' })
+}
+
+// ── Cycle stats (for cycle-complete summary screen) ──────────────────
+export async function fetchCycleStats(cycleNumber: number): Promise<{
+  workoutsCompleted: number
+  totalSets: number
+  sets: { exercise_name:string; weight_lbs:number|null; reps:number|null; completed_at:string }[]
+  firstDate: string | null
+  lastDate:  string | null
+}> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { workoutsCompleted:0, totalSets:0, sets:[], firstDate:null, lastDate:null }
+
+  const { data: sessions } = await supabase
+    .from('sessions')
+    .select('id, started_at')
+    .eq('user_id', user.id)
+    .or(`cycle_number.eq.${cycleNumber},cycle_number.is.null`)
+    .not('completed_at', 'is', null)
+    .order('started_at', { ascending: true })
+
+  if (!sessions?.length) return { workoutsCompleted:0, totalSets:0, sets:[], firstDate:null, lastDate:null }
+
+  const ids = sessions.map((s:any) => s.id)
+  const { data: sets } = await supabase
+    .from('logged_sets')
+    .select('exercise_name, weight_lbs, reps, completed_at')
+    .in('session_id', ids)
+    .not('weight_lbs', 'is', null)
+    .not('reps', 'is', null)
+    .order('completed_at', { ascending: true })
+
+  return {
+    workoutsCompleted: sessions.length,
+    totalSets: sets?.length ?? 0,
+    sets: (sets ?? []) as any[],
+    firstDate: sessions[0]?.started_at ?? null,
+    lastDate:  sessions[sessions.length-1]?.started_at ?? null,
+  }
 }
