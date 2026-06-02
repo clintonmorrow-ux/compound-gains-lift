@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, CheckCircle2, Settings2, Clock, ChartLine, LayoutList } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
-import { WORKOUTS, WEEK_CONFIG, PHASE_LABELS } from '@/lib/program/data'
+import { WORKOUTS, WEEK_CONFIG, PHASE_LABELS, getWorkouts } from '@/lib/program/data'
+import type { ProgramFormat } from '@/types'
 import { fetchSettings, updateSettings, fetchRecentSessions, fetchAllOneRms, fetchAllLoggedSets, fetchCoachPrefs } from '@/lib/db'
 import { detectDeloadReadiness, type CoachSet } from '@/lib/program/coach'
 import { Battery } from 'lucide-react'
@@ -26,6 +27,7 @@ export default function Dashboard() {
 
   const [deloadReasons, setDeloadReasons] = useState<string[]>([])
   const [deloadDismissed, setDeloadDismissed] = useState(false)
+  const [programFormat, setProgramFormat] = useState<ProgramFormat>('4day')
 
   const init = useCallback(async () => {
     try {
@@ -37,6 +39,7 @@ export default function Dashboard() {
         fetchAllLoggedSets(), fetchCoachPrefs()
       ])
       setWeek(s.current_week)
+      setProgramFormat((s.program_format as ProgramFormat) ?? '4day')
       setHasRms(rms.length > 0)
       setDone((sessions as any[])
         .filter(x => x.week_number===s.current_week && x.completed_at)
@@ -74,7 +77,8 @@ export default function Dashboard() {
   )
 
   const cfg  = WEEK_CONFIG[week]
-  const next = WORKOUTS.find(w => !done.includes(w.key))
+  const workouts = getWorkouts(programFormat)
+  const next = workouts.find(w => !done.includes(w.key))
 
   return (
     <div className="min-h-screen pb-tabs" style={{ background:'var(--bg)' }}>
@@ -239,7 +243,7 @@ export default function Dashboard() {
         <div className="fade-rise" style={{ animationDelay:'0.09s' }}>
           <p className="ios-section-label mb-2">This Week</p>
           <div className="ios-group">
-            {WORKOUTS.map((w, i) => {
+            {workouts.map((w, i) => {
               const isDone = done.includes(w.key)
               const c = WC[w.key]
               return (

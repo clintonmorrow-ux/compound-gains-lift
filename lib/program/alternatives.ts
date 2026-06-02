@@ -31,6 +31,64 @@ export type AltsMap = Partial<Record<EquipmentKey, Alt[]>>
 export const EXERCISE_ALTS: Record<string, AltsMap> = {
 
   // ── WORKOUT A ────────────────────────────────────────────────────────
+  'Machine Lateral Raise': {
+    cables:          [{ name:'Behind-the-Back Cable Lateral Raise', cue:'Cable behind body · constant tension · natural arc' },
+                      { name:'Leaning Cable Lateral Raise',         cue:'Lean away from stack · maximises stretched position' }],
+    dumbbells:       [{ name:'DB Lateral Raise',                    cue:'3-sec eccentric · slight lean · thumb down at top' },
+                      { name:'DB Lateral Raise (Lying)',            cue:'Lie on bench · raise top arm · maximises stretch at bottom' }],
+    bands:           [{ name:'Band Lateral Raise',                  cue:'Stand on band · bilateral or unilateral' }],
+    kettlebells:     [{ name:'KB Lateral Raise',                    cue:'Same arc as DB — control the eccentric carefully' }],
+    bodyweight:      [{ name:'Wall Lateral Raise',                  cue:'Face wall · raise arm along wall · isolates delt' }],
+  },
+
+  'Reverse Cable Fly': {
+    cables:          [{ name:'Single-Arm Reverse Cable Fly',        cue:'One arm at a time for better contraction focus' }],
+    dumbbells:       [{ name:'DB Rear Delt Fly',                    cue:'Hinge forward · lead with elbows · slow 3-sec return' }],
+    machines:        [{ name:'Pec Deck Rear Delt (Reverse)',        cue:'Reverse position on pec deck · arms wide · squeeze' }],
+    bands:           [{ name:'Band Pull-Apart',                     cue:'Hold band at chest height · pull apart to T · squeeze' }],
+    kettlebells:     [{ name:'KB Rear Delt Row',                    cue:'High elbow row · focus on rear delt squeeze not lat pull' }],
+    bodyweight:      [{ name:'Prone Y-Raise',                       cue:'Lie face down · raise arms in Y shape · rear delt + lower trap' }],
+  },
+
+  'Incline DB Curl': {
+    barbell:         [{ name:'EZ-Bar Curl',                         cue:'Slight supination grip · full extension · elbows fixed' }],
+    cables:          [{ name:'Cable Curl (High Pulley)',            cue:'Arms up at cable height · curl toward ears · peak contraction' }],
+    machines:        [{ name:'Machine Preacher Curl',               cue:'Chest against pad · eliminates cheating · full stretch' }],
+    dumbbells:       [{ name:'DB Concentration Curl',              cue:'Elbow on inner thigh · full isolation · no body swing' }],
+    bands:           [{ name:'Band Curl',                           cue:'Stand on band · full ROM · squeeze at top' }],
+    kettlebells:     [{ name:'KB Curl (Supinating)',                cue:'Neutral to supinated grip through ROM' }],
+    bodyweight:      [{ name:'Underhand Inverted Row',              cue:'Supinated grip · curl toward bar — compound bicep work' }],
+  },
+
+  'Cable Curl': {
+    barbell:         [{ name:'Barbell Curl',                        cue:'Elbows fixed · full extension · supinate at top' }],
+    dumbbells:       [{ name:'Alternating DB Curl',                 cue:"Supinate at top · don't swing · slow 3-sec eccentric" }],
+    machines:        [{ name:'Machine Curl',                        cue:'Smooth resistance curve · isolate without stabilisation' }],
+    bands:           [{ name:'Band Curl',                           cue:'Stand on band · constant tension · slow lowering' }],
+    kettlebells:     [{ name:'KB Curl',                             cue:'Neutral or supinating · different bell angles challenge differently' }],
+    bodyweight:      [{ name:'Chin-Up',                             cue:'Supinated grip · full dead hang · chin over bar' }],
+  },
+
+  'EZ-Bar Skull Crusher': {
+    barbell:         [{ name:'Close-Grip Bench Press',              cue:'Hands shoulder-width · lower to chest · tricep-focused press' }],
+    dumbbells:       [{ name:'Lying DB Tricep Extension',           cue:'Lie flat · lower DBs to ears · elbows close · press to full lockout' }],
+    cables:          [{ name:'Cable Overhead Extension',            cue:'Face away from stack · cable behind head · elbows close' }],
+    machines:        [{ name:'Machine Tricep Extension',            cue:'Seated · adjust for full overhead stretch · smooth press' }],
+    bands:           [{ name:'Band Skull Crusher',                  cue:'Pin band under head · same arc as EZ-bar version' }],
+    kettlebells:     [{ name:'KB Skull Crusher',                    cue:'Hold bell by horns · same movement pattern as EZ-bar' }],
+    bodyweight:      [{ name:'Diamond Push-Up',                     cue:'Hands close together · direct tricep loading' }],
+  },
+
+  'Cable Overhead Tricep Extension': {
+    barbell:         [{ name:'EZ-Bar Overhead Extension',          cue:'Grip inside knurling · elbows close · full stretch overhead' }],
+    dumbbells:       [{ name:'DB Overhead Extension (seated)',      cue:'Both hands on one DB · elbows close · full stretch' },
+                      { name:'Lying DB Tricep Extension',          cue:'Lie flat · lower DBs toward ears · emphasise stretch' }],
+    machines:        [{ name:'Machine Overhead Tricep Extension',   cue:'Adjust seat height · elbows close · full lockout' }],
+    bands:           [{ name:'Band Overhead Tricep Extension',      cue:'Stand on band · both hands overhead · press up' }],
+    kettlebells:     [{ name:'KB Overhead Extension',              cue:'Hold bell by horns overhead · elbows close · lower behind head' }],
+    bodyweight:      [{ name:'Bench Dip',                          cue:'Hands behind on bench · lower slowly · full elbow extension' }],
+  },
+
   'Barbell Bench Press': {
     dumbbells:       [{ name:'Dumbbell Bench Press',        cue:'Full ROM · wrists neutral or pronated · elbows ~45°' },
                       { name:'DB Floor Press',              cue:'Removes bottom stretch — good for shoulder issues' }],

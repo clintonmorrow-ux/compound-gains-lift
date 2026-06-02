@@ -1,6 +1,7 @@
 export type ExerciseType = 'primary' | 'secondary' | 'isolation'
 
-export type WorkoutKey = 'A' | 'B' | 'C' | 'D'
+export type WorkoutKey = 'A' | 'B' | 'C' | 'D' | 'E'
+export type ProgramFormat = '4day' | '5day'
 
 export interface Exercise {
   name: string
@@ -36,6 +37,7 @@ export interface UserOneRm {
 }
 
 export interface UserSettings {
+  program_format?: ProgramFormat
   current_week: number
   round_to_lbs: number
 }

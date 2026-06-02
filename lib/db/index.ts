@@ -40,7 +40,7 @@ export async function fetchSettings(): Promise<UserSettings> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('user_settings')
-    .select('current_week, round_to_lbs')
+    .select('current_week, round_to_lbs, program_format')
     .single()
   if (error || !data) return { current_week: 1, round_to_lbs: 5 }
   return data
@@ -314,4 +314,13 @@ export async function findIncompleteSession(weekNumber: number, workoutKey: stri
     .limit(1)
     .maybeSingle()
   return data as { id:string; started_at:string; logged_sets: any[] } | null
+}
+
+// ── Program format ────────────────────────────────────────────────────
+export async function saveProgramFormat(format: '4day' | '5day'): Promise<void> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+  await supabase.from('user_settings')
+    .upsert({ id: user.id, program_format: format }, { onConflict: 'id' })
 }

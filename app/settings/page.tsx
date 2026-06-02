@@ -6,8 +6,9 @@ import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
 import { WORKOUTS } from '@/lib/program/data'
 import { fetchAllOneRms, upsertOneRm, fetchSettings, updateSettings,
-         fetchEquipment, saveEquipment, fetchCoachPrefs, saveCoachPrefs } from '@/lib/db'
+         fetchEquipment, saveEquipment, fetchCoachPrefs, saveCoachPrefs, saveProgramFormat } from '@/lib/db'
 import { DEFAULT_COACH_PREFS } from '@/lib/program/coach'
+import type { ProgramFormat } from '@/types'
 import { EQUIPMENT_LABELS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import type { UserOneRm } from '@/types'
 
@@ -24,7 +25,10 @@ export default function SettingsPage() {
   const [saved,   setSaved]   = useState<string|null>(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(false)
-  const [coachPrefs, setCoachPrefs] = useState(DEFAULT_COACH_PREFS)
+  const [coachPrefs,     setCoachPrefs]     = useState(DEFAULT_COACH_PREFS)
+  const [programFormat, setProgramFormat] = useState<ProgramFormat>('4day')
+  const [showMigrate,   setShowMigrate]   = useState(false)
+  const [pendingFormat, setPendingFormat] = useState<ProgramFormat|null>(null)
 
   const init = useCallback(async () => {
     try {
@@ -35,6 +39,7 @@ export default function SettingsPage() {
         fetchAllOneRms(), fetchSettings(), fetchEquipment(), fetchCoachPrefs()
       ])
       setCoachPrefs(cp)
+      setProgramFormat((s.program_format as ProgramFormat) ?? '4day')
       const m: Record<string,string> = {}
       r.forEach((x: UserOneRm) => { m[x.exercise_name] = String(x.weight_lbs) })
       setRms(m); setRound(s.round_to_lbs); setEquip(eq)
@@ -52,6 +57,20 @@ export default function SettingsPage() {
     const next = { ...coachPrefs, [key]: !coachPrefs[key] }
     setCoachPrefs(next)
     try { await saveCoachPrefs(next) } catch {}
+  }
+
+  const requestFormatSwitch = (fmt: ProgramFormat) => {
+    if (fmt === programFormat) return
+    setPendingFormat(fmt)
+    setShowMigrate(true)
+  }
+
+  const confirmFormatSwitch = async () => {
+    if (!pendingFormat) return
+    setProgramFormat(pendingFormat)
+    await saveProgramFormat(pendingFormat)
+    setPendingFormat(null)
+    setShowMigrate(false)
   }
 
   const save = async (name: string, val: string) => {
@@ -258,6 +277,36 @@ export default function SettingsPage() {
           </p>
         </div>
 
+        {/* ── Program Format ── */}
+        <div>
+          <p className="ios-section-label mb-2">Program Format</p>
+          <div className="ios-group">
+            {([
+              { fmt:'4day' as const, label:'4-Day Upper/Lower', sub:'A B C D · Each muscle 1× per week · ~65 min/session' },
+              { fmt:'5day' as const, label:'5-Day Push/Pull/Legs', sub:'A B C D E · Each muscle 2× per week · +Shoulders & Arms day' },
+            ]).map((opt, i) => {
+              const active = programFormat === opt.fmt
+              return (
+                <button key={opt.fmt} onClick={()=>requestFormatSwitch(opt.fmt)}
+                  className={`ios-row w-full ${i===0?'ios-row-first':''}`}
+                  style={{ textAlign:'left', background: active ? 'rgba(255,159,10,0.08)' : undefined }}>
+                  <div style={{ flex:1, minWidth:0, paddingRight:12 }}>
+                    <p className="t-body" style={{ color:'var(--label)', fontWeight: active ? 700 : 600 }}>{opt.label}</p>
+                    <p className="t-caption" style={{ color:'#8E8E93', marginTop:2, lineHeight:1.4 }}>{opt.sub}</p>
+                  </div>
+                  {active && <div style={{ width:20, height:20, borderRadius:'50%', flexShrink:0,
+                    background:'#FF9F0A', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <span style={{ fontSize:11, color:'#000', fontWeight:900 }}>✓</span>
+                  </div>}
+                </button>
+              )
+            })}
+          </div>
+          <p className="t-caption" style={{ color:'#8E8E93', marginTop:8, paddingInline:4, lineHeight:1.5 }}>
+            Switching mid-cycle keeps your current week and phase. Smart weight history carries over for all matching exercises.
+          </p>
+        </div>
+
         {/* ── Coaching Intelligence ── */}
         <div>
           <p className="ios-section-label mb-2">Coaching Intelligence</p>
@@ -300,6 +349,52 @@ export default function SettingsPage() {
         </button>
 
       </div>
+      {/* ── Migration dialog ── */}
+      {showMigrate && pendingFormat && (
+        <div className="sheet-scrim" onClick={()=>setShowMigrate(false)}>
+          <div className="sheet-panel" onClick={e=>e.stopPropagation()}
+               style={{ padding:'24px 20px 20px' }}>
+            <div style={{ width:36, height:4, borderRadius:99, background:'rgba(84,84,88,0.5)', margin:'0 auto 20px' }} />
+            <h3 style={{ fontSize:20, fontWeight:800, color:'#fff', letterSpacing:'-0.5px', marginBottom:8 }}>
+              Switch to {pendingFormat === '5day' ? '5-Day' : '4-Day'} program?
+            </h3>
+            <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:20 }}>
+              {pendingFormat === '5day' ? <>
+                <div style={{ padding:'12px 14px', borderRadius:12, background:'rgba(48,209,88,0.1)',
+                  border:'0.5px solid rgba(48,209,88,0.3)' }}>
+                  <p style={{ fontSize:13, fontWeight:700, color:'#30D158', marginBottom:6 }}>✓ Carries over</p>
+                  <p style={{ fontSize:13, color:'#8E8E93', lineHeight:1.5 }}>Current week & phase · Smart weight history for all matching exercises · Exercise customisations · All history</p>
+                </div>
+                <div style={{ padding:'12px 14px', borderRadius:12, background:'rgba(255,159,10,0.08)',
+                  border:'0.5px solid rgba(255,159,10,0.3)' }}>
+                  <p style={{ fontSize:13, fontWeight:700, color:'#FF9F0A', marginBottom:6 }}>+ New on Day 5</p>
+                  <p style={{ fontSize:13, color:'#8E8E93', lineHeight:1.5 }}>Shoulders & Arms day · Machine Lateral Raise · Reverse Cable Fly · Incline DB Curl · Cable Curl · EZ-Bar Skull Crusher · Cable Overhead Extension</p>
+                  <p style={{ fontSize:12, color:'rgba(255,159,10,0.7)', marginTop:6 }}>New exercises build smart suggestions from your first session.</p>
+                </div>
+              </> : <>
+                <div style={{ padding:'12px 14px', borderRadius:12, background:'rgba(48,209,88,0.1)',
+                  border:'0.5px solid rgba(48,209,88,0.3)' }}>
+                  <p style={{ fontSize:13, fontWeight:700, color:'#30D158', marginBottom:6 }}>✓ Carries over</p>
+                  <p style={{ fontSize:13, color:'#8E8E93', lineHeight:1.5 }}>Current week & phase · All exercise history · Smart weight suggestions · All customisations</p>
+                </div>
+              </>}
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              <button onClick={confirmFormatSwitch}
+                style={{ width:'100%', height:52, borderRadius:14, fontSize:16, fontWeight:700,
+                  background:'#FF9F0A', color:'#000' }}>
+                Switch to {pendingFormat === '5day' ? '5-Day' : '4-Day'}
+              </button>
+              <button onClick={()=>setShowMigrate(false)}
+                style={{ width:'100%', height:52, borderRadius:14, fontSize:16, fontWeight:600,
+                  background:'rgba(118,118,128,0.18)', color:'#8E8E93' }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <BottomNav />
     </div>
   )

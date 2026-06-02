@@ -4,9 +4,10 @@ import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Check, RotateCcw, X } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
-import { WORKOUTS, WEEK_CONFIG, PHASE_LABELS } from '@/lib/program/data'
+import { WORKOUTS, WEEK_CONFIG, PHASE_LABELS, getWorkouts } from '@/lib/program/data'
+import type { ProgramFormat } from '@/types'
 import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
-import { fetchExercisePreferences, saveExercisePreference, fetchEquipment } from '@/lib/db'
+import { fetchExercisePreferences, saveExercisePreference, fetchEquipment, fetchSettings } from '@/lib/db'
 import type { Exercise } from '@/types'
 
 const WC: Record<string,string> = { A:'#0A84FF', B:'#30D158', C:'#BF5AF2', D:'#FF9F0A' }
@@ -112,14 +113,16 @@ export default function ProgramPage() {
   const [swapEx,    setSwapEx]    = useState<Exercise|null>(null)
   const [saved,     setSaved]     = useState<string|null>(null)
   const [saveErr,   setSaveErr]   = useState<string|null>(null)
+  const [programFormat, setProgramFormat] = useState<ProgramFormat>('4day')
 
   const init = useCallback(async () => {
     try {
       const sb = createClient()
       const {data:{session}} = await sb.auth.getSession()
       if (!session) await sb.auth.signInAnonymously()
-      const [p, eq] = await Promise.all([fetchExercisePreferences(), fetchEquipment()])
+      const [p, eq, s] = await Promise.all([fetchExercisePreferences(), fetchEquipment(), fetchSettings()])
       setPrefs(p); setEquipment(eq)
+      setProgramFormat((s.program_format as ProgramFormat) ?? '4day')
     } catch(e) { console.error(e) }
     finally { setLoading(false) }
   }, [])
@@ -238,7 +241,7 @@ export default function ProgramPage() {
         </div>
 
         {/* Workout cards */}
-        {WORKOUTS.map(wkt => {
+        {getWorkouts(programFormat).map(wkt => {
           const c = WC[wkt.key]
           return (
             <div key={wkt.key}>

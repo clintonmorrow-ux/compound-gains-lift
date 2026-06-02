@@ -70,10 +70,85 @@ export const WORKOUTS: Workout[] = [
       { name: 'Seated Calf Raise',             muscle: 'Calves',     type: 'secondary', cue: 'Knee bent 90° · targets soleus · full stretch at bottom · slow 2-sec contraction at top' },
       { name: 'Single-Leg Calf Raise',         muscle: 'Calves',     type: 'isolation', isBodyweight: true, cue: 'Stand on edge · hold DB for load · full ROM · emphasise the stretched position at the bottom' },
       { name: 'Cable Crunch',                  muscle: 'Core',       type: 'primary',   cue: 'Flex at the waist — not the hips · round the spine' },
-      { name: 'Pallof Press (per side)',       muscle: 'Core',       type: 'secondary', cue: 'Anti-rotation · brace hard · slow and controlled' },
+      { name: 'Pallof Press (per side)',       muscle: 'Core',       type: 'secondary', cue: "Anti-rotation · brace hard · slow and controlled" },
     ],
   },
 ]
+
+// ── 5-Day Program ─────────────────────────────────────────────────────
+// Push / Pull / Legs / Hip-Ham / Shoulders & Arms
+// Each muscle hit 2× per week. Same WEEK_CONFIG phase structure applies.
+
+export const WORKOUTS_5DAY: Workout[] = [
+  {
+    key: 'A', name: 'Workout A', shortName: 'Upper Push', day: 'Day 1', focus: 'Chest · Shoulders · Side Delts · Triceps', restTimes: '2–3 min compounds · 60–90 sec isolation',
+    exercises: [
+      { name: 'Barbell Bench Press',                  muscle: 'Chest',      type: 'primary',   cue: 'Retract scapula · arch · drive feet through floor · pause at full chest stretch — long muscle length = greater hypertrophy' },
+      { name: 'Incline Dumbbell Press',               muscle: 'Chest',      type: 'secondary', cue: 'Full ROM · wrists neutral · elbows ~45° · pause at full pec stretch — research confirms stretched position drives hypertrophy' },
+      { name: 'Cable Chest Fly',                      muscle: 'Chest',      type: 'isolation', cue: 'Wide arc · pause at full stretch — lengthened position is the primary hypertrophic driver per Wolf et al. 2025' },
+      { name: 'Overhead Press (Barbell)',              muscle: 'Shoulders',  type: 'primary',   cue: 'Bar touches upper chest · press to full lockout · stay vertical · brace core' },
+      { name: 'Behind-the-Back Cable Lateral Raise',  muscle: 'Side Delts', type: 'isolation', cue: 'Cable behind back · arm crosses low in front · lead with elbow · keeps constant tension through full ROM' },
+      { name: 'DB Lateral Raise',                     muscle: 'Side Delts', type: 'isolation', cue: '3-sec eccentric · slight lean forward · thumb down at top · no momentum' },
+      { name: 'Tricep Rope Pushdown',                 muscle: 'Triceps',    type: 'primary',   cue: "Elbows locked at sides · spread rope at bottom · full extension · slow return" },
+      { name: 'Overhead DB Tricep Extension',         muscle: 'Triceps',    type: 'isolation', cue: 'Elbows close · full extension at bottom · pause in stretched position · supinate at top — long muscle length = peak hypertrophy stimulus' },
+    ],
+  },
+  {
+    key: 'B', name: 'Workout B', shortName: 'Lower Quad', day: 'Day 2', focus: 'Quads · Calves · Core', restTimes: '2–3 min compounds · 60–90 sec isolation',
+    exercises: [
+      { name: 'Barbell Back Squat',                   muscle: 'Quads',      type: 'primary',   cue: 'Brace · break at hips and knees · sit to depth · drive knees out' },
+      { name: 'Bulgarian Split Squat (DB)',            muscle: 'Quads',      type: 'secondary', cue: 'Hinge forward · emphasise the stretched position at the bottom — Wolf & Schoenfeld research confirms stretch-mediated hypertrophy' },
+      { name: 'Leg Press',                            muscle: 'Quads',      type: 'secondary', cue: "Feet low and narrow for quad emphasis · full ROM · don't lock out" },
+      { name: 'Leg Extension',                        muscle: 'Quads',      type: 'isolation', cue: 'Pause at the top · slow eccentric · high mind-muscle connection' },
+      { name: 'Standing Calf Raise',                  muscle: 'Calves',     type: 'primary',   cue: 'Full dorsiflexion stretch at bottom · pause at top · gastrocnemius dominant' },
+      { name: 'Seated Calf Raise',                    muscle: 'Calves',     type: 'secondary', cue: 'Knee bent 90° · targets soleus (knee-flexed head) · full stretch at bottom · squeeze at top' },
+      { name: 'Hanging Leg Raise',                    muscle: 'Core',       type: 'primary',   cue: 'Dead hang · raise legs to 90° · slow eccentric · no swing', isBodyweight: true },
+      { name: 'Ab Wheel Rollout',                     muscle: 'Core',       type: 'secondary', cue: 'Hips stay low · roll to full extension · pull back with lats', isBodyweight: true },
+    ],
+  },
+  {
+    key: 'C', name: 'Workout C', shortName: 'Upper Pull', day: 'Day 3', focus: 'Back · Rear Delts · Biceps', restTimes: '2–3 min compounds · 60–90 sec isolation',
+    exercises: [
+      { name: 'Barbell Bent-Over Row',                muscle: 'Back',       type: 'primary',   cue: 'Hinge 45° · drive elbows back · squeeze upper back · slow eccentric' },
+      { name: 'Lat Pulldown',                         muscle: 'Back',       type: 'primary',   cue: 'Wide overhand grip · pull to chest · full arm extension at top · pause in stretch — emphasise the lengthened position' },
+      { name: 'Seated Cable Row (Wide)',              muscle: 'Back',       type: 'secondary', cue: 'Tall spine · drive elbows back · squeeze at end ROM · slow eccentric' },
+      { name: 'Face Pull',                            muscle: 'Rear Delts', type: 'primary',   cue: 'Pull to face · elbows high · externally rotate at end · pause and squeeze' },
+      { name: 'DB Rear Delt Fly',                     muscle: 'Rear Delts', type: 'isolation', cue: 'Hinge forward · lead with elbows · pause at top · slow 3-sec return' },
+      { name: 'Barbell Curl',                         muscle: 'Biceps',     type: 'primary',   cue: 'Elbows pinned · full extension at bottom · pause in stretched position · supinate at top — long muscle length = peak hypertrophy stimulus' },
+      { name: 'Hammer Curl',                          muscle: 'Biceps',     type: 'isolation', cue: 'Neutral grip · curl to shoulder · 2-sec squeeze · slow eccentric' },
+    ],
+  },
+  {
+    key: 'D', name: 'Workout D', shortName: 'Lower Hip/Ham', day: 'Day 4', focus: 'Hamstrings · Glutes · Calves · Core', restTimes: '2–3 min compounds · 60–90 sec isolation',
+    exercises: [
+      { name: 'Romanian Deadlift (RDL)',              muscle: 'Hamstrings', type: 'primary',   cue: 'Hinge at hips · push hips back · emphasise the stretched position at the bottom — Wolf & Schoenfeld research confirms stretch-mediated hypertrophy' },
+      { name: 'Barbell Hip Thrust',                   muscle: 'Glutes',     type: 'primary',   cue: "Chin tucked · drive through heels · full lockout · squeeze at top" },
+      { name: 'Lying Leg Curl',                       muscle: 'Hamstrings', type: 'secondary', cue: 'Slow eccentric · plantarflex foot for peak contraction · emphasise the lengthened stretch position' },
+      { name: 'Cable Pull-Through',                   muscle: 'Glutes',     type: 'secondary', cue: "Hip hinge · drive hips forward forcefully · squeeze glutes at top" },
+      { name: 'Seated Calf Raise',                    muscle: 'Calves',     type: 'secondary', cue: 'Knee bent 90° · targets soleus · full stretch at bottom · slow 2-sec contraction at top' },
+      { name: 'Single-Leg Calf Raise',               muscle: 'Calves',     type: 'isolation', isBodyweight: true, cue: 'Stand on edge · hold DB for load · full ROM · emphasise the stretched position at the bottom' },
+      { name: 'Cable Crunch',                         muscle: 'Core',       type: 'primary',   cue: "Elbows to knees · round spine · don't use hip flexors · hold contracted position" },
+      { name: 'Pallof Press (per side)',              muscle: 'Core',       type: 'secondary', cue: "Anti-rotation · brace hard · slow and controlled" },
+    ],
+  },
+  {
+    key: 'E', name: 'Workout E', shortName: 'Shoulders & Arms', day: 'Day 5', focus: 'Side Delts · Rear Delts · Biceps · Triceps', restTimes: '60–90 sec all exercises',
+    exercises: [
+      { name: 'Leaning Cable Lateral Raise',          muscle: 'Side Delts', type: 'isolation', cue: 'Hold cable low · lean away from stack · lead elbow up · pause at stretch — lengthened position maximises side delt stimulus (Wolf & Schoenfeld 2025)' },
+      { name: 'Machine Lateral Raise',               muscle: 'Side Delts', type: 'secondary', cue: 'Pad against upper forearm · full ROM · slow 3-sec eccentric — different resistance curve from cable/DB versions' },
+      { name: 'Reverse Cable Fly',                   muscle: 'Rear Delts', type: 'isolation', cue: 'Cross cables at face height · pull to sides · elbows slightly bent · pause at peak contraction' },
+      { name: 'Incline DB Curl',                     muscle: 'Biceps',     type: 'secondary', cue: 'Lie back on incline bench · full stretch at bottom · long-head emphasis — distinct stimulus from standing curl' },
+      { name: 'Cable Curl',                          muscle: 'Biceps',     type: 'isolation', cue: 'Constant cable tension · full ROM · supinate at top · slow eccentric' },
+      { name: 'EZ-Bar Skull Crusher',                muscle: 'Triceps',    type: 'secondary', cue: 'Lower bar to forehead · elbows back slightly · press to lockout · long-head emphasis at stretched position' },
+      { name: 'Cable Overhead Tricep Extension',     muscle: 'Triceps',    type: 'isolation', cue: 'Face away from stack · rope behind head · elbows close · full extension — long head under maximal stretch' },
+    ],
+  },
+]
+
+// Helper — returns the correct workout array for the user's program format
+export function getWorkouts(format: '4day' | '5day' = '4day') {
+  return format === '5day' ? WORKOUTS_5DAY : WORKOUTS
+}
 
 export const WEEK_CONFIG: Record<number, WeekConfig> = {
   1:  { sets: { primary: 4, secondary: 3, isolation: 3 }, reps: { primary: '10–12', secondary: '10–12', isolation: '12–15' }, rir: 3, phase: 'Phase 1 — Accumulation',            isDeload: false, note: '4 sets on primary lifts from day one. Leave 3 reps in the tank.',      percentages: { primary: 0.65, secondary: 0.67, isolation: 0.70 } },
