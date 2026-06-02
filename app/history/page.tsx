@@ -38,19 +38,17 @@ export default function HistoryPage() {
     <div className="min-h-screen pb-tabs" style={{ background:'var(--bg)' }}>
 
       <div className="pt-safe sticky top-0 z-20"
-        style={{ background:'rgba(0,0,0,0.95)', backdropFilter:'saturate(180%) blur(24px)', WebkitBackdropFilter:'saturate(180%) blur(24px)', borderBottom:'1px solid rgba(84,84,88,0.8)' }}>
-        <div className="flex items-center gap-3 px-4 pb-3 pt-2">
-          <button onClick={() => router.push('/')}
-            className="tap w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ background:'var(--fill-3)' }}>
-            <ChevronLeft size={20} strokeWidth={2.5} style={{ color:'var(--accent)' }} />
-          </button>
+        style={{ background:'rgba(8,8,14,0.97)', backdropFilter:'saturate(200%) blur(28px)',
+                 WebkitBackdropFilter:'saturate(200%) blur(28px)',
+                 borderBottom:'0.5px solid rgba(84,84,88,0.45)' }}>
+        <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', padding:'10px 18px 13px' }}>
           <div>
-            <h1 className="t-title2 sf-bold" style={{ color:'var(--label)' }}>History</h1>
-            <p className="t-caption1" style={{ color:'#8E8E93' }}>
-              {loading ? 'Loading…' : `${sessions.length} sessions`}
-            </p>
+            <p style={{ fontSize:9, fontWeight:700, color:'rgba(142,142,147,0.6)', textTransform:'uppercase', letterSpacing:'0.1em' }}>Session Log</p>
+            <p style={{ fontSize:22, fontWeight:800, color:'#fff', letterSpacing:'-0.7px', lineHeight:1.1, marginTop:1 }}>History</p>
           </div>
+          <p style={{ fontSize:12, color:'#636366', paddingBottom:3 }}>
+            {loading ? '' : `${sessions.length} sessions`}
+          </p>
         </div>
       </div>
 

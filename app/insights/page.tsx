@@ -61,15 +61,13 @@ export default function InsightsPage() {
   useEffect(()=>{ init() }, [init])
 
   const Header = (
-    <div className="pt-safe sticky top-0 z-20" style={{
-      background:'rgba(0,0,0,0.95)', backdropFilter:'saturate(180%) blur(24px)',
-      WebkitBackdropFilter:'saturate(180%) blur(24px)', borderBottom:'1px solid rgba(84,84,88,0.8)' }}>
-      <div className="flex items-center gap-3 px-4 pb-3 pt-2">
-        <button onClick={()=>router.push('/')} style={{ width:40, height:40, borderRadius:'50%',
-          background:'var(--fill-3)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-          <ChevronLeft size={20} strokeWidth={2.5} style={{ color:'var(--accent)' }} />
-        </button>
-        <h1 className="t-title2 sf-bold" style={{ color:'var(--label)' }}>Insights</h1>
+    <div className="pt-safe sticky top-0 z-20"
+      style={{ background:'rgba(8,8,14,0.97)', backdropFilter:'saturate(200%) blur(28px)',
+               WebkitBackdropFilter:'saturate(200%) blur(28px)',
+               borderBottom:'0.5px solid rgba(84,84,88,0.45)' }}>
+      <div style={{ padding:'10px 18px 13px' }}>
+        <p style={{ fontSize:9, fontWeight:700, color:'rgba(142,142,147,0.6)', textTransform:'uppercase', letterSpacing:'0.1em' }}>Training Data</p>
+        <p style={{ fontSize:22, fontWeight:800, color:'#fff', letterSpacing:'-0.7px', lineHeight:1.1, marginTop:1 }}>Insights</p>
       </div>
     </div>
   )

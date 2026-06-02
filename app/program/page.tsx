@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Check, RotateCcw, X } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
+import OnermSection from '@/components/OnermSection'
 import { createClient } from '@/lib/supabase/client'
 import { WORKOUTS, WEEK_CONFIG, PHASE_LABELS, getWorkouts } from '@/lib/program/data'
 import type { ProgramFormat } from '@/types'
@@ -179,25 +180,20 @@ export default function ProgramPage() {
   return (
     <div style={{ minHeight:'100svh', background:'#000' }}>
 
-      {/* Header */}
+      {/* Header — no back button, this is a nav tab */}
       <div style={{ position:'sticky', top:0, zIndex:20, paddingTop:'env(safe-area-inset-top)',
-        background:'rgba(0,0,0,0.95)', backdropFilter:'saturate(180%) blur(24px)',
-        WebkitBackdropFilter:'saturate(180%) blur(24px)',
-        borderBottom:'0.5px solid rgba(84,84,88,0.6)' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px 12px' }}>
-          <button onClick={() => router.back()} style={{ width:38, height:38, borderRadius:'50%',
-            background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center',
-            justifyContent:'center', flexShrink:0, border:'none', cursor:'pointer' }}>
-            <ChevronLeft size={18} strokeWidth={2.5} style={{ color:'#FF9F0A' }} />
-          </button>
-          <div style={{ flex:1 }}>
-            <p style={{ fontSize:17, fontWeight:700, color:'#fff', letterSpacing:'-0.5px' }}>Program</p>
-            <p style={{ fontSize:12, color:'#8E8E93', marginTop:1 }}>12 weeks · Galpin methodology</p>
+        background:'rgba(8,8,14,0.97)', backdropFilter:'saturate(200%) blur(28px)',
+        WebkitBackdropFilter:'saturate(200%) blur(28px)',
+        borderBottom:'0.5px solid rgba(84,84,88,0.45)' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 18px 13px' }}>
+          <div>
+            <p style={{ fontSize:9, fontWeight:700, color:'rgba(142,142,147,0.6)', textTransform:'uppercase', letterSpacing:'0.1em' }}>12 Weeks · Galpin</p>
+            <p style={{ fontSize:22, fontWeight:800, color:'#fff', letterSpacing:'-0.7px', lineHeight:1.1, marginTop:1 }}>Program</p>
           </div>
           {customCount > 0 && (
-            <div style={{ padding:'5px 12px', borderRadius:8, background:'rgba(255,159,10,0.15)',
-              border:'0.5px solid rgba(255,159,10,0.3)' }}>
-              <span style={{ fontSize:12, fontWeight:700, color:'#FF9F0A' }}>
+            <div style={{ padding:'5px 12px', borderRadius:8, background:'rgba(255,159,10,0.13)',
+              border:'0.5px solid rgba(255,159,10,0.28)' }}>
+              <span style={{ fontSize:11, fontWeight:700, color:'#FF9F0A' }}>
                 {customCount} custom
               </span>
             </div>
@@ -321,7 +317,9 @@ export default function ProgramPage() {
           )
         })}
 
-        {/* Bottom spacing for nav */}
+        {/* ── 1RM Calibration (moved from Settings) ── */}
+        <OnermSection format={programFormat} />
+
         <div style={{ height:8 }} />
       </div>
 
