@@ -43,7 +43,19 @@ export default function Dashboard() {
         fetchAllLoggedSets(), fetchCoachPrefs()
       ])
       setWeek(s.current_week)
-      localStorage.setItem('cg_week', String(s.current_week))
+      // Only update localStorage once the DB has confirmed the real week.
+      // Avoids caching the default '1' when user_settings row is missing.
+      if (s.current_week > 1) {
+        localStorage.setItem('cg_week', String(s.current_week))
+      } else {
+        // DB returned 1 — check if localStorage has a trusted higher value
+        const cached = parseInt(localStorage.getItem('cg_week') ?? '0', 10)
+        if (cached > 1) {
+          // localStorage knows better — restore it to DB and use it
+          setWeek(cached)
+          updateSettings({ current_week: cached }).catch(console.error)
+        }
+      }
       setProgramFormat((s.program_format as ProgramFormat) ?? '4day')
       setHasRms(rms.length > 0)
       setDone((sessions as any[])
@@ -66,7 +78,7 @@ export default function Dashboard() {
   const bumpWeek = async (d: number) => {
     const n = Math.max(1, Math.min(12, week + d))
     setWeek(n)
-    localStorage.setItem('cg_week', String(n))
+    localStorage.setItem('cg_week', String(n))  // always trust user-driven changes
     setDone([])  // clear immediately so UI doesn't flash stale data
     await updateSettings({ current_week: n })
     // Refetch sessions and recalculate done for the new week

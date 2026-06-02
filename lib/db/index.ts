@@ -38,12 +38,32 @@ export async function deleteOneRm(exerciseName: string): Promise<void> {
 
 export async function fetchSettings(): Promise<UserSettings> {
   const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { current_week: 1, round_to_lbs: 5 }
+
   const { data, error } = await supabase
     .from('user_settings')
     .select('current_week, round_to_lbs, program_format')
-    .single()
-  if (error || !data) return { current_week: 1, round_to_lbs: 5 }
-  return data
+    .eq('id', user.id)   // explicit filter — don't rely solely on RLS
+    .maybeSingle()        // returns null (not error) when 0 rows exist
+
+  if (error) {
+    console.error('fetchSettings error:', error)
+    return { current_week: 1, round_to_lbs: 5 }
+  }
+
+  if (!data) {
+    // No row yet — create one with defaults so future reads work
+    await supabase.from('user_settings')
+      .insert({ id: user.id, current_week: 1, round_to_lbs: 5 })
+    return { current_week: 1, round_to_lbs: 5 }
+  }
+
+  return {
+    current_week:   data.current_week   ?? 1,
+    round_to_lbs:   data.round_to_lbs   ?? 5,
+    program_format: data.program_format,
+  }
 }
 
 export async function updateSettings(settings: Partial<UserSettings>): Promise<void> {
