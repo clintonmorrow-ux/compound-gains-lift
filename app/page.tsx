@@ -20,7 +20,11 @@ const PC: Record<number,string>  = {
 
 export default function Dashboard() {
   const router = useRouter()
-  const [week,    setWeek]    = useState(1)
+  const [week, setWeek] = useState<number>(() => {
+    if (typeof window === 'undefined') return 1
+    const cached = parseInt(localStorage.getItem('cg_week') ?? '1', 10)
+    return isNaN(cached) ? 1 : cached
+  })
   const [done,    setDone]    = useState<string[]>([])
   const [hasRms,  setHasRms]  = useState(true)
   const [ready,   setReady]   = useState(false)
@@ -39,6 +43,7 @@ export default function Dashboard() {
         fetchAllLoggedSets(), fetchCoachPrefs()
       ])
       setWeek(s.current_week)
+      localStorage.setItem('cg_week', String(s.current_week))
       setProgramFormat((s.program_format as ProgramFormat) ?? '4day')
       setHasRms(rms.length > 0)
       setDone((sessions as any[])
@@ -61,6 +66,7 @@ export default function Dashboard() {
   const bumpWeek = async (d: number) => {
     const n = Math.max(1, Math.min(12, week + d))
     setWeek(n)
+    localStorage.setItem('cg_week', String(n))
     setDone([])  // clear immediately so UI doesn't flash stale data
     await updateSettings({ current_week: n })
     // Refetch sessions and recalculate done for the new week
