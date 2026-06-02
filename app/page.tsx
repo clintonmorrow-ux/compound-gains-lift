@@ -34,6 +34,7 @@ export default function Dashboard() {
   const [deloadDismissed, setDeloadDismissed] = useState(false)
   const [programFormat,   setProgramFormat]   = useState<ProgramFormat>('4day')
   const [cycleNumber,     setCycleNumber]     = useState(1)
+  const [weekStartedAt,   setWeekStartedAt]   = useState<string|null>(null)
   const [showCycleEnd,    setShowCycleEnd]    = useState(false)
   const [cycleStats,      setCycleStats]      = useState<any>(null)
 
@@ -47,6 +48,7 @@ export default function Dashboard() {
         fetchAllLoggedSets(), fetchCoachPrefs()
       ])
       setCycleNumber(s.cycle_number ?? 1)
+      setWeekStartedAt(s.week_started_at ?? null)
       setWeek(s.current_week)
       // Only update localStorage once the DB has confirmed the real week.
       // Avoids caching the default '1' when user_settings row is missing.
@@ -63,8 +65,16 @@ export default function Dashboard() {
       }
       setProgramFormat((s.program_format as ProgramFormat) ?? '4day')
       setHasRms(rms.length > 0)
+      const wsa = s.week_started_at
       setDone((sessions as any[])
-        .filter(x => x.week_number===s.current_week && x.completed_at)
+        .filter(x =>
+          x.week_number === s.current_week &&
+          x.completed_at &&
+          // Only count sessions started AFTER the user moved to this week.
+          // Prevents old test/ghost sessions from a previous run at this
+          // week number showing as done.
+          (!wsa || new Date(x.started_at) >= new Date(wsa))
+        )
         .map((x:any) => x.workout_key))
       // Deload readiness — only surface if the user keeps the alert on
       if (cp.deloadAlerts) {
@@ -92,10 +102,16 @@ export default function Dashboard() {
     setWeek(n)
     localStorage.setItem('cg_week', String(n))
     setDone([])
-    await updateSettings({ current_week: n })
+    await updateSettings({ current_week: n, week_started_at: new Date().toISOString() })
+    const nowStr = new Date().toISOString()
+    setWeekStartedAt(nowStr)
     const sessions = await fetchRecentSessions(50)
     setDone((sessions as any[])
-      .filter((x: any) => x.week_number === n && x.completed_at)
+      .filter((x: any) =>
+        x.week_number === n &&
+        x.completed_at &&
+        new Date(x.started_at) >= new Date(nowStr)
+      )
       .map((x: any) => x.workout_key))
   }
 
@@ -106,7 +122,7 @@ export default function Dashboard() {
     setDone([])
     setShowCycleEnd(false)
     localStorage.setItem('cg_week', '1')
-    await updateSettings({ current_week: 1, cycle_number: next })
+    await updateSettings({ current_week: 1, cycle_number: next, week_started_at: new Date().toISOString() })
   }
 
   if (!ready) return (
