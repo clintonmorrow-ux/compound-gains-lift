@@ -65,15 +65,23 @@ export default function Dashboard() {
       }
       setProgramFormat((s.program_format as ProgramFormat) ?? '4day')
       setHasRms(rms.length > 0)
-      const wsa = s.week_started_at
+      // Auto-set week_started_at on first load if it's missing — ensures
+      // ghost sessions from before this timestamp don't show as done
+      let wsa = s.week_started_at
+      if (!wsa) {
+        wsa = new Date().toISOString()
+        updateSettings({ week_started_at: wsa }).catch(console.error)
+      }
+      setWeekStartedAt(wsa)
+
       setDone((sessions as any[])
         .filter(x =>
           x.week_number === s.current_week &&
           x.completed_at &&
-          // Only count sessions started AFTER the user moved to this week.
-          // Prevents old test/ghost sessions from a previous run at this
-          // week number showing as done.
-          (!wsa || new Date(x.started_at) >= new Date(wsa))
+          // Exclude empty ghost sessions (created before lazy session fix)
+          (x.logged_sets?.length ?? 0) > 0 &&
+          // Exclude sessions started before the user moved to this week
+          new Date(x.started_at) >= new Date(wsa)
         )
         .map((x:any) => x.workout_key))
       // Deload readiness — only surface if the user keeps the alert on
@@ -110,6 +118,7 @@ export default function Dashboard() {
       .filter((x: any) =>
         x.week_number === n &&
         x.completed_at &&
+        (x.logged_sets?.length ?? 0) > 0 &&
         new Date(x.started_at) >= new Date(nowStr)
       )
       .map((x: any) => x.workout_key))
