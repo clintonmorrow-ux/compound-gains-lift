@@ -51,61 +51,95 @@ function EditableSetRow({ set, isBodyweight, accentColor, onSaved, onDeleted }: 
 
   return (
     <div style={{
-      display:'flex', alignItems:'center', gap:8, padding:'10px 14px',
       borderRadius:12, transition:'background 0.2s',
       background: saved ? 'rgba(48,209,88,0.1)' : 'rgba(118,118,128,0.08)',
       border:`0.5px solid ${saved ? 'rgba(48,209,88,0.35)' : 'rgba(84,84,88,0.3)'}`,
+      overflow:'hidden',
     }}>
-      {/* Set badge */}
-      <div style={{ width:26, height:26, borderRadius:'50%', flexShrink:0,
-        display:'flex', alignItems:'center', justifyContent:'center',
-        background: saved ? '#30D158' : 'rgba(84,84,88,0.3)',
-        fontSize:11, fontWeight:800, color: saved ? '#000' : '#8E8E93' }}>
-        {saved ? '✓' : set.set_number}
+      {/* Main row: badge | weight | × | reps | save | delete */}
+      <div style={{ display:'flex', alignItems:'center', gap:7, padding:'9px 12px' }}>
+        {/* Set badge */}
+        <div style={{ width:24, height:24, borderRadius:'50%', flexShrink:0,
+          display:'flex', alignItems:'center', justifyContent:'center',
+          background: saved ? '#30D158' : 'rgba(84,84,88,0.3)',
+          fontSize:10, fontWeight:800, color: saved ? '#000' : '#8E8E93' }}>
+          {saved ? '✓' : set.set_number}
+        </div>
+
+        {/* Weight */}
+        {isBodyweight
+          ? <span style={{ flex:1, fontSize:13, color:'#8E8E93', textAlign:'center' }}>Bodyweight</span>
+          : <input type="number" inputMode="decimal"
+              value={wt} onChange={e => setWt(e.target.value)}
+              onFocus={e => e.target.select()} onBlur={save}
+              style={{ flex:1, minWidth:0, height:34, textAlign:'center', borderRadius:9,
+                outline:'none', fontSize:14, fontWeight:700,
+                background: dirty ? `color-mix(in srgb, ${accentColor} 12%, rgba(118,118,128,0.18))` : 'rgba(118,118,128,0.18)',
+                color:'#fff', border: dirty ? `1px solid ${accentColor}55` : 'none' }} />}
+
+        <span style={{ fontSize:11, color:'rgba(84,84,88,0.7)', flexShrink:0 }}>×</span>
+
+        {/* Reps */}
+        <input type="number" inputMode="numeric"
+          value={reps} onChange={e => setReps(e.target.value)}
+          onFocus={e => e.target.select()} onBlur={save}
+          style={{ width:46, height:34, textAlign:'center', borderRadius:9,
+            outline:'none', fontSize:14, fontWeight:700, flexShrink:0,
+            background: dirty ? `color-mix(in srgb, ${accentColor} 12%, rgba(118,118,128,0.18))` : 'rgba(118,118,128,0.18)',
+            color:'#fff', border: dirty ? `1px solid ${accentColor}55` : 'none' }} />
+
+        <span style={{ fontSize:10, color:'rgba(84,84,88,0.5)', flexShrink:0 }}>reps</span>
+
+        {/* Save / spinner */}
+        {saving
+          ? <div style={{ width:24, height:24, borderRadius:'50%', border:'2px solid transparent',
+              borderTopColor: accentColor, animation:'spin 0.7s linear infinite', flexShrink:0 }} />
+          : dirty
+            ? <button onClick={save} style={{ width:24, height:24, borderRadius:'50%', flexShrink:0,
+                display:'flex', alignItems:'center', justifyContent:'center',
+                background: accentColor, border:'none', cursor:'pointer' }}>
+                <Check size={12} strokeWidth={3} style={{ color:'#fff' }} />
+              </button>
+            : <div style={{ width:24, flexShrink:0 }} />}
+
+        {/* Delete */}
+        <button onClick={handleDelete} style={{ width:24, height:24, borderRadius:'50%', flexShrink:0,
+          display:'flex', alignItems:'center', justifyContent:'center', border:'none', cursor:'pointer',
+          background: confirm ? 'rgba(255,69,58,0.25)' : 'transparent' }}>
+          <Trash2 size={13} style={{ color: confirm ? '#FF453A' : 'rgba(84,84,88,0.55)' }} />
+        </button>
       </div>
 
-      {/* Weight */}
-      {isBodyweight
-        ? <span style={{ flex:1, fontSize:14, color:'#8E8E93', textAlign:'center' }}>Bodyweight</span>
-        : <input type="number" inputMode="decimal"
-            value={wt} onChange={e => setWt(e.target.value)}
-            onFocus={e => e.target.select()} onBlur={save}
-            style={{ flex:1, height:36, textAlign:'center', borderRadius:10,
-              outline:'none', fontSize:15, fontWeight:700,
-              background: dirty ? `color-mix(in srgb, ${accentColor} 12%, rgba(118,118,128,0.18))` : 'rgba(118,118,128,0.18)',
-              color:'#fff', border: dirty ? `1px solid ${accentColor}55` : 'none' }} />}
-
-      <span style={{ fontSize:12, color:'rgba(84,84,88,0.7)', flexShrink:0 }}>×</span>
-
-      {/* Reps */}
-      <input type="number" inputMode="numeric"
-        value={reps} onChange={e => setReps(e.target.value)}
-        onFocus={e => e.target.select()} onBlur={save}
-        style={{ width:52, height:36, textAlign:'center', borderRadius:10,
-          outline:'none', fontSize:15, fontWeight:700,
-          background: dirty ? `color-mix(in srgb, ${accentColor} 12%, rgba(118,118,128,0.18))` : 'rgba(118,118,128,0.18)',
-          color:'#fff', border: dirty ? `1px solid ${accentColor}55` : 'none' }} />
-
-      <span style={{ fontSize:12, color:'rgba(84,84,88,0.7)', flexShrink:0, minWidth:26 }}>reps</span>
-
-      {/* Save / spinner */}
-      {saving
-        ? <div style={{ width:28, height:28, borderRadius:'50%', border:'2px solid transparent',
-            borderTopColor: accentColor, animation:'spin 0.7s linear infinite', flexShrink:0 }} />
-        : dirty
-          ? <button onClick={save} style={{ width:28, height:28, borderRadius:'50%', flexShrink:0,
+      {/* RIR sub-row — only shown when RIR was logged */}
+      {set.rir != null && (
+        <div style={{ display:'flex', alignItems:'center', gap:6,
+          padding:'4px 12px 8px', paddingLeft:43 }}>
+          <span style={{ fontSize:10, fontWeight:600, color:'#636366' }}>RIR</span>
+          {[0,1,2,3,4].map(r => (
+            <div key={r} style={{
+              width:22, height:22, borderRadius:6, flexShrink:0,
               display:'flex', alignItems:'center', justifyContent:'center',
-              background: accentColor, border:'none', cursor:'pointer' }}>
-              <Check size={14} strokeWidth={3} style={{ color:'#fff' }} />
-            </button>
-          : <div style={{ width:28, flexShrink:0 }} />}
-
-      {/* Delete */}
-      <button onClick={handleDelete} style={{ width:28, height:28, borderRadius:'50%', flexShrink:0,
-        display:'flex', alignItems:'center', justifyContent:'center', border:'none', cursor:'pointer',
-        background: confirm ? 'rgba(255,69,58,0.25)' : 'transparent' }}>
-        <Trash2 size={14} style={{ color: confirm ? '#FF453A' : 'rgba(84,84,88,0.6)' }} />
-      </button>
+              fontSize:11, fontWeight:800,
+              background: r === set.rir
+                ? r === 0 ? 'rgba(255,69,58,0.25)'
+                : r <= 2   ? `color-mix(in srgb, ${accentColor} 20%, transparent)`
+                :            'rgba(48,209,88,0.2)'
+                : 'rgba(44,44,46,0.6)',
+              color: r === set.rir
+                ? r === 0 ? '#FF453A'
+                : r <= 2   ? accentColor
+                :            '#30D158'
+                : '#3A3A3C',
+              border: r === set.rir
+                ? `0.5px solid ${r === 0 ? 'rgba(255,69,58,0.4)' : r <= 2 ? accentColor+'55' : 'rgba(48,209,88,0.4)'}`
+                : '0.5px solid rgba(44,44,46,0.4)',
+            }}>{r === 4 ? '4+' : r}</div>
+          ))}
+          <span style={{ fontSize:10, color:'#636366', marginLeft:2 }}>
+            {set.rir === 0 ? 'Failure' : set.rir === 1 ? '1 left' : set.rir === 2 ? '2 left' : set.rir === 3 ? '3 left' : '4+ left'}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
