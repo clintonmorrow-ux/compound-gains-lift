@@ -465,7 +465,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const [cycleNumber, setCycleNumber] = useState(1)
   const [altsFor,   setAltsFor]   = useState<string|null>(null)
   const [rest,      setRest]      = useState<{sec:number;name:string;startedAt:number}|null>(null)
-  const [showExitSheet,   setShowExitSheet]   = useState(false)
+  const [showExitSheet,    setShowExitSheet]    = useState(false)
+  const [showFinishEarly,  setShowFinishEarly]  = useState(false)
   const [resumeCandidate, setResumeCandidate] = useState<{id:string;started_at:string;logged_sets:any[]}|null>(null)
   const [syncErrors,      setSyncErrors]      = useState<string[]>([])
   const [done,      setDone]      = useState(false)
@@ -800,13 +801,29 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           )
         })}
 
-        {logged >= total && (
+        {/* Complete (all sets done) */}
+        {logged >= total && logged > 0 && (
           <button onClick={async()=>{ if(sid) await completeSession(sid); setDone(true) }}
             style={{ width:'100%', height:56, borderRadius:18, fontSize:17, fontWeight:700,
               display:'flex', alignItems:'center', justifyContent:'center', gap:8,
               background:'linear-gradient(135deg, #30D158, #34C759)',
               color:'#fff', marginTop:4, boxShadow:'0 4px 24px rgba(48,209,88,0.35)' }}>
             <CheckCircle2 size={20} strokeWidth={2.5} /> Complete Workout
+          </button>
+        )}
+
+        {/* Finish Early (some sets done, not all) */}
+        {logged > 0 && logged < total && (
+          <button onClick={() => setShowFinishEarly(true)}
+            style={{ width:'100%', height:48, borderRadius:16, fontSize:15, fontWeight:700,
+              display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+              background:'rgba(255,159,10,0.1)', color:'#FF9F0A',
+              border:'0.5px solid rgba(255,159,10,0.35)', marginTop:4 }}>
+            <CheckCircle2 size={17} strokeWidth={2} /> Finish Early
+            <span style={{ fontSize:12, fontWeight:500, color:'rgba(255,159,10,0.7)',
+              background:'rgba(255,159,10,0.15)', padding:'2px 8px', borderRadius:99 }}>
+              {logged}/{total} sets
+            </span>
           </button>
         )}
       </div>
@@ -871,6 +888,57 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           <button onClick={()=>setSyncErrors([])}
             style={{ fontSize:20, color:'rgba(255,255,255,0.8)', background:'none',
               border:'none', cursor:'pointer', lineHeight:1, padding:'0 4px' }}>×</button>
+        </div>
+      )}
+
+      {/* ── Finish Early sheet ── */}
+      {showFinishEarly && (
+        <div className="sheet-scrim" onClick={()=>setShowFinishEarly(false)}>
+          <div className="sheet-panel" onClick={e=>e.stopPropagation()}
+               style={{ padding:'24px 20px 20px' }}>
+            <div style={{ width:36, height:4, borderRadius:99, background:'rgba(84,84,88,0.5)',
+              margin:'0 auto 20px' }} />
+            <h3 style={{ fontSize:20, fontWeight:800, color:'#fff', letterSpacing:'-0.5px', marginBottom:6 }}>
+              Finish workout early?
+            </h3>
+            <p style={{ fontSize:15, color:'#8E8E93', lineHeight:1.5, marginBottom:16 }}>
+              You've logged <strong style={{ color:'#fff' }}>{logged} of {total} sets</strong>.
+              The {total - logged} remaining sets will simply be skipped.
+            </p>
+            <div style={{ padding:'12px 14px', borderRadius:14, marginBottom:20,
+              background:'rgba(48,209,88,0.08)', border:'0.5px solid rgba(48,209,88,0.25)' }}>
+              <p style={{ fontSize:12, fontWeight:700, color:'#30D158', marginBottom:8 }}>
+                Weight suggestions stay accurate
+              </p>
+              {[
+                'Only the sets you actually logged are used for progression',
+                "Unlogged sets leave no record — they cannot affect next week's weights",
+                'Smart suggestions will calibrate from your real performance today',
+              ].map((t, i) => (
+                <div key={i} style={{ display:'flex', gap:8, marginBottom: i < 2 ? 6 : 0 }}>
+                  <span style={{ color:'#30D158', fontSize:12, flexShrink:0, marginTop:1 }}>✓</span>
+                  <p style={{ fontSize:13, color:'rgba(255,255,255,0.65)', lineHeight:1.4 }}>{t}</p>
+                </div>
+              ))}
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              <button onClick={async()=>{
+                  setShowFinishEarly(false)
+                  if(sid) await completeSession(sid)
+                  setDone(true)
+                }}
+                style={{ width:'100%', height:54, borderRadius:16, fontSize:17, fontWeight:700,
+                  background:'rgba(255,159,10,0.15)', color:'#FF9F0A',
+                  border:'0.5px solid rgba(255,159,10,0.4)' }}>
+                Finish & Save {logged} Sets
+              </button>
+              <button onClick={()=>setShowFinishEarly(false)}
+                style={{ width:'100%', height:54, borderRadius:16, fontSize:17, fontWeight:700,
+                  background:'rgba(118,118,128,0.18)', color:'#8E8E93' }}>
+                Keep Going
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
