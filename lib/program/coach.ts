@@ -76,12 +76,12 @@ export function detectRirTrends(sets: CoachSet[]): RirTrendSignal[] {
     if (rirDelta <= -1.5) {
       signals.push({
         exercise: ex, direction: 'fatigue', rirDelta, sessions: recent.length,
-        message: `${ex} feels ${Math.abs(rirDelta).toFixed(0)} RIR harder at the same load over ${recent.length} sessions — fatigue may be building.`,
+        message: `${ex} is getting harder at the same weight — RIR has dropped ${Math.abs(rirDelta).toFixed(0)} points across ${recent.length} sessions. Your muscles are accumulating fatigue over weeks. Consider a deload or reduce volume on this lift.`,
       })
     } else if (rirDelta >= 1.5) {
       signals.push({
         exercise: ex, direction: 'ready', rirDelta, sessions: recent.length,
-        message: `${ex} is getting easier at the same load — you're ready to add weight.`,
+        message: `${ex} is feeling easier at the same weight across ${recent.length} sessions — you've adapted. Add load next session.`,
       })
     }
   }
@@ -127,7 +127,7 @@ export function detectDeloadReadiness(sets: CoachSet[]): DeloadSignal {
   // Indicator B: RIR fatigue trend on ≥2 exercises
   const fatigueTrends = detectRirTrends(sets).filter(s => s.direction === 'fatigue')
   if (fatigueTrends.length >= 2) {
-    reasons.push(`Effort rising at the same load on ${fatigueTrends.length} exercises`)
+    reasons.push(`Same weight requires more effort on ${fatigueTrends.length} exercises across recent sessions — cumulative fatigue building`)
   }
 
   // Indicator C: multiple exercises hitting RIR 0 repeatedly (grinding)
@@ -192,12 +192,12 @@ export function analyzeIntraSetFatigue(sets: CoachSet[]): IntraSetSignal[] {
     if (gap >= 3) {
       signals.push({
         exercise: ex, firstSetRir, lastSetRir, gap, suggestion: 'reps',
-        message: `${ex}: big effort drop-off across sets (RIR ${firstSetRir}→${lastSetRir}). Hold the weight and add reps before increasing load.`,
+        message: `${ex}: RIR dropped from ${firstSetRir} to ${lastSetRir} across your sets at the same weight. This is muscle fatigue accumulating — not effort dropping. Your muscles had less capacity by the final sets. Build more capacity here by adding reps per set before increasing load.`,
       })
     } else if (gap <= 1 && lastSetRir >= 2) {
       signals.push({
         exercise: ex, firstSetRir, lastSetRir, gap, suggestion: 'load',
-        message: `${ex}: strong all the way through (RIR ${firstSetRir}→${lastSetRir}). Ready to add load next session.`,
+        message: `${ex}: minimal fatigue across sets — RIR held at ${firstSetRir}→${lastSetRir}. Your muscles recovered well between sets. You have capacity to add weight next session.`,
       })
     }
   }

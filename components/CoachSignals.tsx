@@ -63,7 +63,7 @@ export default function CoachSignals({ rirTrends, deload, intraSet, prefs }: {
       cards.push(
         <SignalCard key={`reps-${i}`} accent="#0A84FF"
           icon={<Activity size={18} strokeWidth={2} style={{ color:'#0A84FF' }} />}
-          tag="Progression Tip" title={s.exercise} body={s.message} />
+          tag="Set Fatigue" title={s.exercise} body={s.message} />
       )
     )
   }
