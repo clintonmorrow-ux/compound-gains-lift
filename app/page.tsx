@@ -32,7 +32,10 @@ export default function Dashboard() {
 
   const [deloadReasons, setDeloadReasons] = useState<string[]>([])
   const [deloadDismissed, setDeloadDismissed] = useState(false)
-  const [programFormat,   setProgramFormat]   = useState<ProgramFormat>('4day')
+  const [programFormat, setProgramFormat] = useState<ProgramFormat>(() => {
+    if (typeof window === 'undefined') return '4day'
+    return (localStorage.getItem('cg_format') as ProgramFormat) ?? '4day'
+  })
   const [cycleNumber,     setCycleNumber]     = useState(1)
   const [weekStartedAt,   setWeekStartedAt]   = useState<string|null>(null)
   const [showCycleEnd,    setShowCycleEnd]    = useState(false)
@@ -63,7 +66,9 @@ export default function Dashboard() {
           updateSettings({ current_week: cached }).catch(console.error)
         }
       }
-      setProgramFormat((s.program_format as ProgramFormat) ?? '4day')
+      const fmt = (s.program_format as ProgramFormat) ?? '4day'
+      setProgramFormat(fmt)
+      localStorage.setItem('cg_format', fmt)
       setHasRms(rms.length > 0)
       // Auto-set week_started_at on first load if it's missing — ensures
       // ghost sessions from before this timestamp don't show as done
@@ -97,6 +102,25 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => { init() }, [init])
+
+  // Re-sync when returning to the dashboard (handles Next.js route caching —
+  // e.g. after changing program format in Settings and navigating back)
+  useEffect(() => {
+    const resync = () => {
+      if (document.visibilityState === 'visible') {
+        // Instant read from cache, then confirm from DB
+        const cached = localStorage.getItem('cg_format') as ProgramFormat | null
+        if (cached) setProgramFormat(cached)
+        init()
+      }
+    }
+    document.addEventListener('visibilitychange', resync)
+    window.addEventListener('focus', resync)
+    return () => {
+      document.removeEventListener('visibilitychange', resync)
+      window.removeEventListener('focus', resync)
+    }
+  }, [init])
 
   const bumpWeek = async (d: number) => {
     // Advancing past Week 12 → trigger cycle complete

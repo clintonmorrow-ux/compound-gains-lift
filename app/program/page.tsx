@@ -114,7 +114,10 @@ export default function ProgramPage() {
   const [swapEx,    setSwapEx]    = useState<Exercise|null>(null)
   const [saved,     setSaved]     = useState<string|null>(null)
   const [saveErr,   setSaveErr]   = useState<string|null>(null)
-  const [programFormat, setProgramFormat] = useState<ProgramFormat>('4day')
+  const [programFormat, setProgramFormat] = useState<ProgramFormat>(() => {
+    if (typeof window === 'undefined') return '4day'
+    return (localStorage.getItem('cg_format') as ProgramFormat) ?? '4day'
+  })
 
   const init = useCallback(async () => {
     try {
@@ -123,7 +126,9 @@ export default function ProgramPage() {
       if (!session) await sb.auth.signInAnonymously()
       const [p, eq, s] = await Promise.all([fetchExercisePreferences(), fetchEquipment(), fetchSettings()])
       setPrefs(p); setEquipment(eq)
-      setProgramFormat((s.program_format as ProgramFormat) ?? '4day')
+      const fmt = (s.program_format as ProgramFormat) ?? '4day'
+      setProgramFormat(fmt)
+      if (typeof window !== 'undefined') localStorage.setItem('cg_format', fmt)
     } catch(e) { console.error(e) }
     finally { setLoading(false) }
   }, [])

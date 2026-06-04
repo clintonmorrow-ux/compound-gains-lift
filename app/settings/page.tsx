@@ -52,8 +52,12 @@ export default function SettingsPage() {
   const confirmFormatSwitch = async () => {
     if (!pendingFormat) return
     setProgramFormat(pendingFormat)
+    // Cache immediately so the dashboard/program pages pick it up on return,
+    // even if Next.js serves them from the router cache without remounting
+    localStorage.setItem('cg_format', pendingFormat)
     await saveProgramFormat(pendingFormat)
     setPendingFormat(null); setShowMigrate(false)
+    router.refresh()  // invalidate route cache so other tabs re-render fresh
   }
 
   const changeRound = async (v: number) => {
