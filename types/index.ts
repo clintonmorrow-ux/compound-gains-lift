@@ -18,6 +18,7 @@ export interface Workout {
   day: string
   focus: string
   restTimes: string
+  duration?: string
   exercises: Exercise[]
 }
 

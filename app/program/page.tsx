@@ -251,11 +251,18 @@ export default function ProgramPage() {
                   <p style={{ fontSize:16, fontWeight:700, color:'#fff', letterSpacing:'-0.3px' }}>{wkt.shortName}</p>
                   <p style={{ fontSize:12, color:'#8E8E93' }}>{wkt.focus}</p>
                 </div>
-                <div style={{ padding:'4px 10px', borderRadius:8,
-                  background:`color-mix(in srgb, ${c} 12%, transparent)` }}>
-                  <span style={{ fontSize:11, fontWeight:700, color: c }}>
-                    {wkt.exercises.length} exercises
-                  </span>
+                <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4, flexShrink:0 }}>
+                  <div style={{ padding:'3px 10px', borderRadius:8,
+                    background:`color-mix(in srgb, ${c} 12%, transparent)` }}>
+                    <span style={{ fontSize:11, fontWeight:700, color: c }}>
+                      {wkt.exercises.length} exercises
+                    </span>
+                  </div>
+                  {wkt.duration && (
+                    <span style={{ fontSize:10, fontWeight:600, color:'#636366', letterSpacing:'0.02em' }}>
+                      {wkt.duration}
+                    </span>
+                  )}
                 </div>
               </div>
 
