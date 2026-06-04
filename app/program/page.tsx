@@ -5,8 +5,7 @@ import { ChevronLeft, ChevronRight, Check, RotateCcw, X } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import OnermSection from '@/components/OnermSection'
 import { createClient } from '@/lib/supabase/client'
-import { WORKOUTS, WEEK_CONFIG, PHASE_LABELS, getWorkouts } from '@/lib/program/data'
-import type { ProgramFormat } from '@/types'
+import { WORKOUTS_5DAY, WEEK_CONFIG, PHASE_LABELS } from '@/lib/program/data'
 import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { fetchExercisePreferences, saveExercisePreference, fetchEquipment, fetchSettings } from '@/lib/db'
 import type { Exercise } from '@/types'
@@ -114,21 +113,15 @@ export default function ProgramPage() {
   const [swapEx,    setSwapEx]    = useState<Exercise|null>(null)
   const [saved,     setSaved]     = useState<string|null>(null)
   const [saveErr,   setSaveErr]   = useState<string|null>(null)
-  const [programFormat, setProgramFormat] = useState<ProgramFormat>(() => {
-    if (typeof window === 'undefined') return '4day'
-    return (localStorage.getItem('cg_format') as ProgramFormat) ?? '4day'
-  })
+
 
   const init = useCallback(async () => {
     try {
       const sb = createClient()
       const {data:{session}} = await sb.auth.getSession()
       if (!session) await sb.auth.signInAnonymously()
-      const [p, eq, s] = await Promise.all([fetchExercisePreferences(), fetchEquipment(), fetchSettings()])
+      const [p, eq] = await Promise.all([fetchExercisePreferences(), fetchEquipment()])
       setPrefs(p); setEquipment(eq)
-      const fmt = (s.program_format as ProgramFormat) ?? '4day'
-      setProgramFormat(fmt)
-      if (typeof window !== 'undefined') localStorage.setItem('cg_format', fmt)
     } catch(e) { console.error(e) }
     finally { setLoading(false) }
   }, [])
@@ -242,7 +235,7 @@ export default function ProgramPage() {
         </div>
 
         {/* Workout cards */}
-        {getWorkouts(programFormat).map(wkt => {
+        {WORKOUTS_5DAY.map(wkt => {
           const c = WC[wkt.key]
           return (
             <div key={wkt.key}>
@@ -323,7 +316,7 @@ export default function ProgramPage() {
         })}
 
         {/* ── 1RM Calibration (moved from Settings) ── */}
-        <OnermSection format={programFormat} />
+        <OnermSection format='5day' />
 
         <div style={{ height:8 }} />
       </div>

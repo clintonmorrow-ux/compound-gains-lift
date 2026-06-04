@@ -3,7 +3,7 @@ import { use, useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { WORKOUTS, WORKOUTS_5DAY, WEEK_CONFIG } from '@/lib/program/data'
+import { WORKOUTS_5DAY, WEEK_CONFIG } from '@/lib/program/data'
 import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/calculator'
 import { fetchAllOneRms, fetchSettings, createSession, completeSession,
          logSet, getRecentSetsForExercise, fetchEquipment, fetchExercisePreferences,
@@ -448,15 +448,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const wk=parseInt(ws), key=day as WorkoutKey
   const router = useRouter()
 
-  // Resolve workout from the user's program format (cached for sync access).
-  // Workout E only exists in 5-day; Workout A differs slightly between formats.
-  const fmt = typeof window !== 'undefined'
-    ? (localStorage.getItem('cg_format') ?? '4day')
-    : '4day'
-  const workoutList = fmt === '5day' ? WORKOUTS_5DAY : WORKOUTS
-  const workout = workoutList.find(w => w.key === key)
-    ?? WORKOUTS_5DAY.find(w => w.key === key)
-    ?? WORKOUTS.find(w => w.key === key)!
+  const workout = WORKOUTS_5DAY.find(w => w.key === key) ?? WORKOUTS_5DAY[0]
   const cfg     = WEEK_CONFIG[wk]
   const accent  = WC[key]
 

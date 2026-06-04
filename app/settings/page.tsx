@@ -7,7 +7,6 @@ import { createClient } from '@/lib/supabase/client'
 import { fetchSettings, updateSettings, fetchEquipment, saveEquipment,
          fetchCoachPrefs, saveCoachPrefs } from '@/lib/db'
 import { DEFAULT_COACH_PREFS } from '@/lib/program/coach'
-import type { ProgramFormat } from '@/types'
 import { EQUIPMENT_LABELS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 
 export default function SettingsPage() {
@@ -16,7 +15,6 @@ export default function SettingsPage() {
   const [equip,         setEquip]         = useState<string[]>(['barbell','dumbbells','cables','machines'])
   const [loading,       setLoading]       = useState(true)
   const [coachPrefs,    setCoachPrefs]    = useState(DEFAULT_COACH_PREFS)
-  const [programFormat, setProgramFormat] = useState<ProgramFormat>('4day')
 
   const [userEmail,     setUserEmail]     = useState('')
   const [signingOut,    setSigningOut]    = useState(false)
@@ -28,10 +26,7 @@ export default function SettingsPage() {
       if (session?.user?.email) setUserEmail(session.user.email)
       const [s, eq, cp] = await Promise.all([fetchSettings(), fetchEquipment(), fetchCoachPrefs()])
       setCoachPrefs(cp)
-      const fmt = (s.program_format as ProgramFormat) ?? '4day'
-      setProgramFormat(fmt)
-      // Keep cache in sync with DB so other pages read the right value
-      if (typeof window !== 'undefined') localStorage.setItem('cg_format', fmt)
+
       setRound(s.round_to_lbs)
       setEquip(eq)
     } catch(e) { console.error(e) }
@@ -48,22 +43,7 @@ export default function SettingsPage() {
 
 
 
-  const switchFormat = async (fmt: ProgramFormat) => {
-    if (fmt === programFormat) return
-    const prev = programFormat
-    setProgramFormat(fmt)
-    localStorage.setItem('cg_format', fmt)
-    try {
-      await updateSettings({ program_format: fmt })
-      router.refresh()
-    } catch(e) {
-      console.error('Failed to save program format:', e)
-      setProgramFormat(prev)
-      localStorage.setItem('cg_format', prev)
-    }
-  }
-
-  const changeRound = async (v: number) => {
+const changeRound = async (v: number) => {
     setRound(v)
     try { await updateSettings({ round_to_lbs: v }) } catch {}
   }
@@ -161,37 +141,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* ── Program Format ── */}
-        <div>
-          <p className="ios-section-label mb-2">Program Format</p>
-          <div className="ios-group">
-            {([
-              { fmt:'4day' as const, label:'4-Day Upper/Lower', sub:'A B C D · Each muscle 1× per week · ~65 min' },
-              { fmt:'5day' as const, label:'5-Day Push/Pull/Legs', sub:'A B C D E · Each muscle 2× per week · +Arms day' },
-            ]).map((opt, i) => {
-              const active = programFormat === opt.fmt
-              return (
-                <button key={opt.fmt} onClick={() => switchFormat(opt.fmt)}
-                  className={`ios-row w-full ${i===0?'ios-row-first':''}`}
-                  style={{ textAlign:'left', background: active ? 'rgba(255,159,10,0.07)' : undefined }}>
-                  <div style={{ flex:1, minWidth:0, paddingRight:12 }}>
-                    <p className="t-body" style={{ color:'var(--label)', fontWeight: active ? 700 : 600 }}>{opt.label}</p>
-                    <p className="t-caption1" style={{ color:'#8E8E93', marginTop:2, lineHeight:1.4 }}>{opt.sub}</p>
-                  </div>
-                  {active && (
-                    <div style={{ width:20, height:20, borderRadius:'50%', flexShrink:0,
-                      background:'var(--accent)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                      <Check size={11} strokeWidth={3} style={{ color:'#000' }} />
-                    </div>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-          <p className="t-caption1 mt-2 px-1" style={{ color:'#8E8E93', lineHeight:1.5 }}>
-            Switching mid-cycle keeps your current week and phase. 1RM and exercise history carry over.
-          </p>
-        </div>
+
 
         {/* ── Coaching Intelligence ── */}
         <div>
