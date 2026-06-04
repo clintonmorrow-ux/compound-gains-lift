@@ -29,7 +29,10 @@ export default function SettingsPage() {
       if (session?.user?.email) setUserEmail(session.user.email)
       const [s, eq, cp] = await Promise.all([fetchSettings(), fetchEquipment(), fetchCoachPrefs()])
       setCoachPrefs(cp)
-      setProgramFormat((s.program_format as ProgramFormat) ?? '4day')
+      const fmt = (s.program_format as ProgramFormat) ?? '4day'
+      setProgramFormat(fmt)
+      // Keep cache in sync with DB so other pages read the right value
+      if (typeof window !== 'undefined') localStorage.setItem('cg_format', fmt)
       setRound(s.round_to_lbs)
       setEquip(eq)
     } catch(e) { console.error(e) }
