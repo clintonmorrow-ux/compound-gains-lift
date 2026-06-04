@@ -79,6 +79,9 @@ export const WORKOUTS: Workout[] = [
 // Push / Pull / Legs / Hip-Ham / Shoulders & Arms
 // Each muscle hit 2× per week. Same WEEK_CONFIG phase structure applies.
 
+// Stable ID for this program — used as active_program_id in user_settings
+export const CURRENT_PROGRAM_ID = 'galpin-5day-hypertrophy'
+
 export const WORKOUTS_5DAY: Workout[] = [
   {
     key: 'A', name: 'Workout A', shortName: 'Upper Push', day: 'Day 1', focus: 'Chest · Shoulders · Side Delts · Triceps', restTimes: '2–3 min compounds · 60–90 sec isolation', duration: '~58 min',

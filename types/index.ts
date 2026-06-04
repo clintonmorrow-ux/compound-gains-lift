@@ -41,6 +41,7 @@ export interface UserSettings {
   program_format?: ProgramFormat
   cycle_number?: number
   week_started_at?: string
+  active_program_id?: string
   current_week: number
   round_to_lbs: number
 }

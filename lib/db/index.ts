@@ -43,7 +43,7 @@ export async function fetchSettings(): Promise<UserSettings> {
 
   const { data, error } = await supabase
     .from('user_settings')
-    .select('current_week, round_to_lbs, program_format, cycle_number, week_started_at')
+    .select('current_week, round_to_lbs, program_format, cycle_number, week_started_at, active_program_id')
     .eq('id', user.id)   // explicit filter — don't rely solely on RLS
     .maybeSingle()        // returns null (not error) when 0 rows exist
 
@@ -60,11 +60,12 @@ export async function fetchSettings(): Promise<UserSettings> {
   }
 
   return {
-    current_week:    data.current_week   ?? 1,
-    round_to_lbs:    data.round_to_lbs   ?? 5,
-    program_format:  data.program_format,
-    cycle_number:    data.cycle_number   ?? 1,
-    week_started_at: data.week_started_at ?? null,
+    current_week:      data.current_week      ?? 1,
+    round_to_lbs:      data.round_to_lbs      ?? 5,
+    program_format:    data.program_format,
+    cycle_number:      data.cycle_number      ?? 1,
+    week_started_at:   data.week_started_at   ?? null,
+    active_program_id: data.active_program_id ?? 'galpin-5day-hypertrophy',
   }
 }
 
