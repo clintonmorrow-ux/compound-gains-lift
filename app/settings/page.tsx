@@ -5,7 +5,7 @@ import { Check, LogOut, ChevronRight } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
 import { fetchSettings, updateSettings, fetchEquipment, saveEquipment,
-         fetchCoachPrefs, saveCoachPrefs, saveProgramFormat } from '@/lib/db'
+         fetchCoachPrefs, saveCoachPrefs } from '@/lib/db'
 import { DEFAULT_COACH_PREFS } from '@/lib/program/coach'
 import type { ProgramFormat } from '@/types'
 import { EQUIPMENT_LABELS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
@@ -51,13 +51,18 @@ export default function SettingsPage() {
 
   const confirmFormatSwitch = async () => {
     if (!pendingFormat) return
-    setProgramFormat(pendingFormat)
-    // Cache immediately so the dashboard/program pages pick it up on return,
-    // even if Next.js serves them from the router cache without remounting
-    localStorage.setItem('cg_format', pendingFormat)
-    await saveProgramFormat(pendingFormat)
-    setPendingFormat(null); setShowMigrate(false)
-    router.refresh()  // invalidate route cache so other tabs re-render fresh
+    try {
+      await updateSettings({ program_format: pendingFormat })
+      // Only update UI + cache after confirming DB write succeeded
+      setProgramFormat(pendingFormat)
+      localStorage.setItem('cg_format', pendingFormat)
+      setPendingFormat(null)
+      setShowMigrate(false)
+      router.refresh()
+    } catch(e) {
+      console.error('Failed to save program format:', e)
+      // Leave dialog open so user can retry
+    }
   }
 
   const changeRound = async (v: number) => {
