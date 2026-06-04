@@ -17,8 +17,7 @@ export default function SettingsPage() {
   const [loading,       setLoading]       = useState(true)
   const [coachPrefs,    setCoachPrefs]    = useState(DEFAULT_COACH_PREFS)
   const [programFormat, setProgramFormat] = useState<ProgramFormat>('4day')
-  const [showMigrate,   setShowMigrate]   = useState(false)
-  const [pendingFormat, setPendingFormat] = useState<ProgramFormat|null>(null)
+
   const [userEmail,     setUserEmail]     = useState('')
   const [signingOut,    setSigningOut]    = useState(false)
 
@@ -47,24 +46,20 @@ export default function SettingsPage() {
     try { await saveCoachPrefs(next) } catch {}
   }
 
-  const requestFormatSwitch = (fmt: ProgramFormat) => {
-    if (fmt === programFormat) return
-    setPendingFormat(fmt); setShowMigrate(true)
-  }
 
-  const confirmFormatSwitch = async () => {
-    if (!pendingFormat) return
+
+  const switchFormat = async (fmt: ProgramFormat) => {
+    if (fmt === programFormat) return
+    const prev = programFormat
+    setProgramFormat(fmt)
+    localStorage.setItem('cg_format', fmt)
     try {
-      await updateSettings({ program_format: pendingFormat })
-      // Only update UI + cache after confirming DB write succeeded
-      setProgramFormat(pendingFormat)
-      localStorage.setItem('cg_format', pendingFormat)
-      setPendingFormat(null)
-      setShowMigrate(false)
+      await updateSettings({ program_format: fmt })
       router.refresh()
     } catch(e) {
       console.error('Failed to save program format:', e)
-      // Leave dialog open so user can retry
+      setProgramFormat(prev)
+      localStorage.setItem('cg_format', prev)
     }
   }
 
@@ -176,7 +171,7 @@ export default function SettingsPage() {
             ]).map((opt, i) => {
               const active = programFormat === opt.fmt
               return (
-                <button key={opt.fmt} onClick={() => requestFormatSwitch(opt.fmt)}
+                <button key={opt.fmt} onClick={() => switchFormat(opt.fmt)}
                   className={`ios-row w-full ${i===0?'ios-row-first':''}`}
                   style={{ textAlign:'left', background: active ? 'rgba(255,159,10,0.07)' : undefined }}>
                   <div style={{ flex:1, minWidth:0, paddingRight:12 }}>
@@ -263,47 +258,7 @@ export default function SettingsPage() {
         <div style={{ height:8 }} />
       </div>
 
-      {/* ── Migration dialog ── */}
-      {showMigrate && pendingFormat && (
-        <div className="sheet-scrim" onClick={() => setShowMigrate(false)}>
-          <div className="sheet-panel" onClick={e=>e.stopPropagation()}
-               style={{ padding:'24px 20px 20px' }}>
-            <div style={{ width:36, height:4, borderRadius:99, background:'rgba(84,84,88,0.5)', margin:'0 auto 20px' }} />
-            <h3 style={{ fontSize:20, fontWeight:800, color:'#fff', letterSpacing:'-0.5px', marginBottom:8 }}>
-              Switch to {pendingFormat === '5day' ? '5-Day' : '4-Day'} program?
-            </h3>
-            <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:20 }}>
-              <div style={{ padding:'12px 14px', borderRadius:12, background:'rgba(48,209,88,0.1)', border:'0.5px solid rgba(48,209,88,0.3)' }}>
-                <p style={{ fontSize:13, fontWeight:700, color:'#30D158', marginBottom:6 }}>✓ Carries over</p>
-                <p style={{ fontSize:13, color:'#8E8E93', lineHeight:1.5 }}>
-                  Current week & phase · Smart weight history · Exercise customisations · All session history
-                </p>
-              </div>
-              {pendingFormat === '5day' && (
-                <div style={{ padding:'12px 14px', borderRadius:12, background:'rgba(255,159,10,0.08)', border:'0.5px solid rgba(255,159,10,0.3)' }}>
-                  <p style={{ fontSize:13, fontWeight:700, color:'#FF9F0A', marginBottom:6 }}>+ New Day 5 exercises</p>
-                  <p style={{ fontSize:13, color:'#8E8E93', lineHeight:1.5 }}>
-                    Machine Lateral Raise · Reverse Cable Fly · Incline DB Curl · Cable Curl · EZ-Bar Skull Crusher · Cable OH Tricep Extension
-                  </p>
-                  <p style={{ fontSize:12, color:'rgba(255,159,10,0.7)', marginTop:6 }}>Suggestions build after your first session.</p>
-                </div>
-              )}
-            </div>
-            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-              <button onClick={confirmFormatSwitch}
-                style={{ width:'100%', height:52, borderRadius:14, fontSize:16, fontWeight:700,
-                  background:'var(--accent)', color:'#000' }}>
-                Switch to {pendingFormat === '5day' ? '5-Day' : '4-Day'}
-              </button>
-              <button onClick={() => setShowMigrate(false)}
-                style={{ width:'100%', height:52, borderRadius:14, fontSize:16, fontWeight:600,
-                  background:'rgba(118,118,128,0.18)', color:'#8E8E93' }}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       <BottomNav />
     </div>
