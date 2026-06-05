@@ -1,18 +1,23 @@
+import { WORKOUTS } from './data'
 import { PROGRAM_LIBRARY } from './programLibrary'
 import { EXERCISE_ALTS } from './alternatives'
 
 // Map every exercise → its primary muscle group.
-// Sourced from EVERY program in the library (Galpin 5-day incl. Day E,
-// PHAT, and any future program) so logged sets from any program are
-// tracked. Alternatives inherit the muscle of the exercise they replace,
-// so swapped-in lifts count toward the correct muscle too.
+// Sourced from EVERY workout list the app has ever shown — the legacy
+// 4-day WORKOUTS (so historically-logged names like 'Overhead DB Tricep
+// Extension' stay mapped), every program in the library (Galpin 5-day
+// incl. Day E, PHAT, future programs), and all swap alternatives (which
+// inherit the muscle of the exercise they replace). This guarantees no
+// logged set is ever orphaned and dropped from volume tracking.
 export const EXERCISE_MUSCLE: Record<string,string> = (() => {
   const m: Record<string,string> = {}
-  // 1. Every exercise across every registered program
-  PROGRAM_LIBRARY.forEach(p => p.workouts.forEach(w =>
-    w.exercises.forEach(e => { if (e.name && !m[e.name]) m[e.name] = e.muscle })
-  ))
-  // 2. Fold in alternatives — each alt targets its parent exercise's muscle
+  const add = (workouts: { exercises: { name:string; muscle:string }[] }[]) =>
+    workouts.forEach(w => w.exercises.forEach(e => { if (e.name && !m[e.name]) m[e.name] = e.muscle }))
+  // 1. Legacy 4-day program — covers names logged before the 5-day rebuild
+  add(WORKOUTS)
+  // 2. Every exercise across every registered program
+  PROGRAM_LIBRARY.forEach(p => add(p.workouts))
+  // 3. Alternatives inherit their parent exercise's muscle
   Object.entries(EXERCISE_ALTS).forEach(([parent, altsMap]) => {
     const muscle = m[parent]
     if (!muscle) return
