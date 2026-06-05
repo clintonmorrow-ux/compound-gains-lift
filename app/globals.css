@@ -57,8 +57,6 @@ a, a:hover, a:visited, a:focus { text-decoration: none !important; color: inheri
 
 button { -webkit-appearance: none; background: transparent; border: none; cursor: pointer; }
 
-html { background: var(--bg); }
-
 /* Ambient ocean light — drifting caustics behind all content */
 body::before {
   content: '';
@@ -81,7 +79,9 @@ body::before {
   60%      { transform: translate3d(-1.8%, 1.4%, 0) scale(1.03); }
 }
 
-html, body {
+html { background: var(--bg); }
+
+body {
   background: transparent;
   color: var(--label);
   font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
