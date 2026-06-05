@@ -1,9 +1,25 @@
-import { WORKOUTS } from './data'
+import { PROGRAM_LIBRARY } from './programLibrary'
+import { EXERCISE_ALTS } from './alternatives'
 
-// Map every exercise → its primary muscle group
+// Map every exercise → its primary muscle group.
+// Sourced from EVERY program in the library (Galpin 5-day incl. Day E,
+// PHAT, and any future program) so logged sets from any program are
+// tracked. Alternatives inherit the muscle of the exercise they replace,
+// so swapped-in lifts count toward the correct muscle too.
 export const EXERCISE_MUSCLE: Record<string,string> = (() => {
   const m: Record<string,string> = {}
-  WORKOUTS.forEach(w => w.exercises.forEach(e => { m[e.name] = e.muscle }))
+  // 1. Every exercise across every registered program
+  PROGRAM_LIBRARY.forEach(p => p.workouts.forEach(w =>
+    w.exercises.forEach(e => { if (e.name && !m[e.name]) m[e.name] = e.muscle })
+  ))
+  // 2. Fold in alternatives — each alt targets its parent exercise's muscle
+  Object.entries(EXERCISE_ALTS).forEach(([parent, altsMap]) => {
+    const muscle = m[parent]
+    if (!muscle) return
+    Object.values(altsMap).forEach(alts =>
+      (alts ?? []).forEach(a => { if (a.name && !m[a.name]) m[a.name] = muscle })
+    )
+  })
   return m
 })()
 
