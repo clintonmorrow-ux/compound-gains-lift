@@ -635,9 +635,16 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     // Lazy session creation — only hit the DB when user actually logs a set
     let sessionId = sid
     if (!sessionId) {
-      const sess = await createSession(wk, key, cycleNumber)
-      sessionId = sess.id
-      setSid(sessionId)
+      try {
+        const sess = await createSession(wk, key, cycleNumber)
+        sessionId = sess.id
+        setSid(sessionId)
+      } catch(e:any) {
+        // Surface the real error so a logging failure is never silent
+        const msg = e?.message || e?.error_description || 'Could not start the workout session'
+        setSyncErrors(prev => [...new Set([...prev, `⚠️ ${msg}`])])
+        throw e
+      }
     }
 
     // Optimistic update — advance UI immediately so the workout never freezes

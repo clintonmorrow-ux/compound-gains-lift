@@ -35,7 +35,7 @@ create table if not exists public.sessions (
   id           uuid        default uuid_generate_v4() primary key,
   user_id      uuid        references public.profiles(id) on delete cascade not null,
   week_number  integer     not null check (week_number between 1 and 12),
-  workout_key  text        not null check (workout_key in ('A','B','C','D')),
+  workout_key  text        not null,
   started_at   timestamptz default now(),
   completed_at timestamptz,
   notes        text
