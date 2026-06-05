@@ -63,8 +63,14 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
   const commit = async () => {
     if (busy) return
     setBusy(true)
-    await onLog(wt > 0 ? wt : null, reps, rir, tempo)
-    setBusy(false)
+    try {
+      await onLog(wt > 0 ? wt : null, reps, rir, tempo)
+    } catch(e) {
+      console.error('Log failed:', e)
+      // busy resets in finally — user can retry
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
