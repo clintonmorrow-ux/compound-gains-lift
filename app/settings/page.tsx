@@ -5,6 +5,7 @@ import { Check, LogOut, ChevronRight } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
 import { getProgram, PROGRAM_LIBRARY } from '@/lib/program/programLibrary'
+import type { Program } from '@/types'
 import { fetchSettings, updateSettings, fetchEquipment, saveEquipment,
          fetchCoachPrefs, saveCoachPrefs } from '@/lib/db'
 import { DEFAULT_COACH_PREFS } from '@/lib/program/coach'
@@ -20,6 +21,7 @@ export default function SettingsPage() {
   const [userEmail,     setUserEmail]     = useState('')
   const [signingOut,    setSigningOut]    = useState(false)
   const [activeProgramId, setActiveProgramId] = useState('galpin-5day-hypertrophy')
+  const [previewProgram,  setPreviewProgram]  = useState<Program|null>(null)
 
   const init = useCallback(async () => {
     try {
@@ -119,7 +121,7 @@ export default function SettingsPage() {
               const active = activeProgramId === prog.id
               const accentColor = prog.focus.includes('Strength') ? '#0A84FF' : '#30D158'
               return (
-                <button key={prog.id} onClick={() => switchProgram(prog.id)}
+                <button key={prog.id} onClick={() => { if (prog.id !== activeProgramId) setPreviewProgram(prog) }}
                   className="w-full" style={{
                     display:'block', textAlign:'left', padding:'14px 16px',
                     borderBottom: i < PROGRAM_LIBRARY.length-1 ? '0.5px solid rgba(84,84,88,0.3)' : 'none',
@@ -294,6 +296,144 @@ export default function SettingsPage() {
       </div>
 
 
+
+      {/* ── Program Preview Sheet ── */}
+      {previewProgram && (
+        <div className="sheet-scrim" onClick={() => setPreviewProgram(null)}>
+          <div onClick={e => e.stopPropagation()}
+               style={{ background:'var(--bg-2,#111118)', borderRadius:'24px 24px 0 0',
+                 maxHeight:'90vh', display:'flex', flexDirection:'column',
+                 border:'0.5px solid rgba(84,84,88,0.4)' }}>
+
+            {/* Drag handle */}
+            <div style={{ width:36, height:4, borderRadius:99, background:'rgba(84,84,88,0.5)',
+              margin:'16px auto 0', flexShrink:0 }} />
+
+            {/* Scrollable body */}
+            <div style={{ overflowY:'auto', padding:'16px 18px 0', flex:1 }}>
+
+              {/* Header */}
+              <div style={{ marginBottom:16 }}>
+                <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, marginBottom:8 }}>
+                  <div style={{ flex:1 }}>
+                    <p style={{ fontSize:22, fontWeight:800, color:'#fff', letterSpacing:'-0.6px', lineHeight:1.1 }}>
+                      {previewProgram.name}
+                    </p>
+                    <p style={{ fontSize:13, color:'rgba(142,142,147,0.7)', marginTop:3 }}>
+                      by {previewProgram.author}
+                    </p>
+                  </div>
+                  <button onClick={() => setPreviewProgram(null)}
+                    style={{ width:30, height:30, borderRadius:'50%', background:'rgba(84,84,88,0.3)',
+                      border:'none', color:'#8E8E93', fontSize:16, flexShrink:0, cursor:'pointer',
+                      display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+                </div>
+                <p style={{ fontSize:13, color:'rgba(255,255,255,0.6)', lineHeight:1.6, marginBottom:12 }}>
+                  {previewProgram.description}
+                </p>
+                <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                  {[previewProgram.focus, `${previewProgram.daysPerWeek} days/week`,
+                    `${previewProgram.totalWeeks} weeks`, previewProgram.split].map(tag => {
+                    const isFirst = tag === previewProgram.focus
+                    const accent = previewProgram.focus.includes('Strength') ? '#0A84FF' : '#30D158'
+                    return (
+                      <span key={tag} style={{
+                        fontSize:10, fontWeight:600,
+                        color: isFirst ? accent : '#636366',
+                        background: isFirst ? `color-mix(in srgb, ${accent} 12%, transparent)` : 'rgba(44,44,46,0.9)',
+                        border: isFirst ? `0.5px solid ${accent}40` : '0.5px solid rgba(84,84,88,0.4)',
+                        padding:'3px 9px', borderRadius:99,
+                      }}>{tag}</span>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Workout breakdown */}
+              <p style={{ fontSize:9, fontWeight:700, color:'rgba(142,142,147,0.6)',
+                textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:10 }}>
+                Workouts
+              </p>
+              <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:20 }}>
+                {previewProgram.workouts.map(wkt => {
+                  const colors: Record<string,string> = {
+                    A:'#0A84FF', B:'#30D158', C:'#BF5AF2', D:'#FF9F0A', E:'#FF453A'
+                  }
+                  const c = colors[wkt.key] ?? '#8E8E93'
+                  const isPower = wkt.dayType === 'power'
+                  const isHyper = wkt.dayType === 'hypertrophy'
+                  return (
+                    <div key={wkt.key} style={{ borderRadius:14,
+                      background:'rgba(28,28,36,0.9)', border:'0.5px solid rgba(84,84,88,0.35)',
+                      overflow:'hidden' }}>
+                      {/* Workout header */}
+                      <div style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px',
+                        borderBottom:'0.5px solid rgba(84,84,88,0.25)' }}>
+                        <div style={{ width:30, height:30, borderRadius:9, flexShrink:0,
+                          background:`color-mix(in srgb, ${c} 18%, transparent)`,
+                          color: c, display:'flex', alignItems:'center', justifyContent:'center',
+                          fontSize:13, fontWeight:800 }}>{wkt.key}</div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                            <p style={{ fontSize:13, fontWeight:700, color:'#fff' }}>{wkt.shortName}</p>
+                            {(isPower || isHyper) && (
+                              <span style={{ fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:99,
+                                color: isPower ? '#0A84FF' : '#30D158',
+                                background: isPower ? 'rgba(10,132,255,0.12)' : 'rgba(48,209,88,0.12)',
+                                border: `0.5px solid ${isPower ? 'rgba(10,132,255,0.3)' : 'rgba(48,209,88,0.3)'}` }}>
+                                {isPower ? '⚡ Power' : '🔥 Hypertrophy'}
+                              </span>
+                            )}
+                          </div>
+                          <p style={{ fontSize:11, color:'#636366', marginTop:1 }}>{wkt.focus}</p>
+                        </div>
+                        <span style={{ fontSize:10, color:'#636366', flexShrink:0 }}>
+                          {wkt.duration ?? `${wkt.exercises.length} ex`}
+                        </span>
+                      </div>
+                      {/* Exercise list */}
+                      <div style={{ padding:'8px 14px 10px' }}>
+                        {wkt.exercises.map((ex, i) => (
+                          <div key={ex.name} style={{ display:'flex', alignItems:'center', gap:8,
+                            paddingBlock:5,
+                            borderBottom: i < wkt.exercises.length-1 ? '0.5px solid rgba(84,84,88,0.18)' : 'none' }}>
+                            <div style={{ width:5, height:5, borderRadius:'50%', flexShrink:0,
+                              background: ex.type==='primary' ? c : ex.type==='secondary' ? 'rgba(142,142,147,0.5)' : 'rgba(84,84,88,0.35)' }} />
+                            <p style={{ fontSize:12, color: ex.type==='primary' ? 'rgba(255,255,255,0.9)' : '#8E8E93',
+                              fontWeight: ex.type==='primary' ? 600 : 400, flex:1 }}>{ex.name}</p>
+                            <p style={{ fontSize:10, color:'#3A3A3C', flexShrink:0 }}>
+                              {ex.type === 'primary' ? '● ' : ex.type === 'secondary' ? '○ ' : '◌ '}{ex.muscle}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Sticky CTA */}
+            <div style={{ padding:'14px 18px', paddingBottom:'calc(14px + env(safe-area-inset-bottom))',
+              borderTop:'0.5px solid rgba(84,84,88,0.3)', background:'rgba(10,10,16,0.98)',
+              flexShrink:0 }}>
+              <button onClick={async () => {
+                  await switchProgram(previewProgram.id)
+                  setPreviewProgram(null)
+                }}
+                style={{ width:'100%', height:54, borderRadius:16, fontSize:17, fontWeight:800,
+                  background: previewProgram.focus.includes('Strength') ? '#0A84FF' : '#30D158',
+                  color:'#000', border:'none', cursor:'pointer', letterSpacing:'-0.2px' }}>
+                Switch to {previewProgram.shortName}
+              </button>
+              <p style={{ fontSize:11, color:'rgba(84,84,88,0.7)', textAlign:'center', marginTop:8, lineHeight:1.4 }}>
+                Resets to Week 1 · Your exercise history and weight suggestions carry over
+              </p>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       <BottomNav />
     </div>
