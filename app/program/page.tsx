@@ -324,7 +324,7 @@ export default function ProgramPage() {
         })}
 
         {/* ── 1RM Calibration (moved from Settings) ── */}
-        <OnermSection format='5day' />
+        <OnermSection programId={typeof window !== 'undefined' ? localStorage.getItem('cg_program') ?? undefined : undefined} />
 
         <div style={{ height:8 }} />
       </div>

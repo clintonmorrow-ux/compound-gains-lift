@@ -1,5 +1,5 @@
 import { WEEK_CONFIG } from './data'
-import type { ExerciseType } from '@/types'
+import type { ExerciseType, WeekConfig } from '@/types'
 
 /** Round to nearest multiple (mirrors Excel MROUND) */
 export function mround(value: number, multiple: number): number {
@@ -12,22 +12,33 @@ export function getTargetWeight(
   oneRm: number,
   exerciseType: ExerciseType,
   weekNumber: number,
-  roundTo: number = 5
+  roundTo: number = 5,
+  cfgOverride?: WeekConfig,
 ): number {
-  const cfg = WEEK_CONFIG[weekNumber]
+  const cfg = cfgOverride ?? WEEK_CONFIG[weekNumber]
   if (!cfg || !oneRm) return 0
   const pct = cfg.percentages[exerciseType]
   return mround(oneRm * pct, roundTo)
 }
 
 /** Get set count for an exercise type in a given week */
-export function getSetsForWeek(exerciseType: ExerciseType, weekNumber: number): number {
-  return WEEK_CONFIG[weekNumber]?.sets[exerciseType] ?? 3
+export function getSetsForWeek(
+  exerciseType: ExerciseType,
+  weekNumber: number,
+  cfgOverride?: WeekConfig,
+): number {
+  const cfg = cfgOverride ?? WEEK_CONFIG[weekNumber]
+  return cfg?.sets[exerciseType] ?? 3
 }
 
 /** Get rep range string for an exercise type in a given week */
-export function getRepsForWeek(exerciseType: ExerciseType, weekNumber: number): string {
-  return WEEK_CONFIG[weekNumber]?.reps[exerciseType] ?? '10–12'
+export function getRepsForWeek(
+  exerciseType: ExerciseType,
+  weekNumber: number,
+  cfgOverride?: WeekConfig,
+): string {
+  const cfg = cfgOverride ?? WEEK_CONFIG[weekNumber]
+  return cfg?.reps[exerciseType] ?? '10–12'
 }
 
 /** Format weight for display */

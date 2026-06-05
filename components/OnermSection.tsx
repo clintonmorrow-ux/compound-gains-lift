@@ -1,22 +1,22 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp, Check } from 'lucide-react'
-import { WORKOUTS, WORKOUTS_5DAY } from '@/lib/program/data'
-import { fetchAllOneRms, upsertOneRm, fetchSettings } from '@/lib/db'
-import type { UserOneRm, ProgramFormat } from '@/types'
+import { getProgram } from '@/lib/program/programLibrary'
+import { fetchAllOneRms, upsertOneRm } from '@/lib/db'
+import type { UserOneRm } from '@/types'
 
 const WC: Record<string,string> = {
   A:'var(--wkt-a)', B:'var(--wkt-b)', C:'var(--wkt-c)',
   D:'var(--wkt-d)', E:'#FF453A',
 }
 
-export default function OnermSection({ format }: { format: ProgramFormat }) {
+export default function OnermSection({ programId }: { programId?: string }) {
   const [rms,   setRms]   = useState<Record<string,string>>({})
   const [group, setGroup] = useState<string>('')
   const [saved, setSaved] = useState<string|null>(null)
 
   useEffect(() => {
-    Promise.all([fetchAllOneRms(), fetchSettings()]).then(([r]) => {
+    fetchAllOneRms().then(r => {
       const m: Record<string,string> = {}
       ;(r as UserOneRm[]).forEach(x => { m[x.exercise_name] = String(x.weight_lbs) })
       setRms(m)
@@ -30,7 +30,7 @@ export default function OnermSection({ format }: { format: ProgramFormat }) {
     catch(e) { console.error(e) }
   }
 
-  const list = format === '5day' ? WORKOUTS_5DAY : WORKOUTS
+  const list = getProgram(programId).workouts
   const allNonBW = list.flatMap(w => w.exercises).filter(e => !e.isBodyweight)
   const totalEntered = allNonBW.filter(e => rms[e.name] && parseFloat(rms[e.name]) > 0).length
   const allDone = totalEntered === allNonBW.length

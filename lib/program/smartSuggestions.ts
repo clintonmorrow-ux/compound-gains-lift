@@ -1,6 +1,6 @@
 import { WEEK_CONFIG } from './data'
 import { mround } from './calculator'
-import type { ExerciseType } from '@/types'
+import type { ExerciseType, WeekConfig } from '@/types'
 
 export type SuggestionDirection = 'up' | 'down' | 'maintain' | 'new'
 
@@ -64,13 +64,14 @@ export function calculateSmartSuggestion(
   exerciseType: ExerciseType,
   weekNumber:   number,
   userOneRm:    number,          // from 1RM Calculator page (0 if not set)
-  roundTo:      number = 5
+  roundTo:      number = 5,
+  cfgOverride?: WeekConfig,
 ): SmartSuggestion | null {
 
   // Need at least 3 logged sets to produce a reliable suggestion
   if (recentSets.length < 3) return null
 
-  const cfg         = WEEK_CONFIG[weekNumber]
+  const cfg         = cfgOverride ?? WEEK_CONFIG[weekNumber]
   if (!cfg) return null
 
   const repsStr     = cfg.reps[exerciseType]            // e.g. "10–12"

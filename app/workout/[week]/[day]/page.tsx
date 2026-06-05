@@ -3,7 +3,6 @@ import { use, useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { WEEK_CONFIG } from '@/lib/program/data'
 import { getProgram, getWeekConfig } from '@/lib/program/programLibrary'
 import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/calculator'
 import { fetchAllOneRms, fetchSettings, createSession, completeSession,
@@ -465,7 +464,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     ? (localStorage.getItem('cg_program') ?? undefined) : undefined
   const activeProgram = getProgram(activeProgramId)
   const workout = activeProgram.workouts.find(w => w.key === key) ?? activeProgram.workouts[0]
-  const cfg     = WEEK_CONFIG[wk]
+  const cfg     = getWeekConfig(activeProgramId, wk, workout.dayType)
   const accent  = WC[key]
 
   const [rms,       setRms]       = useState<Record<string,number>>({})
@@ -509,7 +508,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
         const oneRm = rm[effectiveName] ?? 0
         const recent = await getRecentSetsForExercise(effectiveName, 15)
         lastMap[ex.name]  = recent[0]?.weight_lbs ?? null
-        smartM[ex.name]   = calculateSmartSuggestion(recent, ex.type, wk, oneRm, settings.round_to_lbs)
+        const exCfg = getWeekConfig(activeProgramId, wk, workout.dayType)
+        smartM[ex.name]   = calculateSmartSuggestion(recent, ex.type, wk, oneRm, settings.round_to_lbs, exCfg)
       }))
       setLasts(lastMap); setSmartMap(smartM)
       // Check for an incomplete session from a previous interrupted workout
@@ -591,7 +591,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     return () => window.removeEventListener('popstate', onPop)
   }, [hasProgress, router])
 
-  const total  = workout.exercises.reduce((a,ex)=>a+getSetsForWeek(ex.type,wk), 0)
+  const total  = workout.exercises.reduce((a,ex)=>a+getSetsForWeek(ex.type,wk,cfg), 0)
   const logged = Object.values(sets).reduce((a,s)=>a+s.length, 0)
   const pct    = total>0 ? logged/total : 0
 
@@ -659,8 +659,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     setRest({ sec: getRestSeconds(wk, origEx.type, activeProgramId, workout.dayType),
              ctx: getRestContext(origEx.type, activeProgramId, workout.dayType),
              name: effName(origEx), startedAt: Date.now() })
-    if (newLogged.length >= getSetsForWeek(origEx.type, wk)) {
-      const next = workout.exercises.find(e => (newSets[e.name]?.length??0) < getSetsForWeek(e.type,wk))
+    if (newLogged.length >= getSetsForWeek(origEx.type, wk, cfg)) {
+      const next = workout.exercises.find(e => (newSets[e.name]?.length??0) < getSetsForWeek(e.type,wk,cfg))
       if (next) setTimeout(()=>setOpen(next.name), 500)
     }
   }
@@ -759,8 +759,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       {/* Exercise list */}
       <div style={{ padding:'12px 14px', display:'flex', flexDirection:'column', gap:10 }}>
         {workout.exercises.map((origEx, idx) => {
-          const exSets   = getSetsForWeek(origEx.type, wk)
-          const exReps   = getRepsForWeek(origEx.type, wk)
+          const exSets   = getSetsForWeek(origEx.type, wk, cfg)
+          const exReps   = getRepsForWeek(origEx.type, wk, cfg)
           const exLogged = sets[origEx.name] ?? []
           const isComp   = exLogged.length >= exSets
           const isOpen   = open === origEx.name
