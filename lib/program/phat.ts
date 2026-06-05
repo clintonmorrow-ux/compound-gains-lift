@@ -59,9 +59,8 @@ export const PHAT_WORKOUTS: Workout[] = [
     day: 'Day 3',
     focus: 'CNS Recovery · Separating Power from Hypertrophy',
     restTimes: '',
-    duration: '',
     isRest: true,
-    restRationale: 'Strategically placed by Layne Norton to separate the power stimulus from the hypertrophy stimulus. After 2 maximal-effort compound sessions (Upper + Lower Power), the central nervous system carries significant residual fatigue that would directly impair the metabolic stress quality of the hypertrophy sessions. Research on post-activation potentiation shows CNS recovery requires 24-48h after near-maximal efforts. Starting hypertrophy work while CNS-fatigued means lighter weights, poorer mind-muscle connection, and blunted metabolic stress — defeating the purpose of the hypertrophy days.',
+    restRationale: "Norton\'s design: separates power from hypertrophy. After 2 maximal-effort compound days, CNS fatigue impairs metabolic stress quality on hypertrophy days. 24-48h recovery restores CNS for quality volume work.",
     exercises: [],
   },
   {
@@ -128,13 +127,11 @@ export const PHAT_WORKOUTS: Workout[] = [
     day: 'Day 7',
     focus: 'Full Recovery Before Next Power Block',
     restTimes: '',
-    duration: '',
     isRest: true,
-    restRationale: 'Full systemic recovery separating one weekly PHAT block from the next. After 5 training sessions (2 power + 3 hypertrophy), both the CNS and the musculature need complete recovery before the next Upper Power session. ATP-PCr stores fully replenish within 24-48h but accumulated fatigue across the whole week requires a full day. This rest day also allows the hypertrophy stimulus from Day 5 and Day 6 to complete its acute signalling phase before the next loading cycle begins.',
+    restRationale: 'Full systemic recovery after 5 training sessions (2 power + 3 hypertrophy). Both CNS and musculature need complete recovery before the next Upper Power session.',
     exercises: [],
   },
 ]
-
 // ── Week Config ───────────────────────────────────────────────────────────────
 // PHAT has two configs per week: one for power days, one for hypertrophy days.
 // Power days: low reps, high intensity (~80–88% 1RM)

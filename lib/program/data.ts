@@ -120,6 +120,17 @@ export const WORKOUTS_5DAY: Workout[] = [
     ],
   },
   {
+    key: 'R1',
+    name: 'Rest Day',
+    shortName: 'Rest',
+    day: 'Day 4',
+    focus: 'Recovery & Muscle Protein Synthesis',
+    restTimes: '',
+    isRest: true,
+    restRationale: 'Mandatory recovery after 3 consecutive training days. Day C rows recruit the same posterior chain stabilisers used in Day D heavy RDL. Schoenfeld 2010: 48h minimum between overlapping muscle groups for full MPS completion.',
+    exercises: [],
+  },
+  {
     key: 'D', name: 'Workout D', shortName: 'Lower Hip/Ham', day: 'Day 4', focus: 'Hamstrings · Glutes · Calves · Core', restTimes: '2–3 min compounds · 60–90 sec isolation', duration: '~58 min',
     exercises: [
       { name: 'Romanian Deadlift (RDL)',              muscle: 'Hamstrings', type: 'primary',   cue: 'Hinge at hips · push hips back · emphasise the stretched position at the bottom — Wolf & Schoenfeld research confirms stretch-mediated hypertrophy' },
@@ -142,6 +153,18 @@ export const WORKOUTS_5DAY: Workout[] = [
       { name: 'EZ-Bar Skull Crusher',                muscle: 'Triceps',    type: 'secondary', cue: 'Lower bar to forehead · elbows back slightly · press to lockout · long-head emphasis at stretched position' },
       { name: 'Cable Overhead Tricep Extension',     muscle: 'Triceps',    type: 'isolation', cue: 'Face away from stack · rope behind head · elbows close · full extension — long head under maximal stretch' },
     ],
+  },
+
+  {
+    key: 'R2',
+    name: 'Rest Day',
+    shortName: 'Rest',
+    day: 'Day 7',
+    focus: 'Full Weekly Recovery',
+    restTimes: '',
+    isRest: true,
+    restRationale: 'Full systemic recovery closes the 7-day block. CNS fatigue dissipates, glycogen fully replenishes, and inflammatory markers resolve. Separates Week N from Week N+1.',
+    exercises: [],
   },
 ]
 
