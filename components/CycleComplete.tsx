@@ -45,7 +45,7 @@ function Counter({ target, suffix = '', duration = 1400 }: { target: number; suf
 // Confetti particle
 function Confetti() {
   const particles = useMemo(() => {
-    const colors = ['#FF9F0A','#30D158','#0A84FF','#FF453A','#BF5AF2','#FFD60A','#FF6B6B','#4ECDC4']
+    const colors = ['#FFB23E','#2DD4A0','#17BEBB','#F25C54','#A885F2','#FFD60A','#FF6B6B','#4ECDC4']
     return Array.from({ length: 48 }, (_, i) => ({
       id: i,
       color: colors[i % colors.length],
@@ -131,16 +131,16 @@ export default function CycleComplete({ cycleNumber, workoutsCompleted, totalSet
 
         {/* Crown + cycle badge */}
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center', marginBottom:24 }}>
-          <div style={{ fontSize:56, lineHeight:1, marginBottom:12, filter:'drop-shadow(0 0 24px rgba(255,159,10,0.6))' }}>
+          <div style={{ fontSize:56, lineHeight:1, marginBottom:12, filter:'drop-shadow(0 0 24px rgba(255,178,62,0.6))' }}>
             👑
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
-            <div style={{ height:1, width:32, background:'rgba(255,159,10,0.4)' }} />
-            <span style={{ fontSize:11, fontWeight:700, color:'rgba(255,159,10,0.7)',
+            <div style={{ height:1, width:32, background:'rgba(255,178,62,0.4)' }} />
+            <span style={{ fontSize:11, fontWeight:700, color:'rgba(255,178,62,0.7)',
               textTransform:'uppercase', letterSpacing:'0.15em' }}>
               Cycle {cycleNumber} Complete
             </span>
-            <div style={{ height:1, width:32, background:'rgba(255,159,10,0.4)' }} />
+            <div style={{ height:1, width:32, background:'rgba(255,178,62,0.4)' }} />
           </div>
           <h1 style={{ fontSize:38, fontWeight:900, color:'#fff', letterSpacing:'-1.5px',
             lineHeight:1.05, textAlign:'center', marginBottom:6 }}>
@@ -157,10 +157,10 @@ export default function CycleComplete({ cycleNumber, workoutsCompleted, totalSet
           transition:'all 0.5s cubic-bezier(0.2,0,0,1)' }}>
 
           {[
-            { Icon:Calendar,  label:'Workouts', value:workoutsCompleted, suffix:'',   color:'#0A84FF' },
-            { Icon:BarChart3, label:'Sets Logged', value:totalSets, suffix:'',         color:'#30D158' },
-            { Icon:Zap,       label:'Weeks',   value:12,            suffix:'/12',     color:'#FF9F0A' },
-            { Icon:TrendingUp,label:'Program', value:100,           suffix:'%',       color:'#BF5AF2' },
+            { Icon:Calendar,  label:'Workouts', value:workoutsCompleted, suffix:'',   color:'#17BEBB' },
+            { Icon:BarChart3, label:'Sets Logged', value:totalSets, suffix:'',         color:'#2DD4A0' },
+            { Icon:Zap,       label:'Weeks',   value:12,            suffix:'/12',     color:'#FFB23E' },
+            { Icon:TrendingUp,label:'Program', value:100,           suffix:'%',       color:'#A885F2' },
           ].map(({ Icon, label, value, suffix, color }) => (
             <div key={label} style={{
               padding:'16px 14px', borderRadius:18,
@@ -199,15 +199,15 @@ export default function CycleComplete({ cycleNumber, workoutsCompleted, totalSet
                       <p style={{ fontSize:13, fontWeight:700, color:'#fff', letterSpacing:'-0.2px' }}>{g.name}</p>
                       <div style={{ display:'flex', alignItems:'center', gap:6 }}>
                         <span style={{ fontSize:12, color:'#636366' }}>{g.start} → {g.end} lbs</span>
-                        <span style={{ fontSize:12, fontWeight:800, color:'#30D158',
-                          background:'rgba(48,209,88,0.12)', padding:'1px 7px', borderRadius:99 }}>
+                        <span style={{ fontSize:12, fontWeight:800, color:'#2DD4A0',
+                          background:'rgba(45,212,160,0.12)', padding:'1px 7px', borderRadius:99 }}>
                           +{g.delta} lbs
                         </span>
                       </div>
                     </div>
                     <div style={{ height:4, borderRadius:99, background:'rgba(84,84,88,0.3)', overflow:'hidden' }}>
                       <div style={{ height:'100%', width:`${barW}%`, borderRadius:99,
-                        background:'linear-gradient(90deg, #30D158, #0A84FF)',
+                        background:'linear-gradient(90deg, #2DD4A0, #17BEBB)',
                         transition:'width 1s ease 0.5s' }} />
                     </div>
                   </div>
@@ -219,9 +219,9 @@ export default function CycleComplete({ cycleNumber, workoutsCompleted, totalSet
 
         {/* What carries over */}
         <div style={{ width:'100%', marginBottom:24, padding:'14px 16px', borderRadius:16,
-          background:'rgba(255,159,10,0.07)', border:'0.5px solid rgba(255,159,10,0.25)',
+          background:'rgba(255,178,62,0.07)', border:'0.5px solid rgba(255,178,62,0.25)',
           opacity: phase === 'action' ? 1 : 0, transition:'opacity 0.5s 0.2s' }}>
-          <p style={{ fontSize:11, fontWeight:700, color:'#FF9F0A', textTransform:'uppercase',
+          <p style={{ fontSize:11, fontWeight:700, color:'#FFB23E', textTransform:'uppercase',
             letterSpacing:'0.1em', marginBottom:10 }}>Cycle {nextCycle} starts with</p>
           {[
             'Your current strength — smart weights calibrate from recent performance',
@@ -231,9 +231,9 @@ export default function CycleComplete({ cycleNumber, workoutsCompleted, totalSet
           ].map((item, i) => (
             <div key={i} style={{ display:'flex', gap:8, alignItems:'flex-start',
               marginBottom: i < 3 ? 8 : 0 }}>
-              <div style={{ width:16, height:16, borderRadius:5, background:'rgba(255,159,10,0.2)',
+              <div style={{ width:16, height:16, borderRadius:5, background:'rgba(255,178,62,0.2)',
                 display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginTop:1 }}>
-                <span style={{ fontSize:9, color:'#FF9F0A' }}>✓</span>
+                <span style={{ fontSize:9, color:'#FFB23E' }}>✓</span>
               </div>
               <p style={{ fontSize:13, color:'rgba(255,255,255,0.7)', lineHeight:1.4 }}>{item}</p>
             </div>
@@ -244,9 +244,9 @@ export default function CycleComplete({ cycleNumber, workoutsCompleted, totalSet
         <button onClick={onBeginNextCycle}
           style={{ width:'100%', height:58, borderRadius:18, fontSize:18, fontWeight:800,
             letterSpacing:'-0.3px',
-            background:'linear-gradient(135deg, #FF9F0A 0%, #FF6B00 100%)',
+            background:'linear-gradient(135deg, #FFB23E 0%, #FF6B00 100%)',
             color:'#000', border:'none', cursor:'pointer',
-            boxShadow:'0 8px 32px rgba(255,159,10,0.4)',
+            boxShadow:'0 8px 32px rgba(255,178,62,0.4)',
             display:'flex', alignItems:'center', justifyContent:'center', gap:8,
             opacity: phase === 'action' ? 1 : 0,
             transform: phase === 'action' ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.97)',

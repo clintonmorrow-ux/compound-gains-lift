@@ -7,7 +7,7 @@ import type { UserOneRm } from '@/types'
 
 const WC: Record<string,string> = {
   A:'var(--wkt-a)', B:'var(--wkt-b)', C:'var(--wkt-c)',
-  D:'var(--wkt-d)', E:'#FF453A',
+  D:'var(--wkt-d)', E:'#F25C54',
 }
 
 export default function OnermSection({ programId }: { programId?: string }) {

@@ -38,8 +38,8 @@ export default function CoachSignals({ rirTrends, deload, intraSet, prefs }: {
   // here we show it as a card only if triggered)
   if (prefs.deloadAlerts && deload.triggered) {
     cards.push(
-      <SignalCard key="deload" accent="#FF9F0A"
-        icon={<Battery size={18} strokeWidth={2} style={{ color:'#FF9F0A' }} />}
+      <SignalCard key="deload" accent="#FFB23E"
+        icon={<Battery size={18} strokeWidth={2} style={{ color:'#FFB23E' }} />}
         tag="Recovery Signal"
         title={`${deload.indicatorsHit} fatigue indicators detected`}
         body={deload.reasons.join(' · ') + '. A deload week could maximise your next training block.'} />
@@ -50,8 +50,8 @@ export default function CoachSignals({ rirTrends, deload, intraSet, prefs }: {
   if (prefs.rirTrend) {
     rirTrends.filter(s => s.direction === 'fatigue').forEach((s, i) =>
       cards.push(
-        <SignalCard key={`fat-${i}`} accent="#FF453A"
-          icon={<TrendingDown size={18} strokeWidth={2} style={{ color:'#FF453A' }} />}
+        <SignalCard key={`fat-${i}`} accent="#F25C54"
+          icon={<TrendingDown size={18} strokeWidth={2} style={{ color:'#F25C54' }} />}
           tag="Fatigue Watch" title={s.exercise} body={s.message} />
       )
     )
@@ -61,8 +61,8 @@ export default function CoachSignals({ rirTrends, deload, intraSet, prefs }: {
   if (prefs.setFatigue) {
     intraSet.filter(s => s.suggestion === 'reps').forEach((s, i) =>
       cards.push(
-        <SignalCard key={`reps-${i}`} accent="#0A84FF"
-          icon={<Activity size={18} strokeWidth={2} style={{ color:'#0A84FF' }} />}
+        <SignalCard key={`reps-${i}`} accent="#17BEBB"
+          icon={<Activity size={18} strokeWidth={2} style={{ color:'#17BEBB' }} />}
           tag="Set Fatigue" title={s.exercise} body={s.message} />
       )
     )
@@ -72,8 +72,8 @@ export default function CoachSignals({ rirTrends, deload, intraSet, prefs }: {
   if (prefs.rirTrend) {
     rirTrends.filter(s => s.direction === 'ready').forEach((s, i) =>
       cards.push(
-        <SignalCard key={`rdy-${i}`} accent="#30D158"
-          icon={<TrendingUp size={18} strokeWidth={2} style={{ color:'#30D158' }} />}
+        <SignalCard key={`rdy-${i}`} accent="#2DD4A0"
+          icon={<TrendingUp size={18} strokeWidth={2} style={{ color:'#2DD4A0' }} />}
           tag="Ready to Progress" title={s.exercise} body={s.message} />
       )
     )
@@ -81,8 +81,8 @@ export default function CoachSignals({ rirTrends, deload, intraSet, prefs }: {
   if (prefs.setFatigue) {
     intraSet.filter(s => s.suggestion === 'load').forEach((s, i) =>
       cards.push(
-        <SignalCard key={`load-${i}`} accent="#30D158"
-          icon={<TrendingUp size={18} strokeWidth={2} style={{ color:'#30D158' }} />}
+        <SignalCard key={`load-${i}`} accent="#2DD4A0"
+          icon={<TrendingUp size={18} strokeWidth={2} style={{ color:'#2DD4A0' }} />}
           tag="Ready to Progress" title={s.exercise} body={s.message} />
       )
     )

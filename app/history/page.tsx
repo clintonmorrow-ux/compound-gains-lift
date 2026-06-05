@@ -86,7 +86,7 @@ export default function HistoryPage() {
                     <div className="flex items-center gap-2">
                       <p className="t-subhead sf-semibold" style={{ color:'var(--label)' }}>{wkt?.shortName ?? s.workout_key}</p>
                       {!s.completed_at &&
-                        <span className="t-caption2 px-2 py-0.5 rounded-full" style={{ background:'rgba(255,159,10,0.15)', color:'var(--orange)' }}>Incomplete</span>}
+                        <span className="t-caption2 px-2 py-0.5 rounded-full" style={{ background:'rgba(255,178,62,0.15)', color:'var(--orange)' }}>Incomplete</span>}
                     </div>
                     <p className="t-caption1 mt-1" style={{ color:'var(--label-3)' }}>
                       Week {s.week_number}

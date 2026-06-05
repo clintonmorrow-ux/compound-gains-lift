@@ -13,7 +13,7 @@ import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program
 import { calculateSmartSuggestion, type SmartSuggestion } from '@/lib/program/smartSuggestions'
 import type { Exercise, WorkoutKey } from '@/types'
 
-const WC: Record<string,string> = { A:'#0A84FF', B:'#30D158', C:'#BF5AF2', D:'#FF9F0A', E:'#FF453A' }
+const WC: Record<string,string> = { A:'#17BEBB', B:'#2DD4A0', C:'#A885F2', D:'#FFB23E', E:'#F25C54' }
 
 // ── Active Set Card (current set being logged) ────────────────────
 function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBodyweight, accentColor, onLog }: {
@@ -91,8 +91,8 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
             {isBodyweight ? 'Added Weight' : 'Weight'}
           </p>
           {isBodyweight && (
-            <span style={{ fontSize:11, color:'rgba(255,159,10,0.7)',
-              background:'rgba(255,159,10,0.1)', padding:'2px 7px', borderRadius:6 }}>
+            <span style={{ fontSize:11, color:'rgba(255,178,62,0.7)',
+              background:'rgba(255,178,62,0.1)', padding:'2px 7px', borderRadius:6 }}>
               belt · vest · optional
             </span>
           )}
@@ -158,7 +158,7 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
           {[0,1,2,3,4].map(v => (
             <button key={v} onClick={()=>setRir(v)} style={{ flex:1, height:42, borderRadius:12,
               background: rir===v ? accentColor : 'rgba(118,118,128,0.15)',
-              fontSize:15, fontWeight:800, color: rir===v ? '#fff' : '#8E8E93',
+              fontSize:15, fontWeight:800, color: rir===v ? '#04161E' : '#8E8E93',
               transition:'background 0.15s' }}>
               {v===4?'4+':v}
             </button>
@@ -175,7 +175,7 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
           <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.08em' }}>
             Eccentric Tempo
           </p>
-          <span style={{ fontSize:11, color:'rgba(10,132,255,0.7)', background:'rgba(10,132,255,0.1)',
+          <span style={{ fontSize:11, color:'rgba(23,190,187,0.7)', background:'rgba(23,190,187,0.1)',
             padding:'2px 7px', borderRadius:6 }}>optional</span>
         </div>
         <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
@@ -183,7 +183,7 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
             <button key={t.code} onClick={()=>setTempo(t.code)}
               style={{ padding:'6px 10px', borderRadius:10,
                 background: tempo===t.code ? accentColor : 'rgba(118,118,128,0.15)',
-                fontSize:12, fontWeight:700, color: tempo===t.code ? '#fff' : '#8E8E93',
+                fontSize:12, fontWeight:700, color: tempo===t.code ? '#04161E' : '#8E8E93',
                 transition:'background 0.15s',
                 display:'flex', alignItems:'center', gap:5 }}>
               <span>{t.code}</span>
@@ -195,8 +195,8 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
           ))}
         </div>
         {tempo !== 'Standard' && (
-          <p style={{ fontSize:12, color:'rgba(10,132,255,0.85)', marginTop:8,
-            background:'rgba(10,132,255,0.08)', padding:'8px 12px', borderRadius:10, lineHeight:1.5 }}>
+          <p style={{ fontSize:12, color:'rgba(23,190,187,0.85)', marginTop:8,
+            background:'rgba(23,190,187,0.08)', padding:'8px 12px', borderRadius:10, lineHeight:1.5 }}>
             💡 {TEMPOS.find(t=>t.code===tempo)?.hint}
           </p>
         )}
@@ -207,7 +207,7 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
         style={{ width:'100%', height:54, borderRadius:14, fontSize:17, fontWeight:800,
           display:'flex', alignItems:'center', justifyContent:'center', gap:8,
           background: busy ? 'rgba(118,118,128,0.3)' : accentColor,
-          color:'#fff', letterSpacing:'-0.3px',
+          color: busy ? '#8E8E93' : '#04161E', letterSpacing:'-0.3px',
           boxShadow: busy ? 'none' : `0 4px 20px ${accentColor}55`,
           transition:'background 0.15s, box-shadow 0.15s' }}>
         {busy
@@ -223,15 +223,15 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
 function LoggedRow({ setNum, weight, reps, rir }: { setNum:number; weight:number|null; reps:number; rir?:number }) {
   return (
     <div style={{ display:'flex', alignItems:'center', gap:12, height:44, paddingInline:14,
-      borderRadius:12, background:'rgba(48,209,88,0.1)', border:'0.5px solid rgba(48,209,88,0.35)' }}>
-      <div style={{ width:24, height:24, borderRadius:'50%', background:'#30D158',
+      borderRadius:12, background:'rgba(45,212,160,0.1)', border:'0.5px solid rgba(45,212,160,0.35)' }}>
+      <div style={{ width:24, height:24, borderRadius:'50%', background:'#2DD4A0',
         display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
         <Check size={13} strokeWidth={3} style={{ color:'#000' }} />
       </div>
       <span style={{ fontSize:13, fontWeight:700, color:'#fff' }}>Set {setNum}</span>
       <span style={{ fontSize:13, color:'#8E8E93', flex:1 }}>
         {weight != null ? `${weight} lbs` : 'Bodyweight'} × {reps} reps
-        {rir !== undefined && <span style={{ color:'rgba(48,209,88,0.8)' }}> · RIR {rir}</span>}
+        {rir !== undefined && <span style={{ color:'rgba(45,212,160,0.8)' }}> · RIR {rir}</span>}
       </span>
     </div>
   )
@@ -278,10 +278,10 @@ function DropSetRow({ lastWeight, repsRange, accentColor, onLog }: {
 
   if (done) return (
     <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px',
-      borderRadius:12, background:'rgba(48,209,88,0.1)', border:'0.5px solid rgba(48,209,88,0.35)',
+      borderRadius:12, background:'rgba(45,212,160,0.1)', border:'0.5px solid rgba(45,212,160,0.35)',
       marginBottom:8 }}>
-      <Check size={14} strokeWidth={3} style={{ color:'#30D158' }} />
-      <span style={{ fontSize:13, color:'#30D158', fontWeight:600 }}>Drop set logged · {wt} lbs × {reps}</span>
+      <Check size={14} strokeWidth={3} style={{ color:'#2DD4A0' }} />
+      <span style={{ fontSize:13, color:'#2DD4A0', fontWeight:600 }}>Drop set logged · {wt} lbs × {reps}</span>
     </div>
   )
 
@@ -289,19 +289,19 @@ function DropSetRow({ lastWeight, repsRange, accentColor, onLog }: {
     <div style={{ marginBottom:8 }}>
       {!open ? (
         <button onClick={()=>setOpen(true)} style={{ width:'100%', padding:'10px 14px',
-          borderRadius:12, background:'rgba(255,159,10,0.08)',
-          border:`0.5px solid rgba(255,159,10,0.3)`,
+          borderRadius:12, background:'rgba(255,178,62,0.08)',
+          border:`0.5px solid rgba(255,178,62,0.3)`,
           display:'flex', alignItems:'center', gap:8 }}>
           <span style={{ fontSize:14 }}>🔽</span>
           <div style={{ flex:1, textAlign:'left' }}>
-            <p style={{ fontSize:13, fontWeight:700, color:'#FF9F0A' }}>Add Drop Set</p>
+            <p style={{ fontSize:13, fontWeight:700, color:'#FFB23E' }}>Add Drop Set</p>
             <p style={{ fontSize:11, color:'#8E8E93' }}>Suggested: {suggestedWt} lbs (−20%) · to failure</p>
           </div>
         </button>
       ) : (
         <div style={{ padding:'12px 14px', borderRadius:12,
-          background:'rgba(255,159,10,0.08)', border:'0.5px solid rgba(255,159,10,0.35)' }}>
-          <p style={{ fontSize:11, fontWeight:700, color:'#FF9F0A', textTransform:'uppercase',
+          background:'rgba(255,178,62,0.08)', border:'0.5px solid rgba(255,178,62,0.35)' }}>
+          <p style={{ fontSize:11, fontWeight:700, color:'#FFB23E', textTransform:'uppercase',
             letterSpacing:'0.08em', marginBottom:10 }}>Drop Set — reduce weight · push to failure</p>
           <div style={{ display:'flex', gap:10, alignItems:'center', marginBottom:10 }}>
             <div style={{ flex:1 }}>
@@ -332,7 +332,7 @@ function DropSetRow({ lastWeight, repsRange, accentColor, onLog }: {
             </div>
           </div>
           <button onClick={commit} disabled={busy} style={{ width:'100%', height:44, borderRadius:12,
-            background:'#FF9F0A', color:'#fff', fontSize:14, fontWeight:800,
+            background:'#FFB23E', color:'#04161E', fontSize:14, fontWeight:800,
             display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
             {busy ? <div style={{ width:16, height:16, borderRadius:'50%', border:'2px solid transparent',
               borderTopColor:'#fff', animation:'spin 0.7s linear infinite' }} />
@@ -379,7 +379,7 @@ function RestPill({ seconds, exName, context, onDone, onRestPause }: {
         <svg width="30" height="30" viewBox="0 0 32 32" style={{ transform:'rotate(-90deg)', flexShrink:0 }}>
           <circle cx="16" cy="16" r="13" fill="none" strokeWidth="2.5" stroke="rgba(84,84,88,0.4)" />
           <circle cx="16" cy="16" r="13" fill="none" strokeWidth="2.5" strokeLinecap="round"
-            style={{ stroke:'#FF9F0A', strokeDasharray:`${2*Math.PI*13}`,
+            style={{ stroke:'#FFB23E', strokeDasharray:`${2*Math.PI*13}`,
               strokeDashoffset:`${2*Math.PI*13*(1-pct/100)}`, transition:'stroke-dashoffset 1s linear' }} />
         </svg>
         <span style={{ fontSize:17, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums', letterSpacing:'-0.3px', flex:1 }}>
@@ -388,8 +388,8 @@ function RestPill({ seconds, exName, context, onDone, onRestPause }: {
         <div style={{ width:0.5, height:18, background:'rgba(84,84,88,0.6)', flexShrink:0 }} />
         <button onClick={onRestPause} title="Rest-Pause: 15s then log more reps"
           style={{ padding:'4px 9px', borderRadius:999, flexShrink:0,
-          background:'rgba(10,132,255,0.25)', fontSize:11, fontWeight:700, color:'#0A84FF',
-          border:'0.5px solid rgba(10,132,255,0.4)' }}>
+          background:'rgba(23,190,187,0.25)', fontSize:11, fontWeight:700, color:'#17BEBB',
+          border:'0.5px solid rgba(23,190,187,0.4)' }}>
           RP
         </button>
         <button onClick={onDone}
@@ -696,9 +696,9 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   if (done) return (
     <div style={{ position:'fixed', inset:0, background:'#000', display:'flex', flexDirection:'column',
       alignItems:'center', justifyContent:'center', gap:28, padding:'0 32px' }}>
-      <div style={{ width:88, height:88, borderRadius:'50%', background:'rgba(48,209,88,0.15)',
+      <div style={{ width:88, height:88, borderRadius:'50%', background:'rgba(45,212,160,0.15)',
         display:'flex', alignItems:'center', justifyContent:'center' }}>
-        <Trophy size={44} style={{ color:'#30D158' }} strokeWidth={1.5} />
+        <Trophy size={44} style={{ color:'#2DD4A0' }} strokeWidth={1.5} />
       </div>
       <div style={{ textAlign:'center' }}>
         <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:8 }}>Workout Complete</p>
@@ -706,7 +706,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
         <p style={{ fontSize:17, color:'#8E8E93', marginTop:8 }}>Week {wk} · {logged} sets logged</p>
       </div>
       <button onClick={()=>router.push('/')} style={{ width:'100%', maxWidth:280, height:54,
-        borderRadius:16, fontSize:17, fontWeight:700, background:accent, color:'#fff' }}>
+        borderRadius:16, fontSize:17, fontWeight:700, background:accent, color:'#04161E' }}>
         Back to Home
       </button>
     </div>
@@ -743,7 +743,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       {/* ── PHAT Day-Type Context Card ── */}
       {workout.dayType && workout.dayType !== 'standard' && (() => {
         const isPower = workout.dayType === 'power'
-        const accent  = isPower ? '#0A84FF' : '#30D158'
+        const accent  = isPower ? '#17BEBB' : '#2DD4A0'
         const tips = isPower ? [
           { icon:'⚡', text:'Explosive concentric intent on every rep — even heavy loads should be driven fast. Speed of intent is what recruits high-threshold motor units.' },
           { icon:'⏱', text:'Full rest between sets is non-negotiable. Phosphocreatine takes 3–4 min to fully replenish — cut the rest and you cut the force output.' },
@@ -801,7 +801,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
               borderRadius:18, overflow:'hidden',
               background: isOpen ? '#0D0D18' : '#0A0A12',
               border:`0.5px solid ${isOpen ? `${accent}55` : 'rgba(84,84,88,0.35)'}`,
-              borderLeft:`3px solid ${isComp ? '#30D158' : isOpen ? accent : 'rgba(84,84,88,0.3)'}`,
+              borderLeft:`3px solid ${isComp ? '#2DD4A0' : isOpen ? accent : 'rgba(84,84,88,0.3)'}`,
               opacity: isComp && !isOpen ? 0.5 : 1, transition:'all 0.2s' }}>
 
               {/* Header */}
@@ -810,7 +810,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                 <div style={{ display:'flex', flexDirection:'column', gap:3, width:22, flexShrink:0 }}>
                   {Array.from({length:exSets}).map((_,i) => (
                     <div key={i} style={{ height:4, borderRadius:99, transition:'background 0.3s',
-                      background: i<exLogged.length ? '#30D158' : 'rgba(84,84,88,0.35)' }} />
+                      background: i<exLogged.length ? '#2DD4A0' : 'rgba(84,84,88,0.35)' }} />
                   ))}
                 </div>
                 <div style={{ flex:1, minWidth:0, textAlign:'left' }}>
@@ -819,13 +819,13 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                   <p style={{ fontSize:12, color:'#8E8E93', marginTop:2 }}>
                     {origEx.muscle}
                     {!origEx.isBodyweight && target>0 && (
-                      <span style={{ color: smart?.direction==='up'?'#30D158':smart?.direction==='down'?'#FF9F0A':accent }}>
+                      <span style={{ color: smart?.direction==='up'?'#2DD4A0':smart?.direction==='down'?'#FFB23E':accent }}>
                         {` · ${target} lbs`}{smart?.direction==='up'?' ↑':smart?.direction==='down'?' ↓':''}
                       </span>
                     )}
                   </p>
                 </div>
-                <span style={{ fontSize:14, fontWeight:800, color:isComp?'#30D158':'#fff' }}>
+                <span style={{ fontSize:14, fontWeight:800, color:isComp?'#2DD4A0':'#fff' }}>
                   {exLogged.length}<span style={{ color:'#8E8E93', fontWeight:500 }}>/{exSets}</span>
                 </span>
               </button>
@@ -877,9 +877,9 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                     {EXERCISE_ALTS[origEx.name] && (
                       <button onClick={()=>setAltsFor(origEx.name)} style={{ display:'flex',
                         alignItems:'center', gap:5, padding:'6px 12px', borderRadius:10,
-                        background:'rgba(10,132,255,0.12)', border:'0.5px solid rgba(10,132,255,0.3)', flexShrink:0 }}>
-                        <ArrowLeftRight size={12} style={{ color:'#0A84FF' }} />
-                        <span style={{ fontSize:12, fontWeight:700, color:'#0A84FF' }}>Swap</span>
+                        background:'rgba(23,190,187,0.12)', border:'0.5px solid rgba(23,190,187,0.3)', flexShrink:0 }}>
+                        <ArrowLeftRight size={12} style={{ color:'#17BEBB' }} />
+                        <span style={{ fontSize:12, fontWeight:700, color:'#17BEBB' }}>Swap</span>
                       </button>
                     )}
                   </div>
@@ -894,8 +894,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           <button onClick={async()=>{ if(sid) await completeSession(sid); setDone(true) }}
             style={{ width:'100%', height:56, borderRadius:18, fontSize:17, fontWeight:700,
               display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-              background:'linear-gradient(135deg, #30D158, #34C759)',
-              color:'#fff', marginTop:4, boxShadow:'0 4px 24px rgba(48,209,88,0.35)' }}>
+              background:'linear-gradient(135deg, #2DD4A0, #34C759)',
+              color:'#04161E', marginTop:4, boxShadow:'0 4px 24px rgba(45,212,160,0.35)' }}>
             <CheckCircle2 size={20} strokeWidth={2.5} /> Complete Workout
           </button>
         )}
@@ -905,11 +905,11 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           <button onClick={() => setShowFinishEarly(true)}
             style={{ width:'100%', height:48, borderRadius:16, fontSize:15, fontWeight:700,
               display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-              background:'rgba(255,159,10,0.1)', color:'#FF9F0A',
-              border:'0.5px solid rgba(255,159,10,0.35)', marginTop:4 }}>
+              background:'rgba(255,178,62,0.1)', color:'#FFB23E',
+              border:'0.5px solid rgba(255,178,62,0.35)', marginTop:4 }}>
             <CheckCircle2 size={17} strokeWidth={2} /> Finish Early
-            <span style={{ fontSize:12, fontWeight:500, color:'rgba(255,159,10,0.7)',
-              background:'rgba(255,159,10,0.15)', padding:'2px 8px', borderRadius:99 }}>
+            <span style={{ fontSize:12, fontWeight:500, color:'rgba(255,178,62,0.7)',
+              background:'rgba(255,178,62,0.15)', padding:'2px 8px', borderRadius:99 }}>
               {logged}/{total} sets
             </span>
           </button>
@@ -967,7 +967,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       {syncErrors.length > 0 && (
         <div style={{ position:'fixed', bottom:'calc(var(--safe-bottom) + 72px)',
           left:16, right:16, zIndex:99, padding:'12px 16px', borderRadius:14,
-          background:'rgba(255,159,10,0.97)', display:'flex', gap:10, alignItems:'center',
+          background:'rgba(255,178,62,0.97)', display:'flex', gap:10, alignItems:'center',
           boxShadow:'0 4px 24px rgba(0,0,0,0.4)' }}>
           <span style={{ fontSize:16, flexShrink:0 }}>⚠️</span>
           <p style={{ fontSize:13, color:'#fff', fontWeight:600, flex:1, lineHeight:1.4 }}>
@@ -994,8 +994,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
               The {total - logged} remaining sets will simply be skipped.
             </p>
             <div style={{ padding:'12px 14px', borderRadius:14, marginBottom:20,
-              background:'rgba(48,209,88,0.08)', border:'0.5px solid rgba(48,209,88,0.25)' }}>
-              <p style={{ fontSize:12, fontWeight:700, color:'#30D158', marginBottom:8 }}>
+              background:'rgba(45,212,160,0.08)', border:'0.5px solid rgba(45,212,160,0.25)' }}>
+              <p style={{ fontSize:12, fontWeight:700, color:'#2DD4A0', marginBottom:8 }}>
                 Weight suggestions stay accurate
               </p>
               {[
@@ -1004,7 +1004,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                 'Smart suggestions will calibrate from your real performance today',
               ].map((t, i) => (
                 <div key={i} style={{ display:'flex', gap:8, marginBottom: i < 2 ? 6 : 0 }}>
-                  <span style={{ color:'#30D158', fontSize:12, flexShrink:0, marginTop:1 }}>✓</span>
+                  <span style={{ color:'#2DD4A0', fontSize:12, flexShrink:0, marginTop:1 }}>✓</span>
                   <p style={{ fontSize:13, color:'rgba(255,255,255,0.65)', lineHeight:1.4 }}>{t}</p>
                 </div>
               ))}
@@ -1016,8 +1016,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                   setDone(true)
                 }}
                 style={{ width:'100%', height:54, borderRadius:16, fontSize:17, fontWeight:700,
-                  background:'rgba(255,159,10,0.15)', color:'#FF9F0A',
-                  border:'0.5px solid rgba(255,159,10,0.4)' }}>
+                  background:'rgba(255,178,62,0.15)', color:'#FFB23E',
+                  border:'0.5px solid rgba(255,178,62,0.4)' }}>
                 Finish & Save {logged} Sets
               </button>
               <button onClick={()=>setShowFinishEarly(false)}
@@ -1061,11 +1061,11 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
               </button>
               <button onClick={handleDiscard}
                 style={{ width:'100%', height:54, borderRadius:16, fontSize:17, fontWeight:700,
-                  background:'rgba(255,69,58,0.1)',
-                  border:'0.5px solid rgba(255,69,58,0.3)', color:'#FF453A' }}>
+                  background:'rgba(242,92,84,0.1)',
+                  border:'0.5px solid rgba(242,92,84,0.3)', color:'#F25C54' }}>
                 Discard Session
                 <span style={{ display:'block', fontSize:12, fontWeight:500,
-                  color:'rgba(255,69,58,0.6)', marginTop:1 }}>Removes all logged sets</span>
+                  color:'rgba(242,92,84,0.6)', marginTop:1 }}>Removes all logged sets</span>
               </button>
             </div>
           </div>

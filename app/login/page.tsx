@@ -36,9 +36,9 @@ export default function LoginPage() {
   if (sent) return (
     <div style={{ minHeight:'100svh', background:'#000', display:'flex', flexDirection:'column',
       alignItems:'center', justifyContent:'center', padding:'0 32px', gap:24 }}>
-      <div style={{ width:72, height:72, borderRadius:'50%', background:'rgba(48,209,88,0.15)',
+      <div style={{ width:72, height:72, borderRadius:'50%', background:'rgba(45,212,160,0.15)',
         display:'flex', alignItems:'center', justifyContent:'center' }}>
-        <Mail size={32} strokeWidth={1.5} style={{ color:'#30D158' }} />
+        <Mail size={32} strokeWidth={1.5} style={{ color:'#2DD4A0' }} />
       </div>
       <div style={{ textAlign:'center' }}>
         <h1 style={{ fontSize:28, fontWeight:800, color:'#fff', letterSpacing:'-0.5px', marginBottom:10 }}>
@@ -120,16 +120,16 @@ export default function LoginPage() {
           onKeyDown={e=>e.key==='Enter'&&sendMagicLink()}
           style={{ width:'100%', height:48, borderRadius:12, padding:'0 16px', fontSize:16,
             fontWeight:500, outline:'none', background:'rgba(118,118,128,0.18)', color:'#fff',
-            border: error ? '1px solid rgba(255,69,58,0.6)' : '1px solid rgba(84,84,88,0.5)',
+            border: error ? '1px solid rgba(242,92,84,0.6)' : '1px solid rgba(84,84,88,0.5)',
             boxSizing:'border-box' }} />
-        {error && <p style={{ fontSize:13, color:'#FF453A', marginTop:6 }}>{error}</p>}
+        {error && <p style={{ fontSize:13, color:'#F25C54', marginTop:6 }}>{error}</p>}
 
         <button onClick={sendMagicLink} disabled={loadMagic||!email}
           style={{ width:'100%', height:50, borderRadius:14, marginTop:12, fontSize:15,
             fontWeight:700, letterSpacing:'-0.3px', cursor: loadMagic||!email ? 'default' : 'pointer',
-            background: loadMagic||!email ? 'rgba(118,118,128,0.15)' : 'rgba(255,159,10,0.15)',
-            color: loadMagic||!email ? '#8E8E93' : '#FF9F0A',
-            border: `1px solid ${loadMagic||!email ? 'rgba(84,84,88,0.4)' : 'rgba(255,159,10,0.4)'}`,
+            background: loadMagic||!email ? 'rgba(118,118,128,0.15)' : 'rgba(255,178,62,0.15)',
+            color: loadMagic||!email ? '#8E8E93' : '#FFB23E',
+            border: `1px solid ${loadMagic||!email ? 'rgba(84,84,88,0.4)' : 'rgba(255,178,62,0.4)'}`,
             display:'flex', alignItems:'center', justifyContent:'center', gap:8,
             transition:'all 0.15s' }}>
           {loadMagic

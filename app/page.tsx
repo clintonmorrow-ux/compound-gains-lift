@@ -12,7 +12,7 @@ import { detectDeloadReadiness, type CoachSet } from '@/lib/program/coach'
 import CycleComplete from '@/components/CycleComplete'
 import { Battery, Zap } from 'lucide-react'
 
-const WC: Record<string,string> = { A:'var(--wkt-a)', B:'var(--wkt-b)', C:'var(--wkt-c)', D:'var(--wkt-d)' }
+const WC: Record<string,string> = { A:'#17BEBB', B:'#2DD4A0', C:'#A885F2', D:'#FFB23E', E:'#F25C54' }
 const PC: Record<number,string>  = {
   1:'ph-1',2:'ph-1',3:'ph-1',4:'ph-d',
   5:'ph-2',6:'ph-2',7:'ph-2',8:'ph-d',
@@ -169,8 +169,8 @@ export default function Dashboard() {
           <div style={{ textAlign:'right' }}>
             <div style={{ display:'flex', alignItems:'center', gap:6, justifyContent:'flex-end' }}>
               {cycleNumber > 1 && (
-                <span style={{ fontSize:9, fontWeight:700, color:'rgba(255,159,10,0.5)',
-                  background:'rgba(255,159,10,0.1)', padding:'1px 6px', borderRadius:5 }}>
+                <span style={{ fontSize:9, fontWeight:700, color:'rgba(255,178,62,0.5)',
+                  background:'rgba(255,178,62,0.1)', padding:'1px 6px', borderRadius:5 }}>
                   C{cycleNumber}
                 </span>
               )}
@@ -279,15 +279,15 @@ export default function Dashboard() {
         {/* ── Deload alert (only when triggered) ── */}
         {deloadReasons.length > 0 && !deloadDismissed && (
           <div className="fade-rise" style={{ animationDelay:'0.04s', display:'flex', gap:12,
-            padding:'14px 16px', borderRadius:16, background:'rgba(255,159,10,0.1)',
-            border:'0.5px solid rgba(255,159,10,0.35)' }}>
+            padding:'14px 16px', borderRadius:16, background:'rgba(255,178,62,0.1)',
+            border:'0.5px solid rgba(255,178,62,0.35)' }}>
             <div style={{ width:36, height:36, borderRadius:11, flexShrink:0,
               display:'flex', alignItems:'center', justifyContent:'center',
-              background:'rgba(255,159,10,0.18)' }}>
-              <Battery size={18} strokeWidth={2} style={{ color:'#FF9F0A' }} />
+              background:'rgba(255,178,62,0.18)' }}>
+              <Battery size={18} strokeWidth={2} style={{ color:'#FFB23E' }} />
             </div>
             <div style={{ flex:1, minWidth:0 }}>
-              <p style={{ fontSize:10, fontWeight:800, color:'#FF9F0A', textTransform:'uppercase',
+              <p style={{ fontSize:10, fontWeight:800, color:'#FFB23E', textTransform:'uppercase',
                 letterSpacing:'0.08em', marginBottom:3 }}>Recovery Signal</p>
               <p style={{ fontSize:14, fontWeight:700, color:'#fff', marginBottom:2 }}>
                 Your body may need a deload
@@ -296,7 +296,7 @@ export default function Dashboard() {
                 {deloadReasons.join(' · ')}.
               </p>
               <button onClick={()=>router.push('/insights')}
-                style={{ marginTop:8, fontSize:13, fontWeight:700, color:'#FF9F0A',
+                style={{ marginTop:8, fontSize:13, fontWeight:700, color:'#FFB23E',
                   background:'none', border:'none', padding:0, cursor:'pointer' }}>
                 View details →
               </button>

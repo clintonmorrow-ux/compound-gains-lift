@@ -6,7 +6,7 @@ import { fetchSessionWithSets, updateLoggedSet, deleteLoggedSet, deleteSession }
 import { WORKOUTS } from '@/lib/program/data'
 import type { WorkoutKey } from '@/types'
 
-const WC: Record<string,string> = { A:'#0A84FF', B:'#30D158', C:'#BF5AF2', D:'#FF9F0A' }
+const WC: Record<string,string> = { A:'#17BEBB', B:'#2DD4A0', C:'#A885F2', D:'#FFB23E' }
 
 function relDate(d: string) {
   const diff = Math.floor((Date.now() - new Date(d).getTime()) / 86400000)
@@ -52,8 +52,8 @@ function EditableSetRow({ set, isBodyweight, accentColor, onSaved, onDeleted }: 
   return (
     <div style={{
       borderRadius:12, transition:'background 0.2s',
-      background: saved ? 'rgba(48,209,88,0.1)' : 'rgba(118,118,128,0.08)',
-      border:`0.5px solid ${saved ? 'rgba(48,209,88,0.35)' : 'rgba(84,84,88,0.3)'}`,
+      background: saved ? 'rgba(45,212,160,0.1)' : 'rgba(118,118,128,0.08)',
+      border:`0.5px solid ${saved ? 'rgba(45,212,160,0.35)' : 'rgba(84,84,88,0.3)'}`,
       overflow:'hidden',
     }}>
       {/* Main row: badge | weight | × | reps | save | delete */}
@@ -61,7 +61,7 @@ function EditableSetRow({ set, isBodyweight, accentColor, onSaved, onDeleted }: 
         {/* Set badge */}
         <div style={{ width:24, height:24, borderRadius:'50%', flexShrink:0,
           display:'flex', alignItems:'center', justifyContent:'center',
-          background: saved ? '#30D158' : 'rgba(84,84,88,0.3)',
+          background: saved ? '#2DD4A0' : 'rgba(84,84,88,0.3)',
           fontSize:10, fontWeight:800, color: saved ? '#000' : '#8E8E93' }}>
           {saved ? '✓' : set.set_number}
         </div>
@@ -105,8 +105,8 @@ function EditableSetRow({ set, isBodyweight, accentColor, onSaved, onDeleted }: 
         {/* Delete */}
         <button onClick={handleDelete} style={{ width:24, height:24, borderRadius:'50%', flexShrink:0,
           display:'flex', alignItems:'center', justifyContent:'center', border:'none', cursor:'pointer',
-          background: confirm ? 'rgba(255,69,58,0.25)' : 'transparent' }}>
-          <Trash2 size={13} style={{ color: confirm ? '#FF453A' : 'rgba(84,84,88,0.55)' }} />
+          background: confirm ? 'rgba(242,92,84,0.25)' : 'transparent' }}>
+          <Trash2 size={13} style={{ color: confirm ? '#F25C54' : 'rgba(84,84,88,0.55)' }} />
         </button>
       </div>
 
@@ -121,17 +121,17 @@ function EditableSetRow({ set, isBodyweight, accentColor, onSaved, onDeleted }: 
               display:'flex', alignItems:'center', justifyContent:'center',
               fontSize:11, fontWeight:800,
               background: r === set.rir
-                ? r === 0 ? 'rgba(255,69,58,0.25)'
+                ? r === 0 ? 'rgba(242,92,84,0.25)'
                 : r <= 2   ? `color-mix(in srgb, ${accentColor} 20%, transparent)`
-                :            'rgba(48,209,88,0.2)'
+                :            'rgba(45,212,160,0.2)'
                 : 'rgba(44,44,46,0.6)',
               color: r === set.rir
-                ? r === 0 ? '#FF453A'
+                ? r === 0 ? '#F25C54'
                 : r <= 2   ? accentColor
-                :            '#30D158'
+                :            '#2DD4A0'
                 : '#3A3A3C',
               border: r === set.rir
-                ? `0.5px solid ${r === 0 ? 'rgba(255,69,58,0.4)' : r <= 2 ? accentColor+'55' : 'rgba(48,209,88,0.4)'}`
+                ? `0.5px solid ${r === 0 ? 'rgba(242,92,84,0.4)' : r <= 2 ? accentColor+'55' : 'rgba(45,212,160,0.4)'}`
                 : '0.5px solid rgba(44,44,46,0.4)',
             }}>{r === 4 ? '4+' : r}</div>
           ))}
@@ -198,13 +198,13 @@ export default function SessionEditPage({ params }: { params: Promise<{sessionId
   const isBodyweight = (name: string) =>
     wkt?.exercises.find(e => e.name === name)?.isBodyweight ?? false
 
-  const accent = session ? (WC[session.workout_key as WorkoutKey] ?? '#FF9F0A') : '#FF9F0A'
+  const accent = session ? (WC[session.workout_key as WorkoutKey] ?? '#FFB23E') : '#FFB23E'
 
   if (loading) return (
     <div style={{ minHeight:'100svh', background:'#000', display:'flex',
       alignItems:'center', justifyContent:'center' }}>
       <div style={{ width:32, height:32, borderRadius:'50%', border:'3px solid transparent',
-        borderTopColor:'#FF9F0A', animation:'spin 0.7s linear infinite' }} />
+        borderTopColor:'#FFB23E', animation:'spin 0.7s linear infinite' }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
@@ -240,12 +240,12 @@ export default function SessionEditPage({ params }: { params: Promise<{sessionId
             </div>
             <button onClick={handleDeleteSession} disabled={deleting}
               style={{ padding:'5px 12px', borderRadius:8, border:'none', cursor:'pointer',
-                background: confirmDelete ? 'rgba(255,69,58,0.25)' : 'rgba(255,69,58,0.1)',
+                background: confirmDelete ? 'rgba(242,92,84,0.25)' : 'rgba(242,92,84,0.1)',
                 transition:'background 0.2s' }}>
               {deleting
                 ? <div style={{ width:14,height:14,borderRadius:'50%',border:'2px solid transparent',
-                    borderTopColor:'#FF453A',animation:'spin 0.7s linear infinite' }} />
-                : <span style={{ fontSize:12, fontWeight:700, color:'#FF453A' }}>
+                    borderTopColor:'#F25C54',animation:'spin 0.7s linear infinite' }} />
+                : <span style={{ fontSize:12, fontWeight:700, color:'#F25C54' }}>
                     {confirmDelete ? 'Confirm' : 'Delete'}
                   </span>}
             </button>

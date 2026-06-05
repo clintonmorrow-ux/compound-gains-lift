@@ -53,8 +53,8 @@ function MuscleRow({ muscle, sets }: { muscle: string; sets: number }) {
               : sets <= t.mrv  ? 'optimal'
               :                  'over'
 
-  const barColor = { none:'transparent', below:'#FF453A',
-                     building:'#FF9F0A', optimal:'#30D158', over:'#FF453A' }[zone]
+  const barColor = { none:'transparent', below:'#F25C54',
+                     building:'#FFB23E', optimal:'#2DD4A0', over:'#F25C54' }[zone]
 
   const zoneLabel = { none:'', below:'Below MEV', building:'Building',
                       optimal:'Optimal', over:'Over MRV' }[zone]
@@ -72,10 +72,10 @@ function MuscleRow({ muscle, sets }: { muscle: string; sets: number }) {
         <div style={{ position:'relative', height:10, borderRadius:6, overflow:'hidden',
           background:'rgba(44,44,46,0.9)' }}>
           {/* Zone backgrounds */}
-          <div style={{ position:'absolute', left:0, width:`${mevX}%`,       height:'100%', background:'rgba(255,69,58,0.15)' }} />
-          <div style={{ position:'absolute', left:`${mevX}%`, width:`${mavX-mevX}%`, height:'100%', background:'rgba(255,159,10,0.15)' }} />
-          <div style={{ position:'absolute', left:`${mavX}%`, width:`${mrvX-mavX}%`, height:'100%', background:'rgba(48,209,88,0.15)' }} />
-          <div style={{ position:'absolute', left:`${mrvX}%`, right:0,       height:'100%', background:'rgba(255,69,58,0.15)' }} />
+          <div style={{ position:'absolute', left:0, width:`${mevX}%`,       height:'100%', background:'rgba(242,92,84,0.15)' }} />
+          <div style={{ position:'absolute', left:`${mevX}%`, width:`${mavX-mevX}%`, height:'100%', background:'rgba(255,178,62,0.15)' }} />
+          <div style={{ position:'absolute', left:`${mavX}%`, width:`${mrvX-mavX}%`, height:'100%', background:'rgba(45,212,160,0.15)' }} />
+          <div style={{ position:'absolute', left:`${mrvX}%`, right:0,       height:'100%', background:'rgba(242,92,84,0.15)' }} />
 
           {/* Bar */}
           {sets > 0 && (
@@ -86,11 +86,11 @@ function MuscleRow({ muscle, sets }: { muscle: string; sets: number }) {
 
           {/* Threshold lines */}
           <div style={{ position:'absolute', left:`${mevX}%`, top:0, bottom:0, width:1.5,
-            background:'rgba(255,159,10,0.8)', transform:'translateX(-50%)' }} />
+            background:'rgba(255,178,62,0.8)', transform:'translateX(-50%)' }} />
           <div style={{ position:'absolute', left:`${mavX}%`, top:0, bottom:0, width:1.5,
-            background:'rgba(48,209,88,0.8)', transform:'translateX(-50%)' }} />
+            background:'rgba(45,212,160,0.8)', transform:'translateX(-50%)' }} />
           <div style={{ position:'absolute', left:`${mrvX}%`, top:0, bottom:0, width:1.5,
-            background:'rgba(255,69,58,0.8)', transform:'translateX(-50%)' }} />
+            background:'rgba(242,92,84,0.8)', transform:'translateX(-50%)' }} />
         </div>
       </div>
 
@@ -192,7 +192,7 @@ export default function MuscleVolumeChart({ sets }: { sets: RawSet[] }) {
           {weeksWithData.map(w => (
             <button key={w} onClick={() => goTo(w)}
               style={{ width:22, height:22, borderRadius:6, fontSize:10, fontWeight:700,
-                background: w === selectedWeek ? '#FF9F0A' : 'rgba(118,118,128,0.2)',
+                background: w === selectedWeek ? '#FFB23E' : 'rgba(118,118,128,0.2)',
                 color: w === selectedWeek ? '#000' : '#8E8E93',
                 border: 'none', cursor: 'pointer' }}>
               {w}
@@ -204,9 +204,9 @@ export default function MuscleVolumeChart({ sets }: { sets: RawSet[] }) {
       {/* Legend */}
       <div style={{ display:'flex', gap:10, marginBottom:14, paddingLeft:86, flexWrap:'wrap' }}>
         {[
-          { color:'rgba(255,159,10,0.8)', label:'MEV' },
-          { color:'rgba(48,209,88,0.8)',  label:'MAV' },
-          { color:'rgba(255,69,58,0.8)',  label:'MRV' },
+          { color:'rgba(255,178,62,0.8)', label:'MEV' },
+          { color:'rgba(45,212,160,0.8)',  label:'MAV' },
+          { color:'rgba(242,92,84,0.8)',  label:'MRV' },
         ].map(l => (
           <div key={l.label} style={{ display:'flex', alignItems:'center', gap:4 }}>
             <div style={{ width:2, height:10, borderRadius:1, background:l.color }} />
@@ -215,9 +215,9 @@ export default function MuscleVolumeChart({ sets }: { sets: RawSet[] }) {
         ))}
         <div style={{ marginLeft:'auto', display:'flex', gap:8 }}>
           {[
-            { color:'#FF453A', label:'Low' },
-            { color:'#FF9F0A', label:'Building' },
-            { color:'#30D158', label:'Optimal' },
+            { color:'#F25C54', label:'Low' },
+            { color:'#FFB23E', label:'Building' },
+            { color:'#2DD4A0', label:'Optimal' },
           ].map(l => (
             <div key={l.label} style={{ display:'flex', alignItems:'center', gap:4 }}>
               <div style={{ width:8, height:8, borderRadius:2, background:l.color, opacity:0.85 }} />

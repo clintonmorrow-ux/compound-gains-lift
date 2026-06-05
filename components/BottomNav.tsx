@@ -33,18 +33,18 @@ export default function BottomNav() {
                 flex:1,
                 display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
                 gap:3, borderRadius:13, margin:'5px 2px',
-                background: on ? 'rgba(255,159,10,0.11)' : 'transparent',
-                border: on ? '0.5px solid rgba(255,159,10,0.18)' : '0.5px solid transparent',
+                background: on ? 'rgba(255,178,62,0.11)' : 'transparent',
+                border: on ? '0.5px solid rgba(255,178,62,0.18)' : '0.5px solid transparent',
                 textDecoration:'none', transition:'all 0.18s ease',
               }}>
                 <Icon
                   size={21}
                   strokeWidth={on ? 2.3 : 1.6}
-                  style={{ color: on ? '#FF9F0A' : '#636366', transition:'all 0.18s ease' }}
+                  style={{ color: on ? '#FF7E6B' : '#636366', transition:'all 0.18s ease' }}
                 />
                 <span style={{
                   fontSize:9, fontWeight: on ? 700 : 500,
-                  color: on ? '#FF9F0A' : '#636366',
+                  color: on ? '#FF7E6B' : '#636366',
                   letterSpacing:'0.01em', transition:'all 0.18s ease',
                 }}>
                   {label}

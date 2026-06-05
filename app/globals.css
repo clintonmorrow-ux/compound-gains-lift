@@ -3,43 +3,44 @@
 @tailwind utilities;
 
 :root {
-  /* ── iOS System Backgrounds ── */
-  --bg:     #000000;
-  --bg-2:   #1C1C1E;
-  --bg-3:   #2C2C2E;
-  --bg-4:   #3A3A3C;
+  /* ── Deep Ocean Backgrounds ── */
+  --bg:     #04161E;
+  --bg-2:   #0B2A33;
+  --bg-3:   #123A45;
+  --bg-4:   #1A4956;
 
-  /* ── iOS Label Colors ── */
-  --label:   #FFFFFF;
-  --label-2: rgba(235,235,245,0.60);
-  --label-3: rgba(235,235,245,0.30);
-  --label-4: rgba(235,235,245,0.18);
+  /* ── Sea-Foam Label Colors ── */
+  --label:   #EFFAF8;
+  --label-2: rgba(214,238,235,0.62);
+  --label-3: rgba(196,228,225,0.34);
+  --label-4: rgba(190,224,221,0.18);
 
-  /* ── iOS Fill Colors ── */
-  --fill:   rgba(120,120,128,0.36);
-  --fill-2: rgba(120,120,128,0.32);
-  --fill-3: rgba(118,118,128,0.24);
-  --fill-4: rgba(116,116,128,0.18);
+  /* ── Aqua Fill Colors ── */
+  --fill:   rgba(52,180,172,0.26);
+  --fill-2: rgba(52,180,172,0.22);
+  --fill-3: rgba(52,180,172,0.16);
+  --fill-4: rgba(52,180,172,0.12);
 
   /* ── Separator ── */
-  --sep: rgba(84,84,88,0.65);
+  --sep: rgba(90,170,165,0.30);
 
-  /* ── iOS System Colors (dark mode) ── */
-  --blue:   #0A84FF;
-  --green:  #30D158;
-  --orange: #FF9F0A;
-  --purple: #BF5AF2;
-  --red:    #FF453A;
-  --teal:   #40CBE0;
+  /* ── Reef System Colors ── */
+  --blue:   #17BEBB;
+  --green:  #2DD4A0;
+  --orange: #FFB23E;
+  --purple: #A885F2;
+  --red:    #F25C54;
+  --teal:   #34DBCB;
 
-  /* ── App Accent ── */
-  --accent: #FF9F0A;
+  /* ── Living Coral Accent ── */
+  --accent: #FF7E6B;
 
-  /* ── Per-Workout ── */
-  --wkt-a: #0A84FF;
-  --wkt-b: #30D158;
-  --wkt-c: #BF5AF2;
-  --wkt-d: #FF9F0A;
+  /* ── Per-Workout (reef zones) ── */
+  --wkt-a: #17BEBB;
+  --wkt-b: #2DD4A0;
+  --wkt-c: #A885F2;
+  --wkt-d: #FFB23E;
+  --wkt-e: #F25C54;
 
   /* ── Layout ── */
   --safe-top:    env(safe-area-inset-top, 0px);
@@ -54,6 +55,10 @@ button { -webkit-appearance: none; background: transparent; border: none; cursor
 
 html, body {
   background: var(--bg);
+  background-image:
+    radial-gradient(ellipse 130% 70% at 50% -15%, rgba(23,190,187,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse 100% 60% at 85% 8%, rgba(255,126,107,0.06) 0%, transparent 50%);
+  background-attachment: fixed;
   color: var(--label);
   font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -131,7 +136,7 @@ input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; }
   width: 100%; height: 50px;
   border-radius: 14px;
   font-size: 17px; font-weight: 600; letter-spacing: -0.41px;
-  background: var(--accent); color: #fff;
+  background: var(--accent); color: #04161E;
   transition: opacity 0.1s;
 }
 .ios-btn:active { opacity: 0.8; }
@@ -166,10 +171,10 @@ input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; }
 .fade-rise { animation: fade-rise 0.22s ease-out both; }
 
 /* ── Phase pills ── */
-.ph-1 { background: rgba(10,132,255,0.16);  color: #5AABFF; }
-.ph-2 { background: rgba(48,209,88,0.16);   color: #5EE886; }
-.ph-3 { background: rgba(191,90,242,0.16);  color: #D08EFF; }
-.ph-d { background: rgba(120,120,128,0.2);  color: rgba(235,235,245,0.45); }
+.ph-1 { background: rgba(23,190,187,0.16);  color: #5FE0DD; }
+.ph-2 { background: rgba(45,212,160,0.16);   color: #6FECC8; }
+.ph-3 { background: rgba(168,133,242,0.16);  color: #C7ADF8; }
+.ph-d { background: rgba(90,170,165,0.18);  color: rgba(214,238,235,0.55); }
 
 /* ── Rest timer pill ── */
 .rest-pill {
@@ -178,7 +183,7 @@ input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; }
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px 8px 10px;
   border-radius: 999px;
-  background: rgba(44,44,46,0.96);
+  background: rgba(11,42,51,0.96);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 0.5px solid var(--sep);

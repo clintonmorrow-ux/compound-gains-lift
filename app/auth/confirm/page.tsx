@@ -51,11 +51,11 @@ export default function ConfirmPage() {
   if (error) return (
     <div style={{ minHeight:'100svh', background:'#000', display:'flex', flexDirection:'column',
       alignItems:'center', justifyContent:'center', padding:'0 32px', gap:20, textAlign:'center' }}>
-      <p style={{ fontSize:18, fontWeight:700, color:'#FF453A' }}>Sign-in failed</p>
+      <p style={{ fontSize:18, fontWeight:700, color:'#F25C54' }}>Sign-in failed</p>
       <p style={{ fontSize:15, color:'#8E8E93', lineHeight:1.6 }}>{error}</p>
       <button onClick={() => window.location.href = '/login'}
         style={{ marginTop:8, height:48, padding:'0 28px', borderRadius:14, fontSize:15,
-          fontWeight:700, background:'#FF9F0A', color:'#fff', border:'none', cursor:'pointer' }}>
+          fontWeight:700, background:'#FFB23E', color:'#fff', border:'none', cursor:'pointer' }}>
         Back to sign in
       </button>
     </div>
@@ -65,7 +65,7 @@ export default function ConfirmPage() {
     <div style={{ minHeight:'100svh', background:'#000', display:'flex', flexDirection:'column',
       alignItems:'center', justifyContent:'center', gap:20 }}>
       <div style={{ width:40, height:40, borderRadius:'50%', border:'3px solid transparent',
-        borderTopColor:'#FF9F0A', animation:'spin 0.7s linear infinite' }} />
+        borderTopColor:'#FFB23E', animation:'spin 0.7s linear infinite' }} />
       <p style={{ fontSize:16, color:'#8E8E93' }}>Signing you in…</p>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
