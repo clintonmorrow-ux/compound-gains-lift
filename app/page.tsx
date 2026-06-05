@@ -149,7 +149,7 @@ export default function Dashboard() {
   const cfg  = WEEK_CONFIG[week]
   const activeProgram = getProgram(activeProgramId)
   const workouts = activeProgram.workouts
-  const next = workouts.find(w => !done.includes(w.key))
+  const next = workouts.find(w => !w.isRest && !done.includes(w.key))
 
   return (
     <div className="min-h-screen pb-tabs" style={{ background:'var(--bg)' }}>
@@ -315,7 +315,22 @@ export default function Dashboard() {
           <div className="ios-group">
             {workouts.map((w, i) => {
               const isDone = done.includes(w.key)
-              const c = WC[w.key]
+              const c = WC[w.key] ?? '#636366'
+
+              if (w.isRest) return (
+                <div key={w.key} className={`ios-row ${i===0?'ios-row-first':''}`}
+                     style={{ opacity:0.6, cursor:'default' }}>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                       style={{ background:'rgba(99,99,102,0.15)' }}>
+                    <span style={{ fontSize:16 }}>🌙</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="t-subhead sf-semibold" style={{ color:'var(--label-2)' }}>Rest · {w.day}</p>
+                    <p className="t-caption1 mt-0.5" style={{ color:'var(--label-3)' }}>{w.focus}</p>
+                  </div>
+                </div>
+              )
+
               return (
                 <Link key={w.key} href={`/workout/${week}/${w.key}`}>
                   <div className={`ios-row ${i===0?'ios-row-first':''}`}>

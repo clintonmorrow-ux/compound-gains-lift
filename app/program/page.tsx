@@ -237,6 +237,34 @@ export default function ProgramPage() {
 
         {/* Workout cards */}
         {getProgram(typeof window !== 'undefined' ? localStorage.getItem('cg_program') ?? undefined : undefined).workouts.map(wkt => {
+          if (wkt.isRest) return (
+            <div key={wkt.key} style={{ padding:'14px 16px', borderRadius:18,
+              background:'rgba(28,28,36,0.7)', border:'0.5px solid rgba(84,84,88,0.25)',
+              opacity:0.85 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom: wkt.restRationale ? 10 : 0 }}>
+                <div style={{ width:34, height:34, borderRadius:10, flexShrink:0,
+                  background:'rgba(99,99,102,0.15)',
+                  display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>
+                  🌙
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <p style={{ fontSize:14, fontWeight:700, color:'rgba(255,255,255,0.6)' }}>Rest Day</p>
+                    <span style={{ fontSize:10, color:'#636366',
+                      background:'rgba(44,44,46,0.8)', border:'0.5px solid rgba(84,84,88,0.3)',
+                      padding:'1px 7px', borderRadius:99 }}>{wkt.day}</span>
+                  </div>
+                  <p style={{ fontSize:12, color:'#636366', marginTop:1 }}>{wkt.focus}</p>
+                </div>
+              </div>
+              {wkt.restRationale && (
+                <p style={{ fontSize:11, color:'rgba(142,142,147,0.5)', lineHeight:1.6,
+                  paddingTop:8, borderTop:'0.5px solid rgba(84,84,88,0.2)' }}>
+                  {wkt.restRationale}
+                </p>
+              )}
+            </div>
+          )
           const c = WC[wkt.key]
           return (
             <div key={wkt.key}>

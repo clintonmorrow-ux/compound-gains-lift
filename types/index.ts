@@ -1,7 +1,7 @@
 export type ExerciseType = 'primary' | 'secondary' | 'isolation'
 export type DayType = 'power' | 'hypertrophy' | 'standard'
 
-export type WorkoutKey = 'A' | 'B' | 'C' | 'D' | 'E'
+export type WorkoutKey = 'A' | 'B' | 'C' | 'D' | 'E' | 'R1' | 'R2'
 export type ProgramFormat = '4day' | '5day'
 
 export interface Exercise {
@@ -21,6 +21,8 @@ export interface Workout {
   restTimes: string
   duration?: string
   dayType?: DayType
+  isRest?: boolean
+  restRationale?: string
   exercises: Exercise[]
 }
 

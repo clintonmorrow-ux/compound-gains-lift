@@ -464,6 +464,14 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     ? (localStorage.getItem('cg_program') ?? undefined) : undefined
   const activeProgram = getProgram(activeProgramId)
   const workout = activeProgram.workouts.find(w => w.key === key) ?? activeProgram.workouts[0]
+
+  // Guard: if someone navigates to a rest day URL, redirect to home
+  if (workout.isRest) {
+    if (typeof window !== 'undefined') router.replace('/')
+    return <div style={{ background:'var(--bg)', minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center' }}>
+      <p style={{ color:'#8E8E93', fontSize:16 }}>🌙</p>
+    </div>
+  }
   const cfg     = getWeekConfig(activeProgramId, wk, workout.dayType)
   const accent  = WC[key]
 
