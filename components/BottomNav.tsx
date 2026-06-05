@@ -33,8 +33,8 @@ export default function BottomNav() {
                 flex:1,
                 display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
                 gap:3, borderRadius:13, margin:'5px 2px',
-                background: on ? 'rgba(255,178,62,0.11)' : 'transparent',
-                border: on ? '0.5px solid rgba(255,178,62,0.18)' : '0.5px solid transparent',
+                background: on ? 'rgba(255,126,107,0.13)' : 'transparent',
+                border: on ? '0.5px solid rgba(255,126,107,0.22)' : '0.5px solid transparent',
                 textDecoration:'none', transition:'all 0.18s ease',
               }}>
                 <Icon
