@@ -9,7 +9,7 @@ import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/c
 import { fetchAllOneRms, fetchSettings, createSession, completeSession,
          logSet, getRecentSetsForExercise, fetchEquipment, fetchExercisePreferences,
          deleteSession, findIncompleteSession } from '@/lib/db'
-import { getRestSeconds, fireRestCompleteNotification, requestNotificationPermission } from '@/lib/program/restTimes'
+import { getRestSeconds, getRestContext, fireRestCompleteNotification, requestNotificationPermission } from '@/lib/program/restTimes'
 import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { calculateSmartSuggestion, type SmartSuggestion } from '@/lib/program/smartSuggestions'
 import type { Exercise, WorkoutKey } from '@/types'
@@ -340,7 +340,9 @@ function DropSetRow({ lastWeight, repsRange, accentColor, onLog }: {
 }
 
 // ── Rest Timer ────────────────────────────────────────────────────
-function RestPill({ seconds, exName, onDone, onRestPause }: { seconds:number; exName:string; onDone:()=>void; onRestPause:()=>void }) {
+function RestPill({ seconds, exName, context, onDone, onRestPause }: {
+  seconds:number; exName:string; context?:string; onDone:()=>void; onRestPause:()=>void
+}) {
   // Absolute end timestamp so the timer recovers correctly after
   // the iPhone screen locks (JS setTimeout freezes while screen is off)
   const [endTime] = useState(() => Date.now() + seconds * 1000)
@@ -361,28 +363,36 @@ function RestPill({ seconds, exName, onDone, onRestPause }: { seconds:number; ex
 
   const m=Math.floor(rem/60), s=rem%60, pct=(rem/seconds)*100
   return (
-    <div className="rest-pill">
-      <svg width="30" height="30" viewBox="0 0 32 32" style={{ transform:'rotate(-90deg)', flexShrink:0 }}>
-        <circle cx="16" cy="16" r="13" fill="none" strokeWidth="2.5" stroke="rgba(84,84,88,0.4)" />
-        <circle cx="16" cy="16" r="13" fill="none" strokeWidth="2.5" strokeLinecap="round"
-          style={{ stroke:'#FF9F0A', strokeDasharray:`${2*Math.PI*13}`,
-            strokeDashoffset:`${2*Math.PI*13*(1-pct/100)}`, transition:'stroke-dashoffset 1s linear' }} />
-      </svg>
-      <span style={{ fontSize:17, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums', letterSpacing:'-0.3px' }}>
-        {m}:{String(s).padStart(2,'0')}
-      </span>
-      <div style={{ width:0.5, height:18, background:'rgba(84,84,88,0.6)', flexShrink:0 }} />
-      <button onClick={onRestPause} title="Rest-Pause: 15s then log more reps"
-        style={{ padding:'4px 9px', borderRadius:999, flexShrink:0,
-        background:'rgba(10,132,255,0.25)', fontSize:11, fontWeight:700, color:'#0A84FF',
-        border:'0.5px solid rgba(10,132,255,0.4)' }}>
-        RP
-      </button>
-      <button onClick={onDone}
-        style={{ padding:'4px 9px', borderRadius:999, flexShrink:0,
-        background:'rgba(118,118,128,0.25)', fontSize:11, fontWeight:600, color:'#8E8E93' }}>
-        Skip
-      </button>
+    <div className="rest-pill" style={{ flexDirection:'column', alignItems:'stretch', gap:0, padding:'10px 14px' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+        <svg width="30" height="30" viewBox="0 0 32 32" style={{ transform:'rotate(-90deg)', flexShrink:0 }}>
+          <circle cx="16" cy="16" r="13" fill="none" strokeWidth="2.5" stroke="rgba(84,84,88,0.4)" />
+          <circle cx="16" cy="16" r="13" fill="none" strokeWidth="2.5" strokeLinecap="round"
+            style={{ stroke:'#FF9F0A', strokeDasharray:`${2*Math.PI*13}`,
+              strokeDashoffset:`${2*Math.PI*13*(1-pct/100)}`, transition:'stroke-dashoffset 1s linear' }} />
+        </svg>
+        <span style={{ fontSize:17, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums', letterSpacing:'-0.3px', flex:1 }}>
+          {m}:{String(s).padStart(2,'0')}
+        </span>
+        <div style={{ width:0.5, height:18, background:'rgba(84,84,88,0.6)', flexShrink:0 }} />
+        <button onClick={onRestPause} title="Rest-Pause: 15s then log more reps"
+          style={{ padding:'4px 9px', borderRadius:999, flexShrink:0,
+          background:'rgba(10,132,255,0.25)', fontSize:11, fontWeight:700, color:'#0A84FF',
+          border:'0.5px solid rgba(10,132,255,0.4)' }}>
+          RP
+        </button>
+        <button onClick={onDone}
+          style={{ padding:'4px 9px', borderRadius:999, flexShrink:0,
+          background:'rgba(118,118,128,0.25)', fontSize:11, fontWeight:600, color:'#8E8E93' }}>
+          Skip
+        </button>
+      </div>
+      {context && (
+        <p style={{ fontSize:11, color:'rgba(142,142,147,0.65)', marginTop:8, lineHeight:1.5,
+          paddingTop:8, borderTop:'0.5px solid rgba(84,84,88,0.25)', fontStyle:'italic' }}>
+          {context}
+        </p>
+      )}
     </div>
   )
 }
@@ -470,7 +480,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const [progPrefs,   setProgPrefs]   = useState<Record<string,{name:string;cue:string}>>({})
   const [cycleNumber, setCycleNumber] = useState(1)
   const [altsFor,   setAltsFor]   = useState<string|null>(null)
-  const [rest,      setRest]      = useState<{sec:number;name:string;startedAt:number}|null>(null)
+  const [rest,      setRest]      = useState<{sec:number;ctx:string;name:string;startedAt:number}|null>(null)
   const [showExitSheet,    setShowExitSheet]    = useState(false)
   const [showFinishEarly,  setShowFinishEarly]  = useState(false)
   const [resumeCandidate, setResumeCandidate] = useState<{id:string;started_at:string;logged_sets:any[]}|null>(null)
@@ -646,7 +656,9 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     const newLogged = [...(sets[origEx.name]??[]), tempSet]
     const newSets   = {...sets, [origEx.name]: newLogged}
     setSets(newSets)
-    setRest({ sec: getRestSeconds(wk, origEx.type), name: effName(origEx), startedAt: Date.now() })
+    setRest({ sec: getRestSeconds(wk, origEx.type, activeProgramId, workout.dayType),
+             ctx: getRestContext(origEx.type, activeProgramId, workout.dayType),
+             name: effName(origEx), startedAt: Date.now() })
     if (newLogged.length >= getSetsForWeek(origEx.type, wk)) {
       const next = workout.exercises.find(e => (newSets[e.name]?.length??0) < getSetsForWeek(e.type,wk))
       if (next) setTimeout(()=>setOpen(next.name), 500)
@@ -700,6 +712,49 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
             transition:'width 0.5s cubic-bezier(0.34,1.56,0.64,1)', boxShadow:`0 0 8px ${accent}88` }} />
         </div>
       </div>
+
+      {/* ── PHAT Day-Type Context Card ── */}
+      {workout.dayType && workout.dayType !== 'standard' && (() => {
+        const isPower = workout.dayType === 'power'
+        const accent  = isPower ? '#0A84FF' : '#30D158'
+        const tips = isPower ? [
+          { icon:'⚡', text:'Explosive concentric intent on every rep — even heavy loads should be driven fast. Speed of intent is what recruits high-threshold motor units.' },
+          { icon:'⏱', text:'Full rest between sets is non-negotiable. Phosphocreatine takes 3–4 min to fully replenish — cut the rest and you cut the force output.' },
+          { icon:'🧠', text:'Motor unit recruitment is today\'s adaptation goal — not the pump. CNS efficiency drives the strength gains that carry into your hypertrophy sessions.' },
+        ] : [
+          { icon:'📍', text:'3-second eccentric on every rep. Mechanical tension during the lowering phase is a primary hypertrophy driver (Schoenfeld & Calatayud 2022).' },
+          { icon:'🔥', text:'Embrace the metabolic stress. The burn indicates lactate and metabolite accumulation — the exact environment that amplifies the hypertrophy signal.' },
+          { icon:'↕️', text:'Full stretch at the bottom of every rep. Stretch-mediated hypertrophy produces greater muscle growth than mid-range loading (Wolf & Schoenfeld 2025).' },
+        ]
+        return (
+          <div style={{ padding:'0 14px 2px' }}>
+            <div style={{ padding:'14px 16px', borderRadius:16,
+              background:`color-mix(in srgb, ${accent} 8%, rgba(18,18,26,1))`,
+              border:`0.5px solid color-mix(in srgb, ${accent} 28%, transparent)` }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
+                <span style={{ fontSize:18 }}>{isPower ? '⚡' : '🔥'}</span>
+                <div>
+                  <p style={{ fontSize:13, fontWeight:800, color: accent, letterSpacing:'-0.2px' }}>
+                    {isPower ? 'Power Day — Neural Activation' : 'Hypertrophy Day — Metabolic Stress'}
+                  </p>
+                  <p style={{ fontSize:11, color:'rgba(142,142,147,0.65)', marginTop:1 }}>
+                    {isPower ? 'Rate of Force Development · Motor Unit Recruitment'
+                             : 'Mechanical Tension · Stretch-Mediated Hypertrophy'}
+                  </p>
+                </div>
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                {tips.map((t, i) => (
+                  <div key={i} style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
+                    <span style={{ fontSize:12, flexShrink:0, marginTop:1 }}>{t.icon}</span>
+                    <p style={{ fontSize:11, color:'rgba(255,255,255,0.58)', lineHeight:1.55 }}>{t.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Exercise list */}
       <div style={{ padding:'12px 14px', display:'flex', flexDirection:'column', gap:10 }}>
@@ -834,7 +889,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
         )}
       </div>
 
-      {rest    && <RestPill key={rest.startedAt} seconds={rest.sec} exName={rest.name} onDone={()=>setRest(null)} onRestPause={()=>setRest(p=>p?{...p,sec:15,startedAt:Date.now()}:null)} />}
+      {rest    && <RestPill key={rest.startedAt} seconds={rest.sec} exName={rest.name} context={rest.ctx} onDone={()=>setRest(null)} onRestPause={()=>setRest(p=>p?{...p,sec:15,startedAt:Date.now()}:null)} />}
       {altsFor && <AltsSheet exName={altsFor} equipment={equipment}
         onSwap={(n,c)=>{ setSwapped(p=>({...p,[altsFor]:{name:n,cue:c}})); setAltsFor(null) }}
         onClose={()=>setAltsFor(null)} />}
