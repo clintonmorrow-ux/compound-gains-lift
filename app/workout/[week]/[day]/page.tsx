@@ -3,7 +3,8 @@ import { use, useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { WORKOUTS_5DAY, WEEK_CONFIG } from '@/lib/program/data'
+import { WEEK_CONFIG } from '@/lib/program/data'
+import { getProgram, getWeekConfig } from '@/lib/program/programLibrary'
 import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/calculator'
 import { fetchAllOneRms, fetchSettings, createSession, completeSession,
          logSet, getRecentSetsForExercise, fetchEquipment, fetchExercisePreferences,
@@ -448,7 +449,12 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const wk=parseInt(ws), key=day as WorkoutKey
   const router = useRouter()
 
-  const workout = WORKOUTS_5DAY.find(w => w.key === key) ?? WORKOUTS_5DAY[0]
+  // Resolve workout from the user's active program.
+  // Falls back to Galpin 5-day if program not found.
+  const activeProgramId = typeof window !== 'undefined'
+    ? (localStorage.getItem('cg_program') ?? undefined) : undefined
+  const activeProgram = getProgram(activeProgramId)
+  const workout = activeProgram.workouts.find(w => w.key === key) ?? activeProgram.workouts[0]
   const cfg     = WEEK_CONFIG[wk]
   const accent  = WC[key]
 

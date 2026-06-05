@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
-import { WORKOUTS_5DAY, WEEK_CONFIG, PHASE_LABELS } from '@/lib/program/data'
+import { WEEK_CONFIG, PHASE_LABELS } from '@/lib/program/data'
+import { getProgram } from '@/lib/program/programLibrary'
 import { fetchSettings, updateSettings, fetchRecentSessions, fetchAllOneRms, fetchAllLoggedSets, fetchCoachPrefs, fetchCycleStats } from '@/lib/db'
 import { detectDeloadReadiness, type CoachSet } from '@/lib/program/coach'
 import CycleComplete from '@/components/CycleComplete'
@@ -20,6 +21,11 @@ const PC: Record<number,string>  = {
 
 export default function Dashboard() {
   const router = useRouter()
+  const [activeProgramId, setActiveProgramId] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'galpin-5day-hypertrophy'
+    return localStorage.getItem('cg_program') ?? 'galpin-5day-hypertrophy'
+  })
+
   const [week, setWeek] = useState<number>(() => {
     if (typeof window === 'undefined') return 1
     const cached = parseInt(localStorage.getItem('cg_week') ?? '1', 10)
@@ -141,7 +147,8 @@ export default function Dashboard() {
   )
 
   const cfg  = WEEK_CONFIG[week]
-  const workouts = WORKOUTS_5DAY
+  const activeProgram = getProgram(activeProgramId)
+  const workouts = activeProgram.workouts
   const next = workouts.find(w => !done.includes(w.key))
 
   return (

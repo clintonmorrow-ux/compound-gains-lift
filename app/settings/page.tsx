@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Check, LogOut, ChevronRight } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
+import { getProgram, PROGRAM_LIBRARY } from '@/lib/program/programLibrary'
 import { fetchSettings, updateSettings, fetchEquipment, saveEquipment,
          fetchCoachPrefs, saveCoachPrefs } from '@/lib/db'
 import { DEFAULT_COACH_PREFS } from '@/lib/program/coach'
@@ -18,6 +19,7 @@ export default function SettingsPage() {
 
   const [userEmail,     setUserEmail]     = useState('')
   const [signingOut,    setSigningOut]    = useState(false)
+  const [activeProgramId, setActiveProgramId] = useState('galpin-5day-hypertrophy')
 
   const init = useCallback(async () => {
     try {
@@ -26,7 +28,9 @@ export default function SettingsPage() {
       if (session?.user?.email) setUserEmail(session.user.email)
       const [s, eq, cp] = await Promise.all([fetchSettings(), fetchEquipment(), fetchCoachPrefs()])
       setCoachPrefs(cp)
-
+      const pid = s.active_program_id ?? 'galpin-5day-hypertrophy'
+      setActiveProgramId(pid)
+      if (typeof window !== 'undefined') localStorage.setItem('cg_program', pid)
       setRound(s.round_to_lbs)
       setEquip(eq)
     } catch(e) { console.error(e) }
@@ -43,7 +47,18 @@ export default function SettingsPage() {
 
 
 
-const changeRound = async (v: number) => {
+  const switchProgram = async (id: string) => {
+    if (id === activeProgramId) return
+    setActiveProgramId(id)
+    if (typeof window !== 'undefined') localStorage.setItem('cg_program', id)
+    try {
+      await updateSettings({ active_program_id: id, current_week: 1, cycle_number: 1,
+        week_started_at: new Date().toISOString() })
+      router.refresh()
+    } catch(e) { console.error('Failed to switch program:', e) }
+  }
+
+  const changeRound = async (v: number) => {
     setRound(v)
     try { await updateSettings({ round_to_lbs: v }) } catch {}
   }
@@ -95,6 +110,76 @@ const changeRound = async (v: number) => {
       {Header}
 
       <div className="px-4 pt-6 space-y-8">
+
+        {/* ── Program Library ── */}
+        <div>
+          <p className="ios-section-label mb-2">Active Program</p>
+          <div className="ios-group" style={{ overflow:'hidden' }}>
+            {PROGRAM_LIBRARY.map((prog, i) => {
+              const active = activeProgramId === prog.id
+              const accentColor = prog.focus.includes('Strength') ? '#0A84FF' : '#30D158'
+              return (
+                <button key={prog.id} onClick={() => switchProgram(prog.id)}
+                  className="w-full" style={{
+                    display:'block', textAlign:'left', padding:'14px 16px',
+                    borderBottom: i < PROGRAM_LIBRARY.length-1 ? '0.5px solid rgba(84,84,88,0.3)' : 'none',
+                    background: active ? `color-mix(in srgb, ${accentColor} 7%, rgba(28,28,36,1))` : 'rgba(28,28,36,1)',
+                    cursor:'pointer', border:'none',
+                  }}>
+                  <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
+                        <p style={{ fontSize:15, fontWeight:700, color:'#fff', letterSpacing:'-0.3px' }}>
+                          {prog.name}
+                        </p>
+                        {active && (
+                          <span style={{ fontSize:9, fontWeight:800, color: accentColor,
+                            background:`color-mix(in srgb, ${accentColor} 15%, transparent)`,
+                            border:`0.5px solid ${accentColor}55`,
+                            padding:'1px 7px', borderRadius:99, textTransform:'uppercase', letterSpacing:'0.08em' }}>
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ fontSize:12, color:'#8E8E93', marginBottom:6 }}>by {prog.author}</p>
+                      <p style={{ fontSize:12, color:'rgba(142,142,147,0.7)', lineHeight:1.5 }}>
+                        {prog.description}
+                      </p>
+                      <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginTop:8 }}>
+                        {[
+                          prog.focus,
+                          `${prog.daysPerWeek} days/week`,
+                          `${prog.totalWeeks} weeks`,
+                          prog.split,
+                        ].map(tag => (
+                          <span key={tag} style={{
+                            fontSize:10, fontWeight:600,
+                            color: tag === prog.focus ? accentColor : '#636366',
+                            background: tag === prog.focus
+                              ? `color-mix(in srgb, ${accentColor} 12%, transparent)`
+                              : 'rgba(44,44,46,0.8)',
+                            border: tag === prog.focus
+                              ? `0.5px solid ${accentColor}40`
+                              : '0.5px solid rgba(84,84,88,0.3)',
+                            padding:'2px 8px', borderRadius:99,
+                          }}>{tag}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{ width:22, height:22, borderRadius:'50%', flexShrink:0, marginTop:2,
+                      background: active ? accentColor : 'rgba(84,84,88,0.3)',
+                      display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.2s' }}>
+                      {active && <span style={{ fontSize:11, color:'#000', fontWeight:900 }}>✓</span>}
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+          <p className="t-caption1 mt-2 px-1" style={{ color:'#8E8E93', lineHeight:1.5 }}>
+            Switching resets to Week 1 of the new program. Your exercise history and weight suggestions carry over for all matching lifts.
+          </p>
+        </div>
 
         {/* ── Equipment ── */}
         <div>

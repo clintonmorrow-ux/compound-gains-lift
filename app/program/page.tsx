@@ -5,7 +5,8 @@ import { ChevronLeft, ChevronRight, Check, RotateCcw, X } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import OnermSection from '@/components/OnermSection'
 import { createClient } from '@/lib/supabase/client'
-import { WORKOUTS_5DAY, WEEK_CONFIG, PHASE_LABELS } from '@/lib/program/data'
+import { WEEK_CONFIG, PHASE_LABELS } from '@/lib/program/data'
+import { getProgram } from '@/lib/program/programLibrary'
 import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { fetchExercisePreferences, saveExercisePreference, fetchEquipment, fetchSettings } from '@/lib/db'
 import type { Exercise } from '@/types'
@@ -235,7 +236,7 @@ export default function ProgramPage() {
         </div>
 
         {/* Workout cards */}
-        {WORKOUTS_5DAY.map(wkt => {
+        {getProgram(typeof window !== 'undefined' ? localStorage.getItem('cg_program') ?? undefined : undefined).workouts.map(wkt => {
           const c = WC[wkt.key]
           return (
             <div key={wkt.key}>

@@ -1,4 +1,5 @@
 export type ExerciseType = 'primary' | 'secondary' | 'isolation'
+export type DayType = 'power' | 'hypertrophy' | 'standard'
 
 export type WorkoutKey = 'A' | 'B' | 'C' | 'D' | 'E'
 export type ProgramFormat = '4day' | '5day'
@@ -19,6 +20,7 @@ export interface Workout {
   focus: string
   restTimes: string
   duration?: string
+  dayType?: DayType
   exercises: Exercise[]
 }
 
@@ -69,4 +71,22 @@ export interface Session {
 
 export interface SessionWithSets extends Session {
   logged_sets: LoggedSet[]
+}
+
+// ── Program library ───────────────────────────────────────────────────
+export interface ProgramMeta {
+  id: string
+  name: string
+  shortName: string
+  author: string
+  description: string
+  focus: string
+  daysPerWeek: number
+  totalWeeks: number
+  split: string
+}
+
+export interface Program extends ProgramMeta {
+  workouts: Workout[]
+  getWeekConfig(week: number, dayType?: DayType): WeekConfig
 }
