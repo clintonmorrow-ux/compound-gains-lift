@@ -124,7 +124,7 @@ function EditableSetRow({ set, isBodyweight, accentColor, onSaved, onDeleted }: 
                 ? r === 0 ? 'rgba(242,92,84,0.25)'
                 : r <= 2   ? `color-mix(in srgb, ${accentColor} 20%, transparent)`
                 :            'rgba(45,212,160,0.2)'
-                : 'rgba(44,44,46,0.6)',
+                : 'rgba(11,42,51,0.55)',
               color: r === set.rir
                 ? r === 0 ? '#F25C54'
                 : r <= 2   ? accentColor
@@ -132,7 +132,7 @@ function EditableSetRow({ set, isBodyweight, accentColor, onSaved, onDeleted }: 
                 : '#3A3A3C',
               border: r === set.rir
                 ? `0.5px solid ${r === 0 ? 'rgba(242,92,84,0.4)' : r <= 2 ? accentColor+'55' : 'rgba(45,212,160,0.4)'}`
-                : '0.5px solid rgba(44,44,46,0.4)',
+                : '0.5px solid rgba(11,42,51,0.4)',
             }}>{r === 4 ? '4+' : r}</div>
           ))}
           <span style={{ fontSize:10, color:'#636366', marginLeft:2 }}>

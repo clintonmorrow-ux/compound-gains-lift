@@ -45,20 +45,44 @@
   /* ── Layout ── */
   --safe-top:    env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* ── Liquid motion easing ── */
+  --ease-liquid: cubic-bezier(0.37, 0, 0.18, 1);    /* deep smooth settle */
+  --ease-swell:  cubic-bezier(0.34, 1.4, 0.42, 1);  /* gentle wave-crest overshoot */
+  --ease-drift:  cubic-bezier(0.45, 0, 0.25, 1);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
 a, a:hover, a:visited, a:focus { text-decoration: none !important; color: inherit; }
 
-/* iOS overrides system light-grey on <button> — force transparent so parent bg shows */
 button { -webkit-appearance: none; background: transparent; border: none; cursor: pointer; }
 
+html { background: var(--bg); }
+
+/* Ambient ocean light — drifting caustics behind all content */
+body::before {
+  content: '';
+  position: fixed;
+  inset: -25%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 48% 38% at 28% 18%, rgba(23,190,187,0.16) 0%, transparent 60%),
+    radial-gradient(ellipse 44% 34% at 78% 12%, rgba(255,126,107,0.09) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 46% at 62% 88%, rgba(45,212,160,0.08) 0%, transparent 62%),
+    radial-gradient(ellipse 40% 50% at 12% 70%, rgba(52,219,203,0.06) 0%, transparent 60%);
+  animation: ocean-drift 26s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes ocean-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  30%      { transform: translate3d(2.2%, -1.8%, 0) scale(1.06); }
+  60%      { transform: translate3d(-1.8%, 1.4%, 0) scale(1.03); }
+}
+
 html, body {
-  background: var(--bg);
-  background-image:
-    radial-gradient(ellipse 130% 70% at 50% -15%, rgba(23,190,187,0.12) 0%, transparent 55%),
-    radial-gradient(ellipse 100% 60% at 85% 8%, rgba(255,126,107,0.06) 0%, transparent 50%);
-  background-attachment: fixed;
+  background: transparent;
   color: var(--label);
   font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -126,9 +150,9 @@ input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; }
   padding: 0 4px 7px;
 }
 
-/* ── Pressable ── */
-.tap { transition: opacity 0.1s; }
-.tap:active { opacity: 0.55; }
+/* ── Pressable — liquid spring ── */
+.tap { transition: transform 0.45s var(--ease-swell), opacity 0.12s ease; will-change: transform; }
+.tap:active { opacity: 0.7; transform: scale(0.972); transition: transform 0.08s var(--ease-drift), opacity 0.08s ease; }
 
 /* ── iOS Primary Button ── */
 .ios-btn {
@@ -139,24 +163,27 @@ input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; }
   background: var(--accent); color: #04161E;
   transition: opacity 0.1s;
 }
-.ios-btn:active { opacity: 0.8; }
+.ios-btn:active { opacity: 0.9; transform: scale(0.985); }
 
 /* ── Sheets ── */
 .sheet-scrim {
   position: fixed; inset: 0; z-index: 60;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(2,12,18,0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: scrim-in 0.4s ease both;
 }
+@keyframes scrim-in { from { opacity: 0; } to { opacity: 1; } }
 .sheet-panel {
   position: absolute; bottom: 0; left: 0; right: 0;
   background: var(--bg-2);
-  border-radius: 20px 20px 0 0;
+  border-radius: 24px 24px 0 0;
   max-height: 82vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: max(var(--safe-bottom), 20px);
-  animation: sheet-up 0.35s cubic-bezier(0.32,0.72,0,1);
+  animation: sheet-up 0.5s var(--ease-liquid);
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.4);
 }
 @keyframes sheet-up {
   from { transform: translateY(100%); }
@@ -165,10 +192,38 @@ input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; }
 
 /* ── Animations ── */
 @keyframes fade-rise {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.fade-rise { animation: fade-rise 0.22s ease-out both; }
+.fade-rise { animation: fade-rise 0.55s var(--ease-liquid) both; }
+
+/* ── Liquid shimmer sweep (progress bars) ── */
+@keyframes shimmer-sweep {
+  0%   { background-position: -160% 0; }
+  100% { background-position: 260% 0; }
+}
+.liquid-fill {
+  position: relative;
+  overflow: hidden;
+}
+.liquid-fill::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(100deg,
+    transparent 20%,
+    rgba(255,255,255,0.35) 48%,
+    rgba(255,255,255,0.35) 52%,
+    transparent 80%);
+  background-size: 220% 100%;
+  animation: shimmer-sweep 3.4s var(--ease-drift) infinite;
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  body::before { animation: none; }
+  .liquid-fill::after { animation: none; opacity: 0; }
+  .fade-rise { animation-duration: 0.01s; }
+}
 
 /* ── Phase pills ── */
 .ph-1 { background: rgba(23,190,187,0.16);  color: #5FE0DD; }
@@ -195,3 +250,11 @@ input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; }
 
 /* Spinner for saving state */
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Liquid wave rest-timer ── */
+@keyframes rp-wave-x { from { transform: translateX(0); } to { transform: translateX(-18px); } }
+.rp-wave  { animation: rp-wave-x 2.3s linear infinite; }
+.rp-wave2 { animation: rp-wave-x 3.2s linear infinite reverse; }
+@media (prefers-reduced-motion: reduce) {
+  .rp-wave, .rp-wave2 { animation: none; }
+}

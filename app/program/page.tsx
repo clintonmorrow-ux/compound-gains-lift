@@ -166,7 +166,7 @@ export default function ProgramPage() {
   const hasSwap     = (ex: Exercise) => !!prefs[ex.name]
 
   if (loading) return (
-    <div style={{ minHeight:'100svh', background:'#000', display:'flex',
+    <div style={{ minHeight:'100svh', background:'transparent', display:'flex',
       alignItems:'center', justifyContent:'center' }}>
       <div style={{ width:32, height:32, borderRadius:'50%', border:'3px solid transparent',
         borderTopColor:'#FFB23E', animation:'spin 0.7s linear infinite' }} />
@@ -177,11 +177,11 @@ export default function ProgramPage() {
   const customCount = Object.keys(prefs).length
 
   return (
-    <div style={{ minHeight:'100svh', background:'#000' }}>
+    <div style={{ minHeight:'100svh', background:'transparent' }}>
 
       {/* Header — no back button, this is a nav tab */}
       <div style={{ position:'sticky', top:0, zIndex:20, paddingTop:'env(safe-area-inset-top)',
-        background:'rgba(8,8,14,0.97)', backdropFilter:'saturate(200%) blur(28px)',
+        background:'rgba(6,24,32,0.82)', backdropFilter:'saturate(200%) blur(28px)',
         WebkitBackdropFilter:'saturate(200%) blur(28px)',
         borderBottom:'0.5px solid rgba(84,84,88,0.45)' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 18px 13px' }}>
@@ -251,7 +251,7 @@ export default function ProgramPage() {
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                     <p style={{ fontSize:14, fontWeight:700, color:'rgba(255,255,255,0.6)' }}>Rest Day</p>
                     <span style={{ fontSize:10, color:'#636366',
-                      background:'rgba(44,44,46,0.8)', border:'0.5px solid rgba(84,84,88,0.3)',
+                      background:'rgba(11,42,51,0.7)', border:'0.5px solid rgba(84,84,88,0.3)',
                       padding:'1px 7px', borderRadius:99 }}>{wkt.day}</span>
                   </div>
                   <p style={{ fontSize:12, color:'#636366', marginTop:1 }}>{wkt.focus}</p>

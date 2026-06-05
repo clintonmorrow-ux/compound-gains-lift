@@ -70,7 +70,7 @@ function MuscleRow({ muscle, sets }: { muscle: string; sets: number }) {
       {/* Zone-track bar */}
       <div style={{ flex:1, position:'relative' }}>
         <div style={{ position:'relative', height:10, borderRadius:6, overflow:'hidden',
-          background:'rgba(44,44,46,0.9)' }}>
+          background:'rgba(11,42,51,0.85)' }}>
           {/* Zone backgrounds */}
           <div style={{ position:'absolute', left:0, width:`${mevX}%`,       height:'100%', background:'rgba(242,92,84,0.15)' }} />
           <div style={{ position:'absolute', left:`${mevX}%`, width:`${mavX-mevX}%`, height:'100%', background:'rgba(255,178,62,0.15)' }} />

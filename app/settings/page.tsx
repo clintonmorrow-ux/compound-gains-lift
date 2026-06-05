@@ -82,7 +82,7 @@ export default function SettingsPage() {
 
   const Header = (
     <div className="pt-safe sticky top-0 z-20"
-      style={{ background:'rgba(8,8,14,0.97)', backdropFilter:'saturate(200%) blur(28px)',
+      style={{ background:'rgba(6,24,32,0.82)', backdropFilter:'saturate(200%) blur(28px)',
                WebkitBackdropFilter:'saturate(200%) blur(28px)',
                borderBottom:'0.5px solid rgba(84,84,88,0.45)' }}>
       <div style={{ padding:'10px 18px 13px' }}>
@@ -97,7 +97,7 @@ export default function SettingsPage() {
   )
 
   if (loading) return (
-    <div className="min-h-screen" style={{ background:'var(--bg)' }}>
+    <div className="min-h-screen" style={{ background:'transparent' }}>
       {Header}
       <div className="flex items-center justify-center py-32">
         <div className="w-8 h-8 rounded-full border-[2.5px] border-t-transparent animate-spin"
@@ -108,7 +108,7 @@ export default function SettingsPage() {
   )
 
   return (
-    <div className="min-h-screen pb-tabs" style={{ background:'var(--bg)' }}>
+    <div className="min-h-screen pb-tabs" style={{ background:'transparent' }}>
       {Header}
 
       <div className="px-4 pt-6 space-y-8">
@@ -159,7 +159,7 @@ export default function SettingsPage() {
                             color: tag === prog.focus ? accentColor : '#636366',
                             background: tag === prog.focus
                               ? `color-mix(in srgb, ${accentColor} 12%, transparent)`
-                              : 'rgba(44,44,46,0.8)',
+                              : 'rgba(11,42,51,0.7)',
                             border: tag === prog.focus
                               ? `0.5px solid ${accentColor}40`
                               : '0.5px solid rgba(84,84,88,0.3)',
@@ -340,7 +340,7 @@ export default function SettingsPage() {
                       <span key={tag} style={{
                         fontSize:10, fontWeight:600,
                         color: isFirst ? accent : '#636366',
-                        background: isFirst ? `color-mix(in srgb, ${accent} 12%, transparent)` : 'rgba(44,44,46,0.9)',
+                        background: isFirst ? `color-mix(in srgb, ${accent} 12%, transparent)` : 'rgba(11,42,51,0.85)',
                         border: isFirst ? `0.5px solid ${accent}40` : '0.5px solid rgba(84,84,88,0.4)',
                         padding:'3px 9px', borderRadius:99,
                       }}>{tag}</span>

@@ -141,7 +141,7 @@ export default function Dashboard() {
   }
 
   if (!ready) return (
-    <div className="flex items-center justify-center min-h-screen" style={{ background:'var(--bg)' }}>
+    <div className="flex items-center justify-center min-h-screen" style={{ background:'transparent' }}>
       <div className="w-8 h-8 rounded-full border-[2.5px] border-t-transparent animate-spin" style={{ borderColor:'var(--accent)' }} />
     </div>
   )
@@ -152,14 +152,14 @@ export default function Dashboard() {
   const next = workouts.find(w => !w.isRest && !done.includes(w.key))
 
   return (
-    <div className="min-h-screen pb-tabs" style={{ background:'var(--bg)' }}>
+    <div className="min-h-screen pb-tabs" style={{ background:'transparent' }}>
 
       {/* ── Header — branding + phase context ── */}
       <div className="pt-safe sticky top-0 z-20"
-        style={{ background:'rgba(8,8,14,0.97)', backdropFilter:'saturate(200%) blur(28px)', WebkitBackdropFilter:'saturate(200%) blur(28px)', borderBottom:'0.5px solid rgba(84,84,88,0.45)' }}>
+        style={{ background:'rgba(6,24,32,0.82)', backdropFilter:'saturate(200%) blur(28px)', WebkitBackdropFilter:'saturate(200%) blur(28px)', borderBottom:'0.5px solid rgba(84,84,88,0.45)' }}>
         {/* Phase progress strip — thin bar at very top showing week/12 */}
-        <div style={{ height:2, background:'rgba(44,44,46,0.8)' }}>
-          <div style={{ height:'100%', width:`${(week/12)*100}%`, background:'var(--accent)', borderRadius:0, transition:'width 0.4s ease' }} />
+        <div style={{ height:2, background:'rgba(11,42,51,0.7)' }}>
+          <div className="liquid-fill" style={{ height:'100%', width:`${(week/12)*100}%`, background:'var(--accent)', borderRadius:0, transition:'width 0.6s var(--ease-liquid)' }} />
         </div>
         <div className="flex items-center justify-between px-5 pb-3 pt-2">
           <div>

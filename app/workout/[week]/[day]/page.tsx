@@ -376,11 +376,28 @@ function RestPill({ seconds, exName, context, onDone, onRestPause }: {
       width: context ? 'min(360px, calc(100vw - 32px))' : 'auto',
     }}>
       <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-        <svg width="30" height="30" viewBox="0 0 32 32" style={{ transform:'rotate(-90deg)', flexShrink:0 }}>
-          <circle cx="16" cy="16" r="13" fill="none" strokeWidth="2.5" stroke="rgba(84,84,88,0.4)" />
-          <circle cx="16" cy="16" r="13" fill="none" strokeWidth="2.5" strokeLinecap="round"
-            style={{ stroke:'#FFB23E', strokeDasharray:`${2*Math.PI*13}`,
-              strokeDashoffset:`${2*Math.PI*13*(1-pct/100)}`, transition:'stroke-dashoffset 1s linear' }} />
+        <svg width="34" height="34" viewBox="0 0 36 36" style={{ flexShrink:0 }}>
+          <defs>
+            <clipPath id="rp-clip"><circle cx="18" cy="18" r="15.5" /></clipPath>
+            <linearGradient id="rp-water" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#3FE8DA" />
+              <stop offset="100%" stopColor="#17BEBB" />
+            </linearGradient>
+          </defs>
+          {/* glass container */}
+          <circle cx="18" cy="18" r="15.5" fill="rgba(23,190,187,0.10)"
+            stroke="rgba(63,232,218,0.45)" strokeWidth="1.5" />
+          {/* draining water, clipped to the circle */}
+          <g clipPath="url(#rp-clip)">
+            <g style={{ transform:`translateY(${(2 + (1 - pct/100)*30) - 4}px)`, transition:'transform 1s linear' }}>
+              <g className="rp-wave">
+                <path d="M0 4 q4.5 -4 9 0 t9 0 t9 0 t9 0 t9 0 t9 0 t9 0 t9 0 V44 H0 Z" fill="url(#rp-water)" opacity="0.92" />
+              </g>
+              <g className="rp-wave2">
+                <path d="M0 5 q4.5 4 9 0 t9 0 t9 0 t9 0 t9 0 t9 0 t9 0 t9 0 V44 H0 Z" fill="url(#rp-water)" opacity="0.5" />
+              </g>
+            </g>
+          </g>
         </svg>
         <span style={{ fontSize:17, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums', letterSpacing:'-0.3px', flex:1 }}>
           {m}:{String(s).padStart(2,'0')}
@@ -694,7 +711,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
 
   if (done) return (
-    <div style={{ position:'fixed', inset:0, background:'#000', display:'flex', flexDirection:'column',
+    <div style={{ position:'fixed', inset:0, background:'transparent', display:'flex', flexDirection:'column',
       alignItems:'center', justifyContent:'center', gap:28, padding:'0 32px' }}>
       <div style={{ width:88, height:88, borderRadius:'50%', background:'rgba(45,212,160,0.15)',
         display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -713,11 +730,11 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   )
 
   return (
-    <div className="min-h-screen pb-tabs" style={{ background:'#000' }}>
+    <div className="min-h-screen pb-tabs" style={{ background:'transparent' }}>
 
       {/* Nav */}
       <div className="pt-safe sticky top-0 z-30" style={{
-        background:'rgba(0,0,0,0.94)', backdropFilter:'saturate(180%) blur(28px)',
+        background:'rgba(6,24,32,0.82)', backdropFilter:'saturate(180%) blur(28px)',
         WebkitBackdropFilter:'saturate(180%) blur(28px)', borderBottom:'0.5px solid rgba(84,84,88,0.6)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px 10px' }}>
           <button onClick={()=>router.back()} style={{ width:36, height:36, borderRadius:'50%',

@@ -62,7 +62,7 @@ export default function InsightsPage() {
 
   const Header = (
     <div className="pt-safe sticky top-0 z-20"
-      style={{ background:'rgba(8,8,14,0.97)', backdropFilter:'saturate(200%) blur(28px)',
+      style={{ background:'rgba(6,24,32,0.82)', backdropFilter:'saturate(200%) blur(28px)',
                WebkitBackdropFilter:'saturate(200%) blur(28px)',
                borderBottom:'0.5px solid rgba(84,84,88,0.45)' }}>
       <div style={{ padding:'10px 18px 13px' }}>
@@ -73,7 +73,7 @@ export default function InsightsPage() {
   )
 
   if (loading) return (
-    <div className="min-h-screen" style={{ background:'var(--bg)' }}>
+    <div className="min-h-screen" style={{ background:'transparent' }}>
       {Header}
       <div className="flex items-center justify-center py-32">
         <div className="w-8 h-8 rounded-full border-[2.5px] border-t-transparent animate-spin" style={{ borderColor:'var(--accent)' }} />
@@ -84,7 +84,7 @@ export default function InsightsPage() {
 
   // Empty state
   if (sets.length === 0) return (
-    <div className="min-h-screen pb-tabs" style={{ background:'var(--bg)' }}>
+    <div className="min-h-screen pb-tabs" style={{ background:'transparent' }}>
       {Header}
       <div className="px-6 py-20 text-center">
         <div style={{ width:64, height:64, borderRadius:'50%', background:'rgba(118,118,128,0.15)',
@@ -129,7 +129,7 @@ export default function InsightsPage() {
   const WC = ['#17BEBB','#2DD4A0','#A885F2','#FFB23E']
 
   return (
-    <div className="min-h-screen pb-tabs" style={{ background:'var(--bg)' }}>
+    <div className="min-h-screen pb-tabs" style={{ background:'transparent' }}>
       {Header}
       <div className="px-4 pt-5 space-y-7">
 

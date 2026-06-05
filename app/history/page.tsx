@@ -35,10 +35,10 @@ export default function HistoryPage() {
   useEffect(() => { init() }, [init])
 
   return (
-    <div className="min-h-screen pb-tabs" style={{ background:'var(--bg)' }}>
+    <div className="min-h-screen pb-tabs" style={{ background:'transparent' }}>
 
       <div className="pt-safe sticky top-0 z-20"
-        style={{ background:'rgba(8,8,14,0.97)', backdropFilter:'saturate(200%) blur(28px)',
+        style={{ background:'rgba(6,24,32,0.82)', backdropFilter:'saturate(200%) blur(28px)',
                  WebkitBackdropFilter:'saturate(200%) blur(28px)',
                  borderBottom:'0.5px solid rgba(84,84,88,0.45)' }}>
         <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', padding:'10px 18px 13px' }}>
