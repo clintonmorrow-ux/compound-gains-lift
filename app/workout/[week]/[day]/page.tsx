@@ -13,7 +13,7 @@ import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program
 import { calculateSmartSuggestion, type SmartSuggestion } from '@/lib/program/smartSuggestions'
 import type { Exercise, WorkoutKey } from '@/types'
 
-const WC: Record<string,string> = { A:'#0A84FF', B:'#30D158', C:'#BF5AF2', D:'#FF9F0A' }
+const WC: Record<string,string> = { A:'#0A84FF', B:'#30D158', C:'#BF5AF2', D:'#FF9F0A', E:'#FF453A' }
 
 // ── Active Set Card (current set being logged) ────────────────────
 function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBodyweight, accentColor, onLog }: {
@@ -75,7 +75,7 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
 
   return (
     <div style={{ borderRadius:16, border:`1px solid ${accentColor}55`,
-      background:`linear-gradient(160deg, rgba(${accentColor==='#0A84FF'?'10,132,255':accentColor==='#30D158'?'48,209,88':accentColor==='#BF5AF2'?'191,90,242':'255,159,10'},0.08) 0%, rgba(13,13,20,0) 100%)`,
+      background:`linear-gradient(160deg, color-mix(in srgb, ${accentColor} 9%, transparent) 0%, rgba(13,13,20,0) 100%)`,
       padding:'16px' }}>
 
       <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase',
@@ -368,7 +368,13 @@ function RestPill({ seconds, exName, context, onDone, onRestPause }: {
 
   const m=Math.floor(rem/60), s=rem%60, pct=(rem/seconds)*100
   return (
-    <div className="rest-pill" style={{ flexDirection:'column', alignItems:'stretch', gap:0, padding:'10px 14px' }}>
+    <div className="rest-pill" style={{
+      flexDirection:'column', alignItems:'stretch', gap:0,
+      padding: context ? '12px 16px' : '8px 12px 8px 10px',
+      borderRadius: context ? 18 : 999,
+      whiteSpace: 'normal',
+      width: context ? 'min(360px, calc(100vw - 32px))' : 'auto',
+    }}>
       <div style={{ display:'flex', alignItems:'center', gap:10 }}>
         <svg width="30" height="30" viewBox="0 0 32 32" style={{ transform:'rotate(-90deg)', flexShrink:0 }}>
           <circle cx="16" cy="16" r="13" fill="none" strokeWidth="2.5" stroke="rgba(84,84,88,0.4)" />
@@ -393,8 +399,8 @@ function RestPill({ seconds, exName, context, onDone, onRestPause }: {
         </button>
       </div>
       {context && (
-        <p style={{ fontSize:11, color:'rgba(142,142,147,0.65)', marginTop:8, lineHeight:1.5,
-          paddingTop:8, borderTop:'0.5px solid rgba(84,84,88,0.25)', fontStyle:'italic' }}>
+        <p style={{ fontSize:11, color:'rgba(142,142,147,0.7)', marginTop:8, lineHeight:1.5,
+          paddingTop:8, borderTop:'0.5px solid rgba(84,84,88,0.25)' }}>
           {context}
         </p>
       )}
