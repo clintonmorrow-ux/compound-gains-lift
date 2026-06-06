@@ -640,7 +640,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     // Check 1RM under effective name (preferred exercise) first, then original
     const effectiveName = progPrefs[ex.name]?.name ?? ex.name
     const oneRm = rms[effectiveName] ?? 0
-    return getTargetWeight(oneRm, ex.type, wk, round)
+    return getTargetWeight(oneRm, ex.type, wk, round, cfg)
   }
 
   // Retry wrapper — 3 attempts with 800ms/1600ms backoff
