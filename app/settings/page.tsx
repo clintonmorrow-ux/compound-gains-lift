@@ -30,7 +30,10 @@ export default function SettingsPage() {
       if (session?.user?.email) setUserEmail(session.user.email)
       const [s, eq, cp] = await Promise.all([fetchSettings(), fetchEquipment(), fetchCoachPrefs()])
       setCoachPrefs(cp)
-      const pid = s.active_program_id ?? 'galpin-5day-hypertrophy'
+      // Prefer the DB value; fall back to the locally-stored selection
+      // (what the workout screen reads) so the two never disagree.
+      const lsPid = typeof window !== 'undefined' ? localStorage.getItem('cg_program') : null
+      const pid = s.active_program_id ?? lsPid ?? 'galpin-5day-hypertrophy'
       setActiveProgramId(pid)
       if (typeof window !== 'undefined') localStorage.setItem('cg_program', pid)
       setRound(s.round_to_lbs)

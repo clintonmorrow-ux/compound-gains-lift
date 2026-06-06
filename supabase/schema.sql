@@ -14,10 +14,14 @@ create table if not exists public.profiles (
 
 -- User settings (week tracker + rounding preference)
 create table if not exists public.user_settings (
-  id           uuid references public.profiles(id) on delete cascade primary key,
-  current_week integer      default 1 check (current_week between 1 and 12),
-  round_to_lbs numeric(4,1) default 5,
-  updated_at   timestamptz  default now()
+  id                uuid references public.profiles(id) on delete cascade primary key,
+  current_week      integer      default 1 check (current_week between 1 and 12),
+  round_to_lbs      numeric(4,1) default 5,
+  program_format    text         default '4day',
+  cycle_number      integer      default 1,
+  week_started_at   timestamptz,
+  active_program_id text         default 'galpin-5day-hypertrophy',
+  updated_at        timestamptz  default now()
 );
 
 -- 1RM / reference weights per exercise

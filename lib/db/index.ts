@@ -48,7 +48,21 @@ export async function fetchSettings(): Promise<UserSettings> {
     .maybeSingle()        // returns null (not error) when 0 rows exist
 
   if (error) {
-    console.error('fetchSettings error:', error)
+    // A missing optional column (e.g. active_program_id not yet migrated)
+    // would otherwise nuke the entire read. Retry with the core columns
+    // that have always existed so the rest of settings still loads.
+    console.error('fetchSettings error (retrying with core columns):', error)
+    const core = await supabase
+      .from('user_settings')
+      .select('current_week, round_to_lbs')
+      .eq('id', user.id)
+      .maybeSingle()
+    if (core.data) {
+      return {
+        current_week: core.data.current_week ?? 1,
+        round_to_lbs: core.data.round_to_lbs ?? 5,
+      }
+    }
     return { current_week: 1, round_to_lbs: 5 }
   }
 
