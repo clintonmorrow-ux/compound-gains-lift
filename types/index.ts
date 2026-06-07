@@ -1,7 +1,7 @@
 export type ExerciseType = 'primary' | 'secondary' | 'isolation'
 export type DayType = 'power' | 'hypertrophy' | 'standard'
 
-export type WorkoutKey = 'A' | 'B' | 'C' | 'D' | 'E' | 'R1' | 'R2'
+export type WorkoutKey = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'R1' | 'R2' | 'R3' | 'R4'
 export type ProgramFormat = '4day' | '5day'
 
 export interface Exercise {

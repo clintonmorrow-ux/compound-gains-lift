@@ -35,9 +35,11 @@ export function getRestSeconds(
     if (dayType === 'power')       return PHAT_POWER_REST[exerciseType]
     if (dayType === 'hypertrophy') return PHAT_HYPERTROPHY_REST[exerciseType]
   }
-  // Galpin / standard: phase-based
+  // Galpin / standard: phase-based, with a sensible per-type fallback
+  // for any program whose phase labels aren't in REST_TABLE.
   const phase = WEEK_CONFIG[weekNumber]?.phase ?? ''
-  return REST_TABLE[phase]?.[exerciseType] ?? 120
+  const TYPE_DEFAULT: Record<ExerciseType, number> = { primary: 150, secondary: 120, isolation: 75 }
+  return REST_TABLE[phase]?.[exerciseType] ?? TYPE_DEFAULT[exerciseType]
 }
 
 // ── Rest context label for the in-workout rest timer ─────────────────

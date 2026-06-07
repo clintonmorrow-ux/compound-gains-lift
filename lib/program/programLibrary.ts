@@ -1,6 +1,9 @@
 import type { Program, WeekConfig, DayType } from '@/types'
 import { WORKOUTS_5DAY, WEEK_CONFIG, CURRENT_PROGRAM_ID } from './data'
 import { PHAT_PROGRAM, getPHATWeekConfig } from './phat'
+import { RP_PROGRAM } from './rpHypertrophy'
+import { SCULPT_PROGRAM } from './womensToning'
+import { VITALITY_PROGRAM } from './seniors'
 
 // ── Galpin 5-Day — wrap existing data into Program interface ──────────────────
 const GALPIN_PROGRAM: Program = {
@@ -21,6 +24,9 @@ const GALPIN_PROGRAM: Program = {
 export const PROGRAM_LIBRARY: Program[] = [
   GALPIN_PROGRAM,
   PHAT_PROGRAM,
+  RP_PROGRAM,
+  SCULPT_PROGRAM,
+  VITALITY_PROGRAM,
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
