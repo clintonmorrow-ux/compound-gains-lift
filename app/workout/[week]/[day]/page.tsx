@@ -861,10 +861,10 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
     const Stat = ({ label, value, unit }: { label:string; value:string; unit?:string }) => (
       <div style={{ flex:1, textAlign:'center', padding:'14px 6px', borderRadius:14,
-        background:'rgba(11,42,51,0.6)', border:'0.5px solid rgba(84,84,88,0.35)' }}>
-        <p style={{ fontSize:26, fontWeight:800, color:'#fff', letterSpacing:'-0.6px', lineHeight:1 }}>{value}</p>
-        {unit && <p style={{ fontSize:10, color:'rgba(239,250,248,0.45)', marginTop:2 }}>{unit}</p>}
-        <p style={{ fontSize:11, fontWeight:600, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.06em', marginTop:6 }}>{label}</p>
+        background:'rgba(239,250,248,0.95)', border:'0.5px solid rgba(4,22,30,0.08)' }}>
+        <p style={{ fontSize:26, fontWeight:800, color:'#04161E', letterSpacing:'-0.6px', lineHeight:1 }}>{value}</p>
+        {unit && <p style={{ fontSize:10, color:'rgba(4,22,30,0.5)', marginTop:2 }}>{unit}</p>}
+        <p style={{ fontSize:11, fontWeight:700, color:'rgba(4,22,30,0.55)', textTransform:'uppercase', letterSpacing:'0.06em', marginTop:6 }}>{label}</p>
       </div>
     )
 
@@ -899,20 +899,20 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           {/* PRs */}
           {prs.length > 0 && (
             <div className="fade-rise" style={{ borderRadius:18, padding:'16px 18px',
-              background:'linear-gradient(135deg, rgba(255,178,62,0.18), rgba(255,126,107,0.1))',
-              border:'0.5px solid rgba(255,178,62,0.4)' }}>
+              background:'linear-gradient(135deg, #FBE6BB, #FCDFD2)',
+              border:'0.5px solid rgba(154,91,0,0.35)' }}>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
-                <Award size={18} style={{ color:'#FFB23E' }} strokeWidth={2.2} />
-                <p style={{ fontSize:13, fontWeight:800, color:'#FFB23E', textTransform:'uppercase', letterSpacing:'0.08em' }}>
+                <Award size={18} style={{ color:'#9A5B00' }} strokeWidth={2.2} />
+                <p style={{ fontSize:13, fontWeight:800, color:'#7A4A00', textTransform:'uppercase', letterSpacing:'0.08em' }}>
                   {prs.length} New Personal Record{prs.length>1?'s':''}
                 </p>
               </div>
               <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                 {prs.map(pr => (
                   <div key={pr.name} style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
-                    <span style={{ fontSize:14, fontWeight:600, color:'#fff' }}>{pr.name}</span>
-                    <span style={{ fontSize:13, color:'rgba(239,250,248,0.7)' }}>
-                      {pr.weight} × {pr.reps} · <b style={{ color:'#fff' }}>{pr.e1rm}</b> e1RM
+                    <span style={{ fontSize:14, fontWeight:700, color:'#04161E' }}>{pr.name}</span>
+                    <span style={{ fontSize:13, color:'rgba(4,22,30,0.6)' }}>
+                      {pr.weight} × {pr.reps} · <b style={{ color:'#04161E' }}>{pr.e1rm}</b> e1RM
                     </span>
                   </div>
                 ))}
