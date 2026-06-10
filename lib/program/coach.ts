@@ -154,8 +154,15 @@ export function detectDeloadReadiness(sets: CoachSet[]): DeloadSignal {
 
 // ─────────────────────────────────────────────────────────────────────
 // 3. INTRA-SET FATIGUE PROFILE
-// Within the most recent session, compares first-set vs last-set RIR.
-// Big drop-off → progress reps before load. Small drop + low RIR → add load.
+// Within the most recent session, looks for genuine fatigue signals —
+// ONLY at comparable weights (within 7%). A pyramid set (weight going
+// up, RIR dropping) is intentional progressive loading, not fatigue.
+//
+// Three distinct patterns:
+//  a) Genuine fatigue: same weight, RIR drops ≥ 3 across sets
+//  b) Load-ready: same weight, RIR barely drops AND stays ≥ 2
+//  c) Weight progression: increasing load across sets — report
+//     actual weight range + RIR range, no false fatigue signal
 // ─────────────────────────────────────────────────────────────────────
 export interface IntraSetSignal {
   exercise: string
@@ -183,21 +190,54 @@ export function analyzeIntraSetFatigue(sets: CoachSet[]): IntraSetSignal[] {
 
   const signals: IntraSetSignal[] = []
   for (const [ex, exSets] of Object.entries(byExercise)) {
-    if (exSets.length < 3) continue  // need enough sets to see drop-off
-    const ordered = exSets.sort((a, b) => a.set_number - b.set_number)
-    const firstSetRir = ordered[0].rir!
-    const lastSetRir  = ordered[ordered.length - 1].rir!
-    const gap = firstSetRir - lastSetRir
+    if (exSets.length < 3) continue
+    const ordered = exSets
+      .filter(s => s.weight_lbs != null && s.rir != null)
+      .sort((a, b) => a.set_number - b.set_number)
+    if (ordered.length < 3) continue
+
+    const weights   = ordered.map(s => s.weight_lbs!)
+    const rirs      = ordered.map(s => s.rir!)
+    const minW      = Math.min(...weights)
+    const maxW      = Math.max(...weights)
+    const weightSpread = maxW > 0 ? (maxW - minW) / maxW : 0
+
+    // ── Case A: Weight increased across the session (pyramid / progressive loading)
+    // RIR dropping here is INTENTIONAL — heavier sets demand more effort.
+    // Report the actual pattern without a false fatigue warning.
+    if (weightSpread > 0.07) {
+      const firstRir = rirs[0], lastRir = rirs[rirs.length - 1]
+      const minW_fmt = Math.round(minW), maxW_fmt = Math.round(maxW)
+      // Only surface as a signal if it's genuinely interesting
+      // (e.g. they pushed to RIR 0 on the top set — worth noting)
+      if (lastRir === 0) {
+        signals.push({
+          exercise: ex, firstSetRir: firstRir, lastSetRir: lastRir,
+          gap: firstRir - lastRir, suggestion: 'maintain',
+          message: `${ex}: you pyramided from ${minW_fmt} to ${maxW_fmt} lbs — solid progressive loading. Your top set hit RIR 0. Make sure you're recovering fully before the next session.`,
+        })
+      }
+      // Otherwise weight progression without grinding — no signal needed, pattern is correct
+      continue
+    }
+
+    // ── Case B: Weight consistent across sets — now check for fatigue
+    const firstSetRir = rirs[0]
+    const lastSetRir  = rirs[rirs.length - 1]
+    const gap = firstSetRir - lastSetRir  // positive = fatigue (RIR falling)
+    const avgW = Math.round(weights.reduce((a, b) => a + b, 0) / weights.length)
 
     if (gap >= 3) {
+      // Genuine intra-set fatigue at constant load
       signals.push({
         exercise: ex, firstSetRir, lastSetRir, gap, suggestion: 'reps',
-        message: `${ex}: RIR dropped from ${firstSetRir} to ${lastSetRir} across your sets at the same weight. This is muscle fatigue accumulating — not effort dropping. Your muscles had less capacity by the final sets. Build more capacity here by adding reps per set before increasing load.`,
+        message: `${ex}: RIR dropped from ${firstSetRir} to ${lastSetRir} across your sets at ~${avgW} lbs. Muscle fatigue is accumulating within the session. Build more capacity here by adding reps per set before increasing load.`,
       })
     } else if (gap <= 1 && lastSetRir >= 2) {
+      // Minimal fatigue at consistent load — ready to progress
       signals.push({
         exercise: ex, firstSetRir, lastSetRir, gap, suggestion: 'load',
-        message: `${ex}: minimal fatigue across sets — RIR held at ${firstSetRir}→${lastSetRir}. Your muscles recovered well between sets. You have capacity to add weight next session.`,
+        message: `${ex}: strong consistency at ~${avgW} lbs — RIR held steady at ${firstSetRir}→${lastSetRir}. Your muscles recovered well between sets. You have capacity to add load next session.`,
       })
     }
   }
