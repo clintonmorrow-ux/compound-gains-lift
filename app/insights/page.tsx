@@ -11,7 +11,7 @@ import { detectRirTrends, detectDeloadReadiness, analyzeIntraSetFatigue, DEFAULT
 import { WORKOUTS } from '@/lib/program/data'
 import {
   e1rmSeries, weeklyVolume, regionIntensity, muscleVolume,
-  personalRecords, detectPlateaus, trainingIndex, EXERCISE_MUSCLE, type RawSet
+  personalRecords, detectPlateaus, trainingIndex, cycleComparison, EXERCISE_MUSCLE, type RawSet, type CycleSet
 } from '@/lib/program/analytics'
 
 // Lightweight inline line chart (SVG)
@@ -117,6 +117,7 @@ export default function InsightsPage() {
 
   // Compute analytics
   const idx       = trainingIndex(sets)
+  const cycleCmp  = cycleComparison(sets as unknown as CycleSet[])
   // Coach signals (computed from RIR + set order data)
   const coachSets   = sets as unknown as CoachSet[]
   const rirTrends   = detectRirTrends(coachSets)
@@ -163,6 +164,40 @@ export default function InsightsPage() {
             <span style={{ fontSize:13, color:'#8E8E93' }}>{prs.length} PRs</span>
           </div>
         </div>
+
+        {/* ── Cycle Progress (only once a 2nd cycle has data) ── */}
+        {cycleCmp && (
+          <div>
+            <p className="ios-section-label mb-1">Cycle Progress</p>
+            <p className="t-footnote mb-3" style={{ color:'#8E8E93' }}>
+              Best e1RM per lift — Cycle {cycleCmp.previous} vs Cycle {cycleCmp.current}.
+            </p>
+            <div style={{ borderRadius:18, padding:'18px', background:'var(--bg-2)', border:'0.5px solid rgba(84,84,88,0.4)' }}>
+              <div style={{ display:'flex', alignItems:'baseline', gap:10, marginBottom:14 }}>
+                <span style={{ fontSize:40, fontWeight:800, color: cycleCmp.avgPctChange>=0?'#2DD4A0':'#FFB23E', letterSpacing:'-1.5px', lineHeight:1 }}>
+                  {cycleCmp.avgPctChange>=0?'+':''}{cycleCmp.avgPctChange.toFixed(1)}%
+                </span>
+                <span style={{ fontSize:13, color:'#8E8E93' }}>
+                  avg strength change · {cycleCmp.improved}/{cycleCmp.total} lifts up
+                </span>
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                {cycleCmp.lifts.map(l => (
+                  <div key={l.exercise} style={{ display:'flex', alignItems:'center', gap:10 }}>
+                    <span style={{ flex:1, fontSize:14, fontWeight:600, color:'#fff', minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{l.exercise}</span>
+                    <span style={{ fontSize:13, color:'rgba(239,250,248,0.5)', fontVariantNumeric:'tabular-nums' }}>{l.prev}</span>
+                    <span style={{ fontSize:12, color:'rgba(239,250,248,0.35)' }}>→</span>
+                    <span style={{ fontSize:14, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums' }}>{l.curr}</span>
+                    <span style={{ width:62, textAlign:'right', fontSize:13, fontWeight:700, fontVariantNumeric:'tabular-nums',
+                      color: l.delta>0?'#2DD4A0':l.delta<0?'#FFB23E':'#8E8E93' }}>
+                      {l.delta>0?'▲':l.delta<0?'▼':'—'} {Math.abs(l.delta)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Muscle Volume Chart ── */}
         <div>

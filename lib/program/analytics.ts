@@ -111,7 +111,50 @@ export function personalRecords(sets: RawSet[]): { exercise:string; e1rm:number;
     .sort((a,b) => b.e1rm - a.e1rm)
 }
 
-// ── Plateau detection: e1RM flat/declining over last 3 sessions ─────
+// ── Cycle comparison: best e1RM per exercise, this cycle vs last ────
+// Needs sets carrying a cycle_number. Compares the most recent cycle that
+// has data against the cycle before it. Returns per-exercise deltas plus a
+// headline (how many lifts improved, average strength change).
+export interface CycleSet extends RawSet { cycle_number: number|null }
+export interface CycleComparison {
+  current: number
+  previous: number
+  lifts: { exercise:string; prev:number; curr:number; delta:number; pct:number }[]
+  improved: number
+  total: number
+  avgPctChange: number
+}
+export function cycleComparison(sets: CycleSet[]): CycleComparison | null {
+  const cycles = Array.from(new Set(sets.map(s => s.cycle_number ?? 1))).sort((a,b)=>a-b)
+  if (cycles.length < 2) return null
+  const current  = cycles[cycles.length-1]
+  const previous = cycles[cycles.length-2]
+
+  const bestIn = (cycle: number) => {
+    const best: Record<string, number> = {}
+    sets.filter(s => (s.cycle_number ?? 1) === cycle && s.weight_lbs && s.reps).forEach(s => {
+      const e = epley(s.weight_lbs!, s.reps!)
+      if (!best[s.exercise_name] || e > best[s.exercise_name]) best[s.exercise_name] = e
+    })
+    return best
+  }
+  const prevBest = bestIn(previous), currBest = bestIn(current)
+
+  const lifts = Object.keys(currBest)
+    .filter(ex => prevBest[ex] != null)            // only lifts present in both cycles
+    .map(ex => {
+      const prev = Math.round(prevBest[ex]), curr = Math.round(currBest[ex])
+      return { exercise: ex, prev, curr, delta: curr-prev, pct: prev>0 ? ((curr-prev)/prev)*100 : 0 }
+    })
+    .sort((a,b) => b.delta - a.delta)
+
+  if (!lifts.length) return null
+  const improved = lifts.filter(l => l.delta > 0).length
+  const avgPctChange = lifts.reduce((a,l)=>a+l.pct,0) / lifts.length
+  return { current, previous, lifts, improved, total: lifts.length, avgPctChange }
+}
+
+
 export function detectPlateaus(sets: RawSet[]): { exercise:string; sessions:number }[] {
   const out: { exercise:string; sessions:number }[] = []
   const exercises = Array.from(new Set(sets.map(s => s.exercise_name)))

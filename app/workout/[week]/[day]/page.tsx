@@ -1,24 +1,125 @@
 'use client'
 import { use, useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus, Flame, Award } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getProgram, getWeekConfig } from '@/lib/program/programLibrary'
 import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/calculator'
 import { fetchAllOneRms, fetchSettings, createSession, completeSession,
          logSet, getRecentSetsForExercise, fetchEquipment, fetchExercisePreferences,
-         deleteSession, findIncompleteSession } from '@/lib/db'
+         deleteSession, findIncompleteSession, fetchAllLoggedSets } from '@/lib/db'
 import { getRestSeconds, getRestContext, fireRestCompleteNotification, requestNotificationPermission } from '@/lib/program/restTimes'
 import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { calculateSmartSuggestion, type SmartSuggestion } from '@/lib/program/smartSuggestions'
+import { EXERCISE_MUSCLE } from '@/lib/program/analytics'
 import type { Exercise, WorkoutKey } from '@/types'
 
 const WC: Record<string,string> = { A:'#17BEBB', B:'#2DD4A0', C:'#A885F2', D:'#FFB23E', E:'#F25C54' }
 
 // ── Active Set Card (current set being logged) ────────────────────
-function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBodyweight, accentColor, onLog }: {
+// ── Plate calculator ─────────────────────────────────────────────────
+// Per-side plate math. Works for a standard barbell (base 45) or any
+// plate-loaded machine (Hammer Strength, Hack, Leg Press…) where the
+// user types the machine's base/carriage weight.
+const PLATE_DENOMS = [45, 35, 25, 10, 5, 2.5]
+
+function computePlates(target: number, base: number, denoms = PLATE_DENOMS) {
+  const perSide = (target - base) / 2
+  if (!isFinite(perSide) || perSide <= 0) {
+    return { plates: [] as { p:number; n:number }[], achievable: base, short: 0, perSide: Math.max(0, perSide) }
+  }
+  let remaining = perSide
+  const plates: { p:number; n:number }[] = []
+  for (const p of denoms) {
+    const n = Math.floor(remaining / p + 1e-9)
+    if (n > 0) { plates.push({ p, n }); remaining -= n * p }
+  }
+  const loadedPerSide = perSide - remaining
+  return { plates, achievable: base + loadedPerSide * 2, short: remaining * 2, perSide }
+}
+
+function PlateCalc({ exerciseName, weight, accentColor }: { exerciseName:string; weight:number; accentColor:string }) {
+  const lname = exerciseName.toLowerCase()
+  const isMachine = /hammer|hack|leg press|v-squat|sled/.test(lname)
+  const inferBase = () => isMachine ? 0 : /smith/.test(lname) ? 25 : 45
+  const storeKey = `cg_base_${exerciseName}`
+  const [open, setOpen] = useState(false)
+  const [base, setBase] = useState<number>(() => {
+    if (typeof window === 'undefined') return inferBase()
+    const saved = localStorage.getItem(storeKey)
+    return saved != null && saved !== '' ? parseFloat(saved) : inferBase()
+  })
+  const setBaseP = (v:number) => { setBase(v); if (typeof window !== 'undefined') localStorage.setItem(storeKey, String(v)) }
+
+  const { plates, achievable, short, perSide } = computePlates(weight, base)
+  const exact = short < 0.01
+
+  return (
+    <div style={{ marginTop:-4, marginBottom:16 }}>
+      <button onClick={()=>setOpen(o=>!o)} style={{ display:'inline-flex', alignItems:'center', gap:6,
+        fontSize:12, fontWeight:700, color:accentColor, background:`color-mix(in srgb, ${accentColor} 12%, transparent)`,
+        border:`0.5px solid color-mix(in srgb, ${accentColor} 30%, transparent)`, padding:'6px 12px', borderRadius:999 }}>
+        🏋 Plates per side {open ? '⌃' : '⌄'}
+      </button>
+
+      {open && (
+        <div style={{ marginTop:10, padding:'14px', borderRadius:14, background:'rgba(11,42,51,0.6)',
+          border:'0.5px solid rgba(84,84,88,0.4)' }}>
+          {/* base weight */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+            <div>
+              <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                {isMachine ? 'Machine base weight' : 'Bar weight'}
+              </p>
+              <p style={{ fontSize:10, color:'rgba(239,250,248,0.4)', marginTop:1 }}>
+                {isMachine ? 'Empty carriage — type your machine\u2019s value' : 'Standard barbell = 45 lb'}
+              </p>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <input type="number" inputMode="decimal" value={base || ''} onChange={e=>setBaseP(parseFloat(e.target.value)||0)}
+                onFocus={e=>e.target.select()}
+                style={{ width:64, background:'rgba(118,118,128,0.2)', border:'none', outline:'none', borderRadius:10,
+                  padding:'8px', fontSize:16, fontWeight:700, color:'#fff', textAlign:'center' }} />
+              <span style={{ fontSize:12, color:'#8E8E93' }}>lbs</span>
+            </div>
+          </div>
+
+          {/* breakdown */}
+          {perSide <= 0 ? (
+            <p style={{ fontSize:13, color:'rgba(239,250,248,0.6)' }}>
+              {weight <= base
+                ? `Just the ${base} lb ${isMachine ? 'base' : 'bar'} — no plates needed.`
+                : 'Enter a weight above to see the plate breakdown.'}
+            </p>
+          ) : (
+            <>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:6, alignItems:'center' }}>
+                {plates.flatMap(({p,n}) => Array.from({length:n}, (_,i)=>(
+                  <span key={`${p}-${i}`} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center',
+                    minWidth:38, height: 30 + (p>=45?10:p>=25?5:0), padding:'0 10px', borderRadius:8,
+                    fontSize:14, fontWeight:800, color:'#04161E',
+                    background:`color-mix(in srgb, ${accentColor} ${p>=45?92:p>=25?78:64}%, #fff)` }}>{p}</span>
+                )))}
+              </div>
+              <p style={{ fontSize:13, color:'rgba(239,250,248,0.85)', marginTop:10 }}>
+                <b style={{ color:'#fff' }}>{plates.map(({p,n})=>`${n}×${p}`).join('  ·  ')}</b> on each side
+              </p>
+              <p style={{ fontSize:12, color: exact ? '#2DD4A0' : '#FFB23E', marginTop:3 }}>
+                {exact
+                  ? `= ${achievable} lbs total`
+                  : `Closest with standard plates: ${achievable} lbs (${short.toFixed(1)} lb short of ${weight})`}
+              </p>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBodyweight, accentColor, exerciseName, onLog }: {
   setNum:number; setCount:number; target:number; repsRange:string
-  lastWeight:number|null; isBodyweight:boolean; accentColor:string
+  lastWeight:number|null; isBodyweight:boolean; accentColor:string; exerciseName:string
   onLog:(w:number|null, r:number, rir:number, tempo:string)=>Promise<void>
 }) {
   const parts   = repsRange.replace('–','-').split('-').map(Number)
@@ -129,6 +230,9 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
           ))}
         </div>
       </div>
+
+      {/* Plate calculator — only for loaded (non-bodyweight) lifts */}
+      {!isBodyweight && <PlateCalc exerciseName={exerciseName} weight={wt} accentColor={accentColor} />}
 
       {/* Reps stepper */}
       <div style={{ marginBottom:16 }}>
@@ -522,6 +626,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const [resumeCandidate, setResumeCandidate] = useState<{id:string;started_at:string;logged_sets:any[]}|null>(null)
   const [syncErrors,      setSyncErrors]      = useState<string[]>([])
   const [done,      setDone]      = useState(false)
+  const [priorBest, setPriorBest] = useState<Record<string, number>>({})
 
   const init = useCallback(async () => {
     try {
@@ -534,6 +639,20 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       const rm:Record<string,number>={}
       rmArr.forEach((x:any)=>{rm[x.exercise_name]=x.weight_lbs})
       setRms(rm); setRound(settings.round_to_lbs); setEquipment(equip)
+      setCycleNumber(settings.cycle_number ?? 1)
+      // All-time best e1RM per exercise (purely historical — session not yet
+      // created), used to detect PRs on the post-workout summary.
+      try {
+        const allSets = await fetchAllLoggedSets()
+        const pb: Record<string, number> = {}
+        ;(allSets as any[]).forEach(s => {
+          if (s.weight_lbs && s.reps) {
+            const e = s.weight_lbs * (1 + s.reps / 30)
+            if (!pb[s.exercise_name] || e > pb[s.exercise_name]) pb[s.exercise_name] = e
+          }
+        })
+        setPriorBest(pb)
+      } catch (e) { console.error('priorBest:', e) }
       const lastMap:Record<string,number|null>={}, smartM:Record<string,SmartSuggestion|null>={}
       await Promise.all(workout.exercises.map(async ex=>{
         if (ex.isBodyweight) { smartM[ex.name]=null; lastMap[ex.name]=null; return }
@@ -710,24 +829,135 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   }
 
 
-  if (done) return (
-    <div style={{ position:'fixed', inset:0, background:'transparent', display:'flex', flexDirection:'column',
-      alignItems:'center', justifyContent:'center', gap:28, padding:'0 32px' }}>
-      <div style={{ width:88, height:88, borderRadius:'50%', background:'rgba(45,212,160,0.15)',
-        display:'flex', alignItems:'center', justifyContent:'center' }}>
-        <Trophy size={44} style={{ color:'#2DD4A0' }} strokeWidth={1.5} />
+  if (done) {
+    // ── Compute session summary from logged sets ──
+    const entries = Object.entries(sets)
+    let totalSets = 0, totalVolume = 0, totalReps = 0
+    const sessionBest: Record<string, { e1rm:number; weight:number; reps:number }> = {}
+    const muscleSets: Record<string, number> = {}
+    entries.forEach(([name, arr]) => {
+      ;(arr as any[]).forEach(s => {
+        if (s.reps == null) return
+        totalSets++
+        totalReps += s.reps
+        if (s.weight_lbs) {
+          totalVolume += s.weight_lbs * s.reps
+          const e = s.weight_lbs * (1 + s.reps / 30)
+          if (!sessionBest[name] || e > sessionBest[name].e1rm) sessionBest[name] = { e1rm:e, weight:s.weight_lbs, reps:s.reps }
+        }
+        const m = EXERCISE_MUSCLE[name]
+        if (m) muscleSets[m] = (muscleSets[m] ?? 0) + 1
+      })
+    })
+    const prs = Object.entries(sessionBest)
+      .filter(([name, b]) => !priorBest[name] || b.e1rm > priorBest[name] + 0.5)
+      .map(([name, b]) => ({ name, weight: b.weight, reps: b.reps, e1rm: Math.round(b.e1rm) }))
+    const muscleSorted = Object.entries(muscleSets).sort((a,b) => b[1]-a[1])
+    const coachLine = prs.length
+      ? `${prs.length} new personal record${prs.length>1?'s':''} this session — outstanding work.`
+      : totalVolume > 0
+      ? `${totalVolume.toLocaleString()} lbs of total work moved across ${totalSets} sets. Consistency compounds.`
+      : `${totalSets} sets logged. Showing up is the win — well done.`
+
+    const Stat = ({ label, value, unit }: { label:string; value:string; unit?:string }) => (
+      <div style={{ flex:1, textAlign:'center', padding:'14px 6px', borderRadius:14,
+        background:'rgba(11,42,51,0.6)', border:'0.5px solid rgba(84,84,88,0.35)' }}>
+        <p style={{ fontSize:26, fontWeight:800, color:'#fff', letterSpacing:'-0.6px', lineHeight:1 }}>{value}</p>
+        {unit && <p style={{ fontSize:10, color:'rgba(239,250,248,0.45)', marginTop:2 }}>{unit}</p>}
+        <p style={{ fontSize:11, fontWeight:600, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.06em', marginTop:6 }}>{label}</p>
       </div>
-      <div style={{ textAlign:'center' }}>
-        <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:8 }}>Workout Complete</p>
-        <h2 style={{ fontSize:34, fontWeight:800, color:'#fff', letterSpacing:'-1px' }}>{workout.shortName}</h2>
-        <p style={{ fontSize:17, color:'#8E8E93', marginTop:8 }}>Week {wk} · {logged} sets logged</p>
+    )
+
+    return (
+      <div className="min-h-screen pb-tabs" style={{ background:'transparent' }}>
+        {/* hero header in the workout's color */}
+        <div className="pt-safe" style={{ position:'relative', overflow:'hidden', padding:'34px 20px 26px',
+          background:`linear-gradient(160deg, color-mix(in srgb, ${accent} 40%, #04161E) 0%, color-mix(in srgb, ${accent} 12%, #0B2A33) 55%, #04161E 100%)` }}>
+          <div aria-hidden style={{ position:'absolute', top:-50, right:-16, fontSize:200, fontWeight:800, lineHeight:1,
+            color:`color-mix(in srgb, ${accent} 20%, transparent)`, letterSpacing:'-0.06em' }}>{key}</div>
+          <div style={{ position:'relative', display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', gap:10 }}>
+            <div style={{ width:64, height:64, borderRadius:'50%', background:'rgba(255,255,255,0.14)',
+              border:'0.5px solid rgba(255,255,255,0.25)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <Check size={34} strokeWidth={3} style={{ color:'#fff' }} />
+            </div>
+            <div>
+              <p style={{ fontSize:11, fontWeight:800, color:'rgba(255,255,255,0.85)', textTransform:'uppercase', letterSpacing:'0.14em' }}>Workout Complete</p>
+              <h2 className="sf-heavy" style={{ fontSize:32, color:'#fff', letterSpacing:'-0.6px', lineHeight:1.05, marginTop:4 }}>{workout.shortName}</h2>
+              <p style={{ fontSize:14, color:'rgba(255,255,255,0.7)', marginTop:4 }}>Week {wk}{cycleNumber>1?` · Cycle ${cycleNumber}`:''}</p>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ padding:'18px 16px', display:'flex', flexDirection:'column', gap:18 }}>
+          {/* big stats */}
+          <div style={{ display:'flex', gap:8 }}>
+            <Stat label="Volume" value={totalVolume>=1000?`${(totalVolume/1000).toFixed(1)}k`:String(totalVolume)} unit="lbs moved" />
+            <Stat label="Sets" value={String(totalSets)} unit="logged" />
+            <Stat label="Reps" value={String(totalReps)} unit="total" />
+          </div>
+
+          {/* PRs */}
+          {prs.length > 0 && (
+            <div className="fade-rise" style={{ borderRadius:18, padding:'16px 18px',
+              background:'linear-gradient(135deg, rgba(255,178,62,0.18), rgba(255,126,107,0.1))',
+              border:'0.5px solid rgba(255,178,62,0.4)' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
+                <Award size={18} style={{ color:'#FFB23E' }} strokeWidth={2.2} />
+                <p style={{ fontSize:13, fontWeight:800, color:'#FFB23E', textTransform:'uppercase', letterSpacing:'0.08em' }}>
+                  {prs.length} New Personal Record{prs.length>1?'s':''}
+                </p>
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                {prs.map(pr => (
+                  <div key={pr.name} style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
+                    <span style={{ fontSize:14, fontWeight:600, color:'#fff' }}>{pr.name}</span>
+                    <span style={{ fontSize:13, color:'rgba(239,250,248,0.7)' }}>
+                      {pr.weight} × {pr.reps} · <b style={{ color:'#fff' }}>{pr.e1rm}</b> e1RM
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* sets per muscle */}
+          {muscleSorted.length > 0 && (
+            <div>
+              <p className="ios-section-label mb-2">Sets by Muscle</p>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                {muscleSorted.map(([m, n]) => (
+                  <span key={m} style={{ fontSize:13, fontWeight:600, color:'rgba(239,250,248,0.92)',
+                    background:'var(--bg-2)', border:'0.5px solid rgba(84,84,88,0.4)', padding:'6px 11px', borderRadius:999 }}>
+                    {m} <b style={{ color:accent }}>{n}</b>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* coach read */}
+          <div style={{ display:'flex', gap:11, padding:'14px 16px', borderRadius:14,
+            background:'rgba(11,42,51,0.5)', border:'0.5px solid rgba(84,84,88,0.35)' }}>
+            <Flame size={18} style={{ color:accent, flexShrink:0, marginTop:1 }} strokeWidth={2} />
+            <p style={{ fontSize:14, color:'rgba(239,250,248,0.88)', lineHeight:1.45 }}>{coachLine}</p>
+          </div>
+
+          {/* actions */}
+          <div style={{ display:'flex', flexDirection:'column', gap:10, marginTop:2 }}>
+            <button onClick={()=>router.push('/')} style={{ width:'100%', height:54,
+              borderRadius:16, fontSize:17, fontWeight:700, background:accent, color:'#04161E' }}>
+              Back to Home
+            </button>
+            <button onClick={()=>router.push('/insights')} style={{ width:'100%', height:48,
+              borderRadius:14, fontSize:15, fontWeight:600, background:'var(--bg-2)', color:'var(--label)',
+              border:'0.5px solid rgba(84,84,88,0.4)' }}>
+              View Insights
+            </button>
+          </div>
+        </div>
       </div>
-      <button onClick={()=>router.push('/')} style={{ width:'100%', maxWidth:280, height:54,
-        borderRadius:16, fontSize:17, fontWeight:700, background:accent, color:'#04161E' }}>
-        Back to Home
-      </button>
-    </div>
-  )
+    )
+  }
 
   return (
     <div className="min-h-screen pb-tabs" style={{ background:'transparent' }}>
@@ -882,6 +1112,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                       target={target} repsRange={exReps}
                       lastWeight={lastWt} isBodyweight={!!origEx.isBodyweight}
                       accentColor={accent}
+                      exerciseName={effName(origEx)}
                       onLog={(w,r,rir,tempo) => handleLog(origEx, nextSet, w, r, rir, tempo)}
                     />
                   )}
