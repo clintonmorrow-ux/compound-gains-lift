@@ -2,11 +2,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CheckCircle2, ArrowRight } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
 import { WEEK_CONFIG, PHASE_LABELS } from '@/lib/program/data'
-import { getProgram } from '@/lib/program/programLibrary'
+import { getProgram, getWeekConfig } from '@/lib/program/programLibrary'
 import { fetchSettings, updateSettings, fetchRecentSessions, fetchAllOneRms, fetchAllLoggedSets, fetchCoachPrefs, fetchCycleStats } from '@/lib/db'
 import { detectDeloadReadiness, type CoachSet } from '@/lib/program/coach'
 import CycleComplete from '@/components/CycleComplete'
@@ -42,6 +42,8 @@ export default function Dashboard() {
   const [weekStartedAt,   setWeekStartedAt]   = useState<string|null>(null)
   const [showCycleEnd,    setShowCycleEnd]    = useState(false)
   const [cycleStats,      setCycleStats]      = useState<any>(null)
+  const [now,             setNow]             = useState<Date | null>(null)
+  useEffect(() => { setNow(new Date()) }, [])
 
   const init = useCallback(async () => {
     try {
@@ -146,10 +148,14 @@ export default function Dashboard() {
     </div>
   )
 
-  const cfg  = WEEK_CONFIG[week]
   const activeProgram = getProgram(activeProgramId)
   const workouts = activeProgram.workouts
   const next = workouts.find(w => !w.isRest && !done.includes(w.key))
+  const cfg  = getWeekConfig(activeProgramId, week, next?.dayType)
+
+  const hour = now?.getHours() ?? 8
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+  const dateLine = now ? now.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' }) : '\u00A0'
 
   return (
     <div className="min-h-screen pb-tabs" style={{ background:'transparent' }}>
@@ -187,6 +193,14 @@ export default function Dashboard() {
       </div>
 
       <div className="px-4 pt-5 space-y-5">
+
+        {/* ── Greeting ── */}
+        <div className="fade-rise">
+          <p style={{ fontSize:15, color:'var(--label-3)', letterSpacing:'0.01em' }}>{greeting}</p>
+          <h1 className="sf-heavy" style={{ fontSize:30, lineHeight:1.1, color:'var(--label)', marginTop:1, letterSpacing:'-0.4px' }}>
+            {dateLine}
+          </h1>
+        </div>
 
         {/* ── 1RM prompt banner ── */}
         {!hasRms && (
@@ -237,33 +251,54 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── Next workout ── */}
+        {/* ── Next workout — hero ── */}
         {next ? (
           <div className="fade-rise" style={{ animationDelay:'0.06s' }}>
-            <p className="ios-section-label mb-2">Up Next</p>
             <Link href={`/workout/${week}/${next.key}`}>
-              <div className="tap rounded-2xl overflow-hidden" style={{ background:'var(--bg-2)' }}>
-                <div className="px-5 pt-5 pb-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-2 h-2 rounded-full" style={{ background: WC[next.key] }} />
-                        <span className="t-caption2 sf-semibold" style={{ color:'var(--label-3)', textTransform:'uppercase', letterSpacing:'0.07em' }}>
-                          Workout {next.key}
-                        </span>
-                      </div>
-                      <h2 className="t-title1" style={{ color:'var(--label)' }}>{next.shortName}</h2>
-                      <p className="t-subhead mt-1" style={{ color:'var(--label-2)', lineHeight:1.5 }}>{next.focus}</p>
-                      <p className="t-footnote mt-3" style={{ color:'var(--label-3)' }}>
-                        {next.exercises.length} exercises · {cfg.sets.primary} primary sets · RIR {cfg.rir}
-                      </p>
-                    </div>
-                  </div>
+              <div className="tap" style={{
+                position:'relative', overflow:'hidden', borderRadius:24, minHeight:300,
+                display:'flex', flexDirection:'column', justifyContent:'flex-end', padding:22,
+                background:`linear-gradient(157deg, color-mix(in srgb, ${WC[next.key]} 44%, #04161E) 0%, color-mix(in srgb, ${WC[next.key]} 15%, #0B2A33) 46%, #0B2A33 100%)`,
+                border:`0.5px solid color-mix(in srgb, ${WC[next.key]} 30%, transparent)`,
+                boxShadow:`0 16px 44px -16px color-mix(in srgb, ${WC[next.key]} 55%, transparent)`,
+              }}>
+                {/* radial glow */}
+                <div aria-hidden style={{ position:'absolute', top:'-28%', right:'-18%', width:'72%', height:'72%',
+                  background:`radial-gradient(circle, color-mix(in srgb, ${WC[next.key]} 50%, transparent) 0%, transparent 70%)`, pointerEvents:'none' }} />
+                {/* jersey-number watermark */}
+                <div aria-hidden style={{ position:'absolute', top:-44, right:-12, fontSize:230, fontWeight:800, lineHeight:1,
+                  color:`color-mix(in srgb, ${WC[next.key]} 24%, transparent)`, letterSpacing:'-0.06em', pointerEvents:'none', userSelect:'none' }}>
+                  {next.key}
                 </div>
-                <div className="px-4 pb-4">
-                  <button className="ios-btn" style={{ background: WC[next.key] }}>
-                    Start Workout
-                  </button>
+
+                {/* content */}
+                <div style={{ position:'relative' }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span style={{ fontSize:11, fontWeight:800, letterSpacing:'0.12em', textTransform:'uppercase', color:'#04161E',
+                      background:`color-mix(in srgb, ${WC[next.key]} 80%, #fff)`, padding:'3px 9px', borderRadius:999 }}>
+                      Up Next
+                    </span>
+                    <span style={{ fontSize:11, fontWeight:600, letterSpacing:'0.07em', textTransform:'uppercase', color:'rgba(239,250,248,0.72)' }}>
+                      Workout {next.key} · Week {week}
+                    </span>
+                  </div>
+                  <h2 className="sf-heavy" style={{ fontSize:34, lineHeight:1.04, color:'#fff', letterSpacing:'-0.6px' }}>{next.shortName}</h2>
+                  <p style={{ fontSize:15, color:'rgba(239,250,248,0.85)', marginTop:6, lineHeight:1.4 }}>{next.focus}</p>
+
+                  {/* meta chips */}
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:14 }}>
+                    {[`${next.exercises.length} exercises`, `${cfg.sets.primary} primary sets`, `RIR ${cfg.rir}`, next.duration]
+                      .filter(Boolean).map((m, i) => (
+                      <span key={i} style={{ fontSize:12, fontWeight:600, color:'rgba(239,250,248,0.95)',
+                        background:'rgba(255,255,255,0.13)', padding:'5px 10px', borderRadius:999, border:'0.5px solid rgba(255,255,255,0.16)' }}>{m}</span>
+                    ))}
+                  </div>
+
+                  {/* CTA */}
+                  <div style={{ marginTop:18, display:'flex', alignItems:'center', justifyContent:'center', gap:7,
+                    background:'#fff', color:'#04161E', borderRadius:14, padding:13, fontWeight:700, fontSize:16 }}>
+                    Start Workout <ArrowRight size={18} strokeWidth={2.5} />
+                  </div>
                 </div>
               </div>
             </Link>
@@ -272,7 +307,7 @@ export default function Dashboard() {
           <div className="fade-rise rounded-2xl px-5 py-7 text-center" style={{ background:'var(--bg-2)' }}>
             <p style={{ fontSize:36, marginBottom:8 }}>🏆</p>
             <p className="t-headline sf-semibold" style={{ color:'var(--label)' }}>Week {week} Complete</p>
-            <p className="t-subhead mt-1" style={{ color:'var(--label-2)' }}>All 4 workouts done</p>
+            <p className="t-subhead mt-1" style={{ color:'var(--label-2)' }}>Every session done — recover well</p>
           </div>
         )}
 
