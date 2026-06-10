@@ -734,21 +734,26 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
       {/* Nav */}
       <div className="pt-safe sticky top-0 z-30" style={{
-        background:'rgba(6,24,32,0.82)', backdropFilter:'saturate(180%) blur(28px)',
+        background:`linear-gradient(135deg, color-mix(in srgb, ${accent} 20%, rgba(6,24,32,0.92)) 0%, rgba(6,24,32,0.88) 60%)`,
+        backdropFilter:'saturate(180%) blur(28px)',
         WebkitBackdropFilter:'saturate(180%) blur(28px)', borderBottom:'0.5px solid rgba(84,84,88,0.6)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px 10px' }}>
           <button onClick={()=>router.back()} style={{ width:36, height:36, borderRadius:'50%',
             background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
             <ChevronLeft size={17} strokeWidth={2.5} style={{ color:accent }} />
           </button>
+          <div style={{ width:30, height:30, borderRadius:9, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center',
+            background:`color-mix(in srgb, ${accent} 85%, #fff)`, color:'#04161E', fontSize:15, fontWeight:800 }}>
+            {key}
+          </div>
           <div style={{ flex:1 }}>
             <p style={{ fontSize:17, fontWeight:700, color:'#fff', letterSpacing:'-0.5px' }}>{workout.shortName}</p>
-            <p style={{ fontSize:12, color:'#8E8E93' }}>Week {wk} · {cfg.phase.split('—')[0].trim()} · RIR {cfg.rir}</p>
+            <p style={{ fontSize:12, color:'rgba(239,250,248,0.6)' }}>Week {wk} · {cfg.phase.split('—')[0].trim()} · RIR {cfg.rir}</p>
           </div>
-          <div style={{ padding:'6px 14px', borderRadius:999, background:'rgba(118,118,128,0.15)',
-            border:'0.5px solid rgba(84,84,88,0.5)' }}>
+          <div style={{ padding:'6px 14px', borderRadius:999, background:'rgba(255,255,255,0.1)',
+            border:'0.5px solid rgba(255,255,255,0.16)' }}>
             <span style={{ fontSize:18, fontWeight:800, color:accent }}>{logged}</span>
-            <span style={{ fontSize:12, color:'#8E8E93' }}> / {total}</span>
+            <span style={{ fontSize:12, color:'rgba(239,250,248,0.5)' }}> / {total}</span>
           </div>
         </div>
         <div style={{ height:3, background:'rgba(118,118,128,0.2)' }}>

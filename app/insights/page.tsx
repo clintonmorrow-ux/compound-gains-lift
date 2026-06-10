@@ -17,27 +17,39 @@ import {
 // Lightweight inline line chart (SVG)
 function Sparkline({ data, color }: { data:number[]; color:string }) {
   if (data.length < 2) return null
-  const w=280, h=64, pad=4
+  const w=300, h=90, pad=6
   const min=Math.min(...data), max=Math.max(...data)
   const range = max-min || 1
-  const pts = data.map((v,i) => {
-    const x = pad + (i/(data.length-1))*(w-2*pad)
-    const y = h-pad - ((v-min)/range)*(h-2*pad)
-    return `${x},${y}`
-  }).join(' ')
-  const lastX = pad + (w-2*pad)
-  const lastY = h-pad - ((data[data.length-1]-min)/range)*(h-2*pad)
+  const P = data.map((v,i) => ({
+    x: pad + (i/(data.length-1))*(w-2*pad),
+    y: h-pad - ((v-min)/range)*(h-2*pad),
+  }))
+  // Catmull-Rom → cubic bezier for a smooth, flowing line (Fidelity-style)
+  const smooth = (pts:{x:number;y:number}[]) => {
+    let d = `M ${pts[0].x},${pts[0].y}`
+    for (let i=0;i<pts.length-1;i++){
+      const p0=pts[i-1]??pts[i], p1=pts[i], p2=pts[i+1], p3=pts[i+2]??p2, t=0.18
+      d += ` C ${p1.x+(p2.x-p0.x)*t},${p1.y+(p2.y-p0.y)*t} ${p2.x-(p3.x-p1.x)*t},${p2.y-(p3.y-p1.y)*t} ${p2.x},${p2.y}`
+    }
+    return d
+  }
+  const line = smooth(P)
+  const last = P[P.length-1]
+  const id = color.replace('#','')
+  const area = `${line} L ${last.x},${h-pad} L ${P[0].x},${h-pad} Z`
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} style={{ width:'100%', height:64 }} preserveAspectRatio="none">
+    <svg viewBox={`0 0 ${w} ${h}`} style={{ width:'100%', height:90, display:'block' }} preserveAspectRatio="none">
       <defs>
-        <linearGradient id={`g-${color}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+        <linearGradient id={`g-${id}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"  stopColor={color} stopOpacity="0.36" />
+          <stop offset="55%" stopColor={color} stopOpacity="0.10" />
           <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
       </defs>
-      <polygon points={`${pad},${h-pad} ${pts} ${lastX},${h-pad}`} fill={`url(#g-${color})`} />
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={lastX} cy={lastY} r="3" fill={color} />
+      <path d={area} fill={`url(#g-${id})`} />
+      <path d={line} fill="none" stroke={color} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={last.x} cy={last.y} r="5.5" fill={color} opacity="0.22" />
+      <circle cx={last.x} cy={last.y} r="2.8" fill={color} />
     </svg>
   )
 }
@@ -158,7 +170,7 @@ export default function InsightsPage() {
           <p className="t-footnote mb-3" style={{ color:'#8E8E93' }}>
             Brighter = more training volume. Surfaces imbalances at a glance.
           </p>
-          <div style={{ borderRadius:18, padding:'16px', background:'#0D0D14',
+          <div style={{ borderRadius:18, padding:'16px', background:'var(--bg-2)',
             border:'0.5px solid rgba(84,84,88,0.4)' }}>
             <MuscleVolumeChart sets={sets} />
             {muscleSorted.length > 0 && (
@@ -215,7 +227,7 @@ export default function InsightsPage() {
                 const color = WC[i % WC.length]
                 return (
                   <div key={lift.ex} style={{ borderRadius:16, padding:'14px 16px 8px',
-                    background:'#0D0D14', border:'0.5px solid rgba(84,84,88,0.4)' }}>
+                    background:'var(--bg-2)', border:'0.5px solid rgba(84,84,88,0.4)' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
                       <p style={{ fontSize:14, fontWeight:700, color:'#fff' }}>{lift.ex}</p>
                       <div style={{ display:'flex', alignItems:'baseline', gap:6 }}>
@@ -245,7 +257,7 @@ export default function InsightsPage() {
             <p className="t-footnote mb-3" style={{ color:'#8E8E93' }}>
               Total tonnage (weight × reps) per week.
             </p>
-            <div style={{ borderRadius:16, padding:'16px', background:'#0D0D14',
+            <div style={{ borderRadius:16, padding:'16px', background:'var(--bg-2)',
               border:'0.5px solid rgba(84,84,88,0.4)', display:'flex', alignItems:'flex-end',
               gap:6, height:120 }}>
               {(() => {

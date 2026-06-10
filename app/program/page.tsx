@@ -175,6 +175,7 @@ export default function ProgramPage() {
   )
 
   const customCount = Object.keys(prefs).length
+  const activeProg = getProgram(typeof window !== 'undefined' ? localStorage.getItem('cg_program') ?? undefined : undefined)
 
   return (
     <div style={{ minHeight:'100svh', background:'transparent' }}>
@@ -186,7 +187,7 @@ export default function ProgramPage() {
         borderBottom:'0.5px solid rgba(84,84,88,0.45)' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 18px 13px' }}>
           <div>
-            <p style={{ fontSize:9, fontWeight:700, color:'rgba(142,142,147,0.6)', textTransform:'uppercase', letterSpacing:'0.1em' }}>12 Weeks · Galpin</p>
+            <p style={{ fontSize:9, fontWeight:700, color:'rgba(142,142,147,0.6)', textTransform:'uppercase', letterSpacing:'0.1em' }}>{activeProg.totalWeeks} Weeks · {activeProg.shortName}</p>
             <p style={{ fontSize:22, fontWeight:800, color:'#fff', letterSpacing:'-0.7px', lineHeight:1.1, marginTop:1 }}>Program</p>
           </div>
           {customCount > 0 && (
