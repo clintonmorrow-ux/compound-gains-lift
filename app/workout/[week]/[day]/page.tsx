@@ -117,6 +117,80 @@ function PlateCalc({ exerciseName, weight, accentColor }: { exerciseName:string;
   )
 }
 
+// ── Warm-up ramp ─────────────────────────────────────────────────────
+// Evidence-based specific warm-up: a few ramp sets at increasing % of the
+// working weight with decreasing reps. Primes the movement pattern and the
+// nervous system without accruing fatigue (top warm-up stays below the
+// working load, low total reps). Offered only on the first primary lift of
+// each muscle group — later lifts for that muscle are already warm.
+// Warm-up sets are guidance only: not logged, and they never start the rest timer.
+function warmupScheme(working: number, round: number): { pct:number; weight:number; reps:number }[] {
+  if (!working || working <= 0) return []
+  const roundTo = (w:number) => Math.max(round, Math.round(w / round) * round)
+  const raw = [ { pct:0.50, reps:5 }, { pct:0.70, reps:3 }, { pct:0.85, reps:2 } ]
+  const out: { pct:number; weight:number; reps:number }[] = []
+  let lastW = -1
+  for (const s of raw) {
+    const w = roundTo(working * s.pct)
+    if (w >= working) continue   // a warm-up is never at/above the working weight
+    if (w === lastW) continue    // dedupe after rounding
+    out.push({ pct: s.pct, weight: w, reps: s.reps })
+    lastW = w
+  }
+  return out
+}
+
+function WarmupSets({ working, round, accentColor, exerciseName }: {
+  working:number; round:number; accentColor:string; exerciseName:string
+}) {
+  const ramp = warmupScheme(working, round)
+  const storeKey = `cg_warmup_open_${exerciseName}`
+  const [openW, setOpenW] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true
+    const v = localStorage.getItem(storeKey); return v == null ? true : v === '1'
+  })
+  const [doneIdx, setDoneIdx] = useState<Set<number>>(new Set())
+  if (!ramp.length) return null
+  const toggleOpen = () => setOpenW(o => { const n = !o; if (typeof window !== 'undefined') localStorage.setItem(storeKey, n?'1':'0'); return n })
+  const toggleDone = (i:number) => setDoneIdx(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n })
+
+  return (
+    <div style={{ borderRadius:12, border:'0.5px solid rgba(84,84,88,0.3)', background:'rgba(118,118,128,0.06)', overflow:'hidden', marginBottom:4 }}>
+      <button onClick={toggleOpen} style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'10px 12px' }}>
+        <Flame size={14} style={{ color:accentColor, flexShrink:0 }} strokeWidth={2.2} />
+        <span style={{ fontSize:12, fontWeight:700, color:'#fff', textTransform:'uppercase', letterSpacing:'0.06em' }}>Warm-up</span>
+        <span style={{ fontSize:11, color:'#8E8E93' }}>· optional · no rest timer</span>
+        <span style={{ marginLeft:'auto', fontSize:12, color:'#8E8E93' }}>{openW ? '⌃' : '⌄'}</span>
+      </button>
+      {openW && (
+        <div style={{ padding:'0 12px 12px', display:'flex', flexDirection:'column', gap:6 }}>
+          <p style={{ fontSize:11, color:'rgba(239,250,248,0.45)', lineHeight:1.45, marginBottom:2 }}>
+            Ramp to your working weight to prime the movement without fatigue. These aren&rsquo;t logged.
+          </p>
+          {ramp.map((s, i) => {
+            const isDone = doneIdx.has(i)
+            return (
+              <button key={i} onClick={()=>toggleDone(i)} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 10px', borderRadius:10,
+                background: isDone ? 'rgba(45,212,160,0.1)' : 'rgba(118,118,128,0.1)',
+                border:`0.5px solid ${isDone ? 'rgba(45,212,160,0.4)' : 'rgba(84,84,88,0.3)'}`, textAlign:'left' }}>
+                <div style={{ width:22, height:22, borderRadius:'50%', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center',
+                  border:`1.5px solid ${isDone ? '#2DD4A0' : 'rgba(142,142,147,0.5)'}`, background: isDone ? '#2DD4A0' : 'transparent' }}>
+                  {isDone && <Check size={13} strokeWidth={3} style={{ color:'#04161E' }} />}
+                </div>
+                <span style={{ fontSize:11, fontWeight:700, color:'#8E8E93', width:42 }}>{Math.round(s.pct*100)}%</span>
+                <span style={{ fontSize:15, fontWeight:700, color: isDone ? '#8E8E93' : '#fff' }}>
+                  {s.weight} <span style={{ fontSize:12, color:'#8E8E93', fontWeight:500 }}>lbs</span>
+                </span>
+                <span style={{ marginLeft:'auto', fontSize:13, color:'#8E8E93' }}>× {s.reps}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBodyweight, accentColor, exerciseName, onLog }: {
   setNum:number; setCount:number; target:number; repsRange:string
   lastWeight:number|null; isBodyweight:boolean; accentColor:string; exerciseName:string
@@ -607,6 +681,24 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   }
   const cfg     = getWeekConfig(activeProgramId, wk, workout.dayType)
   const accent  = WC[key]
+
+  // Optional warm-up ramp on the first compound lift of each MAJOR muscle
+  // group. Major = the muscles whose lead movement is a multi-joint lift
+  // worth ramping (squat, bench, row, RDL, hip thrust, overhead press).
+  // We don't gate on 'primary' alone because some templates (e.g. Galpin)
+  // tag big compounds like the Back Squat as 'secondary' — those still get
+  // a warm-up. Isolation lifts and accessory muscles (delts/arms/calves/
+  // core) are skipped; they're light and the muscle is already warm.
+  const warmupTargets = (() => {
+    const MAJOR = new Set(['Chest','Back','Quads','Hamstrings','Glutes','Shoulders'])
+    const seen = new Set<string>(), out = new Set<string>()
+    workout.exercises.forEach(ex => {
+      if (!MAJOR.has(ex.muscle) || seen.has(ex.muscle)) return
+      if (ex.type === 'isolation' || ex.isBodyweight) return
+      seen.add(ex.muscle); out.add(ex.name)
+    })
+    return out
+  })()
 
   const [rms,       setRms]       = useState<Record<string,number>>({})
   const [round,     setRound]     = useState(5)
@@ -1099,6 +1191,11 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                       <span style={{ fontSize:12, color:'#8E8E93' }}>Last: {lastWt} lbs</span>
                     </>}
                   </div>
+
+                  {/* Warm-up ramp — first primary lift of each muscle group, optional, not logged, no rest timer */}
+                  {!isComp && warmupTargets.has(origEx.name) && target > 0 && (
+                    <WarmupSets working={target} round={round} accentColor={accent} exerciseName={effName(origEx)} />
+                  )}
 
                   {/* Logged sets */}
                   {exLogged.map((l:any, i:number) => (
