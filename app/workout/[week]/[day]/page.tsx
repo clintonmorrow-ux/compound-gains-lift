@@ -1,7 +1,7 @@
 'use client'
 import { use, useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus, Flame, Award } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus, Flame, Award, Lightbulb } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getProgram, getWeekConfig } from '@/lib/program/programLibrary'
 import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/calculator'
@@ -138,6 +138,56 @@ function warmupScheme(working: number, round: number): { pct:number; weight:numb
     lastW = w
   }
   return out
+}
+
+// ── Coaching bubble ──────────────────────────────────────────────────
+// A small, tappable pill that expands to explain the weight: whether it
+// jumped since last session, and WHY (the smart-suggestion reason, which
+// includes the double-progression signal — e.g. "hit top of rep range,
+// load increased"). Collapsed by default so it never clutters the screen,
+// and it only renders when there's something worth saying.
+function CoachBubble({ target, lastWeight, suggestion, isBodyweight, accentColor }: {
+  target:number; lastWeight:number|null; suggestion:SmartSuggestion|null; isBodyweight:boolean; accentColor:string
+}) {
+  const [open, setOpen] = useState(false)
+  const jump = (!isBodyweight && lastWeight != null && target > 0) ? target - lastWeight : null
+  const hasJump = jump != null && Math.abs(jump) >= 0.5
+  const reason = suggestion?.reason
+  if (!hasJump && !reason) return null
+
+  const dirColor = (suggestion?.direction === 'up' || (jump ?? 0) > 0) ? '#2DD4A0'
+                 : (suggestion?.direction === 'down' || (jump ?? 0) < 0) ? '#FFB23E' : accentColor
+  const label = hasJump
+    ? (jump! > 0 ? `Up ${Math.round(jump!)} lbs from last time` : `Down ${Math.round(-jump!)} lbs from last time`)
+    : 'Why this weight?'
+
+  return (
+    <div style={{ marginBottom:4 }}>
+      <button onClick={()=>setOpen(o=>!o)} style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'6px 11px',
+        borderRadius:999, background:'rgba(118,118,128,0.12)', border:'0.5px solid rgba(84,84,88,0.35)' }}>
+        <Lightbulb size={13} style={{ color:accentColor, flexShrink:0 }} strokeWidth={2.2} />
+        <span style={{ fontSize:12, fontWeight:600, color: hasJump ? dirColor : '#fff' }}>{label}</span>
+        <span style={{ fontSize:11, color:'#8E8E93' }}>{open ? '⌃' : '⌄'}</span>
+      </button>
+      {open && (
+        <div style={{ marginTop:8, padding:'12px 14px', borderRadius:12, background:'rgba(118,118,128,0.08)',
+          border:'0.5px solid rgba(84,84,88,0.3)', display:'flex', flexDirection:'column', gap:8 }}>
+          {hasJump && (
+            <div style={{ display:'flex', alignItems:'baseline', gap:8 }}>
+              <span style={{ fontSize:15, fontWeight:800, color:dirColor }}>{jump! > 0 ? '↑' : '↓'} {Math.round(Math.abs(jump!))} lbs</span>
+              <span style={{ fontSize:13, color:'rgba(239,250,248,0.65)' }}>{lastWeight} → {target} lbs since last session</span>
+            </div>
+          )}
+          {reason && <p style={{ fontSize:13, color:'rgba(239,250,248,0.85)', lineHeight:1.5 }}>{reason}</p>}
+          {suggestion && (
+            <p style={{ fontSize:11, color:'#8E8E93' }}>
+              Confidence: {suggestion.confidence}{suggestion.estimatedOneRm ? ` · est. 1RM ~${suggestion.estimatedOneRm} lbs` : ''}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 function WarmupSets({ working, round, accentColor, exerciseName }: {
@@ -1191,6 +1241,12 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                       <span style={{ fontSize:12, color:'#8E8E93' }}>Last: {lastWt} lbs</span>
                     </>}
                   </div>
+
+                  {/* Coaching — why this weight / jump since last session (tap to expand) */}
+                  {!isComp && (
+                    <CoachBubble target={target} lastWeight={lastWt} suggestion={smart ?? null}
+                      isBodyweight={!!origEx.isBodyweight} accentColor={accent} />
+                  )}
 
                   {/* Warm-up ramp — first primary lift of each muscle group, optional, not logged, no rest timer */}
                   {!isComp && warmupTargets.has(origEx.name) && target > 0 && (
