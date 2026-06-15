@@ -890,6 +890,30 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     return getTargetWeight(oneRm, ex.type, wk, round, cfg)
   }
 
+  // When the user swaps an exercise mid-workout, pull the NEW exercise's own
+  // history so the suggested weight, "last time", and coaching reflect what
+  // they actually lift on it — not the lift it replaced. If the new exercise
+  // has no history, we clear the suggestion (so nothing misleading shows) and
+  // they enter their weight manually.
+  const applySwap = async (slot: string, newName: string, cue: string) => {
+    setSwapped(p => ({ ...p, [slot]: { name: newName, cue } }))
+    setAltsFor(null)
+    const ex = workout.exercises.find(e => e.name === slot)
+    if (!ex || ex.isBodyweight) {
+      setLasts(p => ({ ...p, [slot]: null })); setSmartMap(p => ({ ...p, [slot]: null })); return
+    }
+    try {
+      const recent = await getRecentSetsForExercise(newName, 15)
+      const oneRm  = rms[newName] ?? 0
+      const exCfg  = getWeekConfig(activeProgramId, wk, workout.dayType)
+      const sug    = calculateSmartSuggestion(recent, ex.type, wk, oneRm, round, exCfg)
+      setLasts(p => ({ ...p, [slot]: recent[0]?.weight_lbs ?? null }))
+      setSmartMap(p => ({ ...p, [slot]: sug }))
+    } catch {
+      setLasts(p => ({ ...p, [slot]: null })); setSmartMap(p => ({ ...p, [slot]: null }))
+    }
+  }
+
   // Retry wrapper — 3 attempts with 800ms/1600ms backoff
   const logWithRetry = async (...args: Parameters<typeof logSet>) => {
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -1311,7 +1335,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
       {rest    && <RestPill key={rest.startedAt} seconds={rest.sec} exName={rest.name} onDone={()=>setRest(null)} onRestPause={()=>setRest(p=>p?{...p,sec:15,startedAt:Date.now()}:null)} />}
       {altsFor && <AltsSheet exName={altsFor} equipment={equipment}
-        onSwap={(n,c)=>{ setSwapped(p=>({...p,[altsFor]:{name:n,cue:c}})); setAltsFor(null) }}
+        onSwap={(n,c)=>{ if (altsFor) applySwap(altsFor, n, c) }}
         onClose={()=>setAltsFor(null)} />}
 
       {/* ── Resume session sheet ── */}
