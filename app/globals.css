@@ -258,3 +258,7 @@ input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; }
 @media (prefers-reduced-motion: reduce) {
   .rp-wave, .rp-wave2 { animation: none; }
 }
+
+/* Hidden scrollbar for horizontal selectors (tempo dial, etc.) */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

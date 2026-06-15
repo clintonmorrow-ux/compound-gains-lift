@@ -8,7 +8,7 @@ import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/c
 import { fetchAllOneRms, fetchSettings, createSession, completeSession,
          logSet, getRecentSetsForExercise, fetchEquipment, fetchExercisePreferences,
          deleteSession, findIncompleteSession, fetchAllLoggedSets } from '@/lib/db'
-import { getRestSeconds, getRestContext, fireRestCompleteNotification, requestNotificationPermission } from '@/lib/program/restTimes'
+import { getRestSeconds, fireRestCompleteNotification, requestNotificationPermission } from '@/lib/program/restTimes'
 import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { calculateSmartSuggestion, type SmartSuggestion } from '@/lib/program/smartSuggestions'
 import { EXERCISE_MUSCLE } from '@/lib/program/analytics'
@@ -397,7 +397,7 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
         </p>
       </div>
 
-      {/* Tempo selector */}
+      {/* Tempo selector — horizontal rolling dial (one row, saves space) */}
       <div style={{ marginBottom:16 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
           <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.08em' }}>
@@ -405,22 +405,24 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
           </p>
           <span style={{ fontSize:11, color:'rgba(23,190,187,0.7)', background:'rgba(23,190,187,0.1)',
             padding:'2px 7px', borderRadius:6 }}>optional</span>
+          <span style={{ marginLeft:'auto', fontSize:14, fontWeight:800, color:accentColor, letterSpacing:'-0.2px' }}>{tempo}</span>
         </div>
-        <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-          {TEMPOS.map(t => (
-            <button key={t.code} onClick={()=>setTempo(t.code)}
-              style={{ padding:'6px 10px', borderRadius:10,
-                background: tempo===t.code ? accentColor : 'rgba(118,118,128,0.15)',
-                fontSize:12, fontWeight:700, color: tempo===t.code ? '#04161E' : '#8E8E93',
-                transition:'background 0.15s',
-                display:'flex', alignItems:'center', gap:5 }}>
-              <span>{t.code}</span>
-              {t.purpose && <span style={{ fontSize:10, fontWeight:500,
-                color: tempo===t.code ? 'rgba(255,255,255,0.7)' : 'rgba(142,142,147,0.7)',
-                background: tempo===t.code ? 'rgba(0,0,0,0.2)' : 'rgba(118,118,128,0.15)',
-                padding:'1px 5px', borderRadius:4 }}>{t.purpose}</span>}
-            </button>
-          ))}
+        <div className="no-scrollbar" style={{ display:'flex', gap:8, overflowX:'auto', scrollSnapType:'x mandatory',
+          paddingBottom:2, WebkitOverflowScrolling:'touch', marginInline:-2, paddingInline:2 }}>
+          {TEMPOS.map(t => {
+            const sel = tempo === t.code
+            return (
+              <button key={t.code} onClick={()=>setTempo(t.code)}
+                style={{ scrollSnapAlign:'center', flexShrink:0, minWidth:74, padding:'8px 12px', borderRadius:12,
+                  background: sel ? accentColor : 'rgba(118,118,128,0.15)',
+                  border: sel ? 'none' : '0.5px solid rgba(84,84,88,0.3)',
+                  display:'flex', flexDirection:'column', alignItems:'center', gap:2, transition:'all 0.15s' }}>
+                <span style={{ fontSize:14, fontWeight:800, color: sel ? '#04161E' : '#fff' }}>{t.code}</span>
+                <span style={{ fontSize:9, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em', whiteSpace:'nowrap',
+                  color: sel ? 'rgba(4,22,30,0.7)' : 'rgba(142,142,147,0.85)' }}>{t.purpose || 'Default'}</span>
+              </button>
+            )
+          })}
         </div>
         {tempo !== 'Standard' && (
           <p style={{ fontSize:12, color:'rgba(23,190,187,0.85)', marginTop:8,
@@ -573,8 +575,8 @@ function DropSetRow({ lastWeight, repsRange, accentColor, onLog }: {
 }
 
 // ── Rest Timer ────────────────────────────────────────────────────
-function RestPill({ seconds, exName, context, onDone, onRestPause }: {
-  seconds:number; exName:string; context?:string; onDone:()=>void; onRestPause:()=>void
+function RestPill({ seconds, exName, onDone, onRestPause }: {
+  seconds:number; exName:string; onDone:()=>void; onRestPause:()=>void
 }) {
   // Absolute end timestamp so the timer recovers correctly after
   // the iPhone screen locks (JS setTimeout freezes while screen is off)
@@ -596,59 +598,43 @@ function RestPill({ seconds, exName, context, onDone, onRestPause }: {
 
   const m=Math.floor(rem/60), s=rem%60, pct=(rem/seconds)*100
   return (
-    <div className="rest-pill" style={{
-      flexDirection:'column', alignItems:'stretch', gap:0,
-      padding: context ? '12px 16px' : '8px 12px 8px 10px',
-      borderRadius: context ? 18 : 999,
-      whiteSpace: 'normal',
-      width: context ? 'min(360px, calc(100vw - 32px))' : 'auto',
-    }}>
-      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-        <svg width="34" height="34" viewBox="0 0 36 36" style={{ flexShrink:0 }}>
-          <defs>
-            <clipPath id="rp-clip"><circle cx="18" cy="18" r="15.5" /></clipPath>
-            <linearGradient id="rp-water" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3FE8DA" />
-              <stop offset="100%" stopColor="#17BEBB" />
-            </linearGradient>
-          </defs>
-          {/* glass container */}
-          <circle cx="18" cy="18" r="15.5" fill="rgba(23,190,187,0.10)"
-            stroke="rgba(63,232,218,0.45)" strokeWidth="1.5" />
-          {/* draining water, clipped to the circle */}
-          <g clipPath="url(#rp-clip)">
-            <g style={{ transform:`translateY(${(2 + (1 - pct/100)*30) - 4}px)`, transition:'transform 1s linear' }}>
-              <g className="rp-wave">
-                <path d="M0 4 q4.5 -4 9 0 t9 0 t9 0 t9 0 t9 0 t9 0 t9 0 t9 0 V44 H0 Z" fill="url(#rp-water)" opacity="0.92" />
-              </g>
-              <g className="rp-wave2">
-                <path d="M0 5 q4.5 4 9 0 t9 0 t9 0 t9 0 t9 0 t9 0 t9 0 t9 0 V44 H0 Z" fill="url(#rp-water)" opacity="0.5" />
-              </g>
+    <div className="rest-pill" style={{ gap:9 }}>
+      <svg width="34" height="34" viewBox="0 0 36 36" style={{ flexShrink:0 }}>
+        <defs>
+          <clipPath id="rp-clip"><circle cx="18" cy="18" r="15.5" /></clipPath>
+          <linearGradient id="rp-water" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#3FE8DA" />
+            <stop offset="100%" stopColor="#17BEBB" />
+          </linearGradient>
+        </defs>
+        <circle cx="18" cy="18" r="15.5" fill="rgba(23,190,187,0.10)"
+          stroke="rgba(63,232,218,0.45)" strokeWidth="1.5" />
+        <g clipPath="url(#rp-clip)">
+          <g style={{ transform:`translateY(${(2 + (1 - pct/100)*30) - 4}px)`, transition:'transform 1s linear' }}>
+            <g className="rp-wave">
+              <path d="M0 4 q4.5 -4 9 0 t9 0 t9 0 t9 0 t9 0 t9 0 t9 0 t9 0 V44 H0 Z" fill="url(#rp-water)" opacity="0.92" />
+            </g>
+            <g className="rp-wave2">
+              <path d="M0 5 q4.5 4 9 0 t9 0 t9 0 t9 0 t9 0 t9 0 t9 0 t9 0 t9 0 V44 H0 Z" fill="url(#rp-water)" opacity="0.5" />
             </g>
           </g>
-        </svg>
-        <span style={{ fontSize:17, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums', letterSpacing:'-0.3px', flex:1 }}>
-          {m}:{String(s).padStart(2,'0')}
-        </span>
-        <div style={{ width:0.5, height:18, background:'rgba(84,84,88,0.6)', flexShrink:0 }} />
-        <button onClick={onRestPause} title="Rest-Pause: 15s then log more reps"
-          style={{ padding:'4px 9px', borderRadius:999, flexShrink:0,
-          background:'rgba(23,190,187,0.25)', fontSize:11, fontWeight:700, color:'#17BEBB',
-          border:'0.5px solid rgba(23,190,187,0.4)' }}>
-          RP
-        </button>
-        <button onClick={onDone}
-          style={{ padding:'4px 9px', borderRadius:999, flexShrink:0,
-          background:'rgba(118,118,128,0.25)', fontSize:11, fontWeight:600, color:'#8E8E93' }}>
-          Skip
-        </button>
-      </div>
-      {context && (
-        <p style={{ fontSize:11, color:'rgba(142,142,147,0.7)', marginTop:8, lineHeight:1.5,
-          paddingTop:8, borderTop:'0.5px solid rgba(84,84,88,0.25)' }}>
-          {context}
-        </p>
-      )}
+        </g>
+      </svg>
+      <span style={{ fontSize:17, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums', letterSpacing:'-0.3px', flexShrink:0 }}>
+        {m}:{String(s).padStart(2,'0')}
+      </span>
+      <div style={{ width:0.5, height:18, background:'rgba(84,84,88,0.6)', flexShrink:0 }} />
+      <button onClick={onRestPause} title="Rest-Pause: 15s then log more reps"
+        style={{ padding:'4px 9px', borderRadius:999, flexShrink:0,
+        background:'rgba(23,190,187,0.25)', fontSize:11, fontWeight:700, color:'#17BEBB',
+        border:'0.5px solid rgba(23,190,187,0.4)' }}>
+        RP
+      </button>
+      <button onClick={onDone}
+        style={{ padding:'4px 9px', borderRadius:999, flexShrink:0,
+        background:'rgba(118,118,128,0.25)', fontSize:11, fontWeight:600, color:'#8E8E93' }}>
+        Skip
+      </button>
     </div>
   )
 }
@@ -762,7 +748,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const [progPrefs,   setProgPrefs]   = useState<Record<string,{name:string;cue:string}>>({})
   const [cycleNumber, setCycleNumber] = useState(1)
   const [altsFor,   setAltsFor]   = useState<string|null>(null)
-  const [rest,      setRest]      = useState<{sec:number;ctx:string;name:string;startedAt:number}|null>(null)
+  const [rest,      setRest]      = useState<{sec:number;name:string;startedAt:number}|null>(null)
   const [showExitSheet,    setShowExitSheet]    = useState(false)
   const [showFinishEarly,  setShowFinishEarly]  = useState(false)
   const [resumeCandidate, setResumeCandidate] = useState<{id:string;started_at:string;logged_sets:any[]}|null>(null)
@@ -962,7 +948,6 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     const newSets   = {...sets, [origEx.name]: newLogged}
     setSets(newSets)
     setRest({ sec: getRestSeconds(wk, origEx.type, activeProgramId, workout.dayType),
-             ctx: getRestContext(origEx.type, activeProgramId, workout.dayType),
              name: effName(origEx), startedAt: Date.now() })
     if (newLogged.length >= getSetsForWeek(origEx.type, wk, cfg)) {
       const next = workout.exercises.find(e => (newSets[e.name]?.length??0) < getSetsForWeek(e.type,wk,cfg))
@@ -973,23 +958,25 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
   if (done) {
     // ── Compute session summary from logged sets ──
-    const entries = Object.entries(sets)
+    // Group by each set's ACTUAL logged exercise_name (so mid-workout swaps —
+    // e.g. Cable Fly → Pec Deck — are attributed to what was really performed,
+    // not the program's original slot name).
+    const allSessionSets = Object.values(sets).flat() as any[]
     let totalSets = 0, totalVolume = 0, totalReps = 0
     const sessionBest: Record<string, { e1rm:number; weight:number; reps:number }> = {}
     const muscleSets: Record<string, number> = {}
-    entries.forEach(([name, arr]) => {
-      ;(arr as any[]).forEach(s => {
-        if (s.reps == null) return
-        totalSets++
-        totalReps += s.reps
-        if (s.weight_lbs) {
-          totalVolume += s.weight_lbs * s.reps
-          const e = s.weight_lbs * (1 + s.reps / 30)
-          if (!sessionBest[name] || e > sessionBest[name].e1rm) sessionBest[name] = { e1rm:e, weight:s.weight_lbs, reps:s.reps }
-        }
-        const m = EXERCISE_MUSCLE[name]
-        if (m) muscleSets[m] = (muscleSets[m] ?? 0) + 1
-      })
+    allSessionSets.forEach(s => {
+      if (!s || s.reps == null) return
+      const exName = s.exercise_name ?? 'Exercise'
+      totalSets++
+      totalReps += s.reps
+      if (s.weight_lbs) {
+        totalVolume += s.weight_lbs * s.reps
+        const e = s.weight_lbs * (1 + s.reps / 30)
+        if (!sessionBest[exName] || e > sessionBest[exName].e1rm) sessionBest[exName] = { e1rm:e, weight:s.weight_lbs, reps:s.reps }
+      }
+      const m = EXERCISE_MUSCLE[exName]
+      if (m) muscleSets[m] = (muscleSets[m] ?? 0) + 1
     })
     const prs = Object.entries(sessionBest)
       .filter(([name, b]) => !priorBest[name] || b.e1rm > priorBest[name] + 0.5)
@@ -1322,7 +1309,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
         )}
       </div>
 
-      {rest    && <RestPill key={rest.startedAt} seconds={rest.sec} exName={rest.name} context={rest.ctx} onDone={()=>setRest(null)} onRestPause={()=>setRest(p=>p?{...p,sec:15,startedAt:Date.now()}:null)} />}
+      {rest    && <RestPill key={rest.startedAt} seconds={rest.sec} exName={rest.name} onDone={()=>setRest(null)} onRestPause={()=>setRest(p=>p?{...p,sec:15,startedAt:Date.now()}:null)} />}
       {altsFor && <AltsSheet exName={altsFor} equipment={equipment}
         onSwap={(n,c)=>{ setSwapped(p=>({...p,[altsFor]:{name:n,cue:c}})); setAltsFor(null) }}
         onClose={()=>setAltsFor(null)} />}
