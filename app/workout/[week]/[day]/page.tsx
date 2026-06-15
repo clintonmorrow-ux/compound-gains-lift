@@ -1,7 +1,7 @@
 'use client'
 import { use, useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus, Flame, Award, Lightbulb } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus, Flame, Award, Lightbulb, RotateCcw } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getProgram, getWeekConfig } from '@/lib/program/programLibrary'
 import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/calculator'
@@ -12,6 +12,7 @@ import { getRestSeconds, fireRestCompleteNotification, requestNotificationPermis
 import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { calculateSmartSuggestion, type SmartSuggestion } from '@/lib/program/smartSuggestions'
 import { EXERCISE_MUSCLE } from '@/lib/program/analytics'
+import { reintroActive, isReintroSet, REINTRO_VOLUME_PCT, REINTRO_RIR_CAP } from '@/lib/program/reintro'
 import type { Exercise, WorkoutKey } from '@/types'
 
 const WC: Record<string,string> = { A:'#17BEBB', B:'#2DD4A0', C:'#A885F2', D:'#FFB23E', E:'#F25C54' }
@@ -755,6 +756,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const [syncErrors,      setSyncErrors]      = useState<string[]>([])
   const [done,      setDone]      = useState(false)
   const [priorBest, setPriorBest] = useState<Record<string, number>>({})
+  const [reintro,   setReintro]   = useState<{active:boolean; loadPct:number; started:string|null; until:string|null}>(
+    { active:false, loadPct:1, started:null, until:null })
 
   const init = useCallback(async () => {
     try {
@@ -768,6 +771,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       rmArr.forEach((x:any)=>{rm[x.exercise_name]=x.weight_lbs})
       setRms(rm); setRound(settings.round_to_lbs); setEquipment(equip)
       setCycleNumber(settings.cycle_number ?? 1)
+      setReintro({ active: reintroActive(settings), loadPct: settings.reintro_load_pct ?? 0.88,
+                   started: settings.reintro_started_at ?? null, until: settings.reintro_until ?? null })
       // All-time best e1RM per exercise (purely historical — session not yet
       // created), used to detect PRs on the post-workout summary.
       try {
@@ -790,7 +795,10 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
         const effectiveName = prefs[ex.name]?.name ?? ex.name
         // Also check if there's a 1RM stored under the effective name; fall back to original
         const oneRm = rm[effectiveName] ?? 0
-        const recent = await getRecentSetsForExercise(effectiveName, 15)
+        const recentRaw = await getRecentSetsForExercise(effectiveName, 15)
+        // Exclude sets logged during the reintroduction window so an easy
+        // ramp-back week never drags the suggestion / 1RM basis down.
+        const recent = recentRaw.filter((s:any) => !isReintroSet(s.completed_at, settings))
         lastMap[ex.name]  = recent[0]?.weight_lbs ?? null
         const exCfg = getWeekConfig(activeProgramId, wk, workout.dayType)
         smartM[ex.name]   = calculateSmartSuggestion(recent, ex.type, wk, oneRm, settings.round_to_lbs, exCfg)
@@ -903,7 +911,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       setLasts(p => ({ ...p, [slot]: null })); setSmartMap(p => ({ ...p, [slot]: null })); return
     }
     try {
-      const recent = await getRecentSetsForExercise(newName, 15)
+      const recentRaw = await getRecentSetsForExercise(newName, 15)
+      const recent = recentRaw.filter((s:any) => !isReintroSet(s.completed_at, { reintro_started_at: reintro.started, reintro_until: reintro.until }))
       const oneRm  = rms[newName] ?? 0
       const exCfg  = getWeekConfig(activeProgramId, wk, workout.dayType)
       const sug    = calculateSmartSuggestion(recent, ex.type, wk, oneRm, round, exCfg)
@@ -1131,7 +1140,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           </div>
           <div style={{ flex:1 }}>
             <p style={{ fontSize:17, fontWeight:700, color:'#fff', letterSpacing:'-0.5px' }}>{workout.shortName}</p>
-            <p style={{ fontSize:12, color:'rgba(239,250,248,0.6)' }}>Week {wk} · {cfg.phase.split('—')[0].trim()} · RIR {cfg.rir}</p>
+            <p style={{ fontSize:12, color:'rgba(239,250,248,0.6)' }}>Week {wk} · {cfg.phase.split('—')[0].trim()} · RIR {reintro.active ? Math.max(cfg.rir, REINTRO_RIR_CAP) : cfg.rir}</p>
           </div>
           <div style={{ padding:'6px 14px', borderRadius:999, background:'rgba(255,255,255,0.1)',
             border:'0.5px solid rgba(255,255,255,0.16)' }}>
@@ -1188,15 +1197,32 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
         )
       })()}
 
+      {/* Reintroduction banner */}
+      {reintro.active && (
+        <div style={{ margin:'12px 14px 0', borderRadius:14, padding:'11px 14px', display:'flex', alignItems:'center', gap:10,
+          background:'color-mix(in srgb, var(--blue) 13%, transparent)', border:'0.5px solid color-mix(in srgb, var(--blue) 32%, transparent)' }}>
+          <RotateCcw size={16} style={{ color:'var(--teal)', flexShrink:0 }} strokeWidth={2.3} />
+          <p style={{ fontSize:12.5, color:'rgba(239,250,248,0.82)', lineHeight:1.45 }}>
+            <b style={{ color:'#fff' }}>Ramp-back week</b> · loads at ~{Math.round(reintro.loadPct*100)}%, reduced volume, RIR {REINTRO_RIR_CAP}+. Re-groove the pattern — these sets won&rsquo;t affect your 1RM or suggestions.
+          </p>
+        </div>
+      )}
+
       {/* Exercise list */}
       <div style={{ padding:'12px 14px', display:'flex', flexDirection:'column', gap:10 }}>
         {workout.exercises.map((origEx, idx) => {
-          const exSets   = getSetsForWeek(origEx.type, wk, cfg)
+          const baseSets = getSetsForWeek(origEx.type, wk, cfg)
+          // Reintroduction: reduce volume, cap load, hold RIR in reserve
+          const exSets   = reintro.active ? Math.max(2, Math.round(baseSets * REINTRO_VOLUME_PCT)) : baseSets
           const exReps   = getRepsForWeek(origEx.type, wk, cfg)
+          const exRir    = reintro.active ? Math.max(cfg.rir, REINTRO_RIR_CAP) : cfg.rir
           const exLogged = sets[origEx.name] ?? []
           const isComp   = exLogged.length >= exSets
           const isOpen   = open === origEx.name
-          const target   = tgt(origEx)
+          const baseTgt  = tgt(origEx)
+          const target   = (reintro.active && !origEx.isBodyweight && baseTgt > 0)
+            ? Math.max(round, Math.round(baseTgt * reintro.loadPct / round) * round)
+            : baseTgt
           const smart    = smartMap[origEx.name]
           const lastWt   = lasts[origEx.name] ?? null
           const nextSet  = exLogged.length + 1  // which set is active
@@ -1246,7 +1272,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                     <span style={{ color:'#8E8E93' }}>·</span>
                     <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>{exReps} reps</span>
                     <span style={{ color:'#8E8E93' }}>·</span>
-                    <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>RIR {cfg.rir}</span>
+                    <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>RIR {exRir}</span>
                     {lastWt && <>
                       <span style={{ color:'#8E8E93', marginLeft:'auto' }}>·</span>
                       <span style={{ fontSize:12, color:'#8E8E93' }}>Last: {lastWt} lbs</span>

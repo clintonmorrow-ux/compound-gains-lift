@@ -43,7 +43,7 @@ export async function fetchSettings(): Promise<UserSettings> {
 
   const { data, error } = await supabase
     .from('user_settings')
-    .select('current_week, round_to_lbs, program_format, cycle_number, week_started_at, active_program_id')
+    .select('current_week, round_to_lbs, program_format, cycle_number, week_started_at, active_program_id, reintro_started_at, reintro_until, reintro_load_pct')
     .eq('id', user.id)   // explicit filter — don't rely solely on RLS
     .maybeSingle()        // returns null (not error) when 0 rows exist
 
@@ -80,7 +80,26 @@ export async function fetchSettings(): Promise<UserSettings> {
     cycle_number:      data.cycle_number      ?? 1,
     week_started_at:   data.week_started_at   ?? null,
     active_program_id: data.active_program_id ?? 'galpin-5day-hypertrophy',
+    reintro_started_at: data.reintro_started_at ?? null,
+    reintro_until:      data.reintro_until      ?? null,
+    reintro_load_pct:   data.reintro_load_pct   ?? null,
   }
+}
+
+// Most recent completed session date (for detecting a training layoff)
+export async function getLastWorkoutDate(): Promise<string | null> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data, error } = await supabase
+    .from('sessions')
+    .select('completed_at')
+    .not('completed_at', 'is', null)
+    .order('completed_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error || !data) return null
+  return data.completed_at ?? null
 }
 
 export async function updateSettings(settings: Partial<UserSettings>): Promise<void> {

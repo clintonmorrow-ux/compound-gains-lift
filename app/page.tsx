@@ -2,13 +2,14 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, CheckCircle2, ArrowRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, CheckCircle2, ArrowRight, RotateCcw } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
 import { WEEK_CONFIG, PHASE_LABELS } from '@/lib/program/data'
 import { getProgram, getWeekConfig } from '@/lib/program/programLibrary'
 import { fetchSettings, updateSettings, fetchRecentSessions, fetchAllOneRms, fetchAllLoggedSets, fetchCoachPrefs, fetchCycleStats } from '@/lib/db'
 import { detectDeloadReadiness, type CoachSet } from '@/lib/program/coach'
+import { recommendReintro, reintroActive, reintroDaysLeft, startReintroPatch, type ReintroPlan } from '@/lib/program/reintro'
 import CycleComplete from '@/components/CycleComplete'
 import { Battery, Zap } from 'lucide-react'
 
@@ -43,6 +44,11 @@ export default function Dashboard() {
   const [showCycleEnd,    setShowCycleEnd]    = useState(false)
   const [cycleStats,      setCycleStats]      = useState<any>(null)
   const [now,             setNow]             = useState<Date | null>(null)
+  const [reintroPlan,     setReintroPlan]     = useState<ReintroPlan | null>(null)  // prompt
+  const [reintroOn,       setReintroOn]       = useState(false)                     // active banner
+  const [reintroLeft,     setReintroLeft]     = useState(0)
+  const [reintroLoad,     setReintroLoad]     = useState(0.88)
+  const [lastWorkoutDate, setLastWorkoutDate] = useState<string | null>(null)
   useEffect(() => { setNow(new Date()) }, [])
 
   const init = useCallback(async () => {
@@ -71,6 +77,21 @@ export default function Dashboard() {
         }
       }
       setHasRms(rms.length > 0)
+
+      // ── Returning from a break: detect a training layoff ──
+      const lastSet = (allSets as any[]).length ? (allSets as any[])[(allSets as any[]).length - 1] : null
+      const lastDate = lastSet?.completed_at ?? null
+      setLastWorkoutDate(lastDate)
+      if (reintroActive(s)) {
+        setReintroOn(true)
+        setReintroLeft(reintroDaysLeft(s))
+        setReintroLoad(s.reintro_load_pct ?? 0.88)
+      } else if (lastDate) {
+        const daysAway = Math.floor((Date.now() - new Date(lastDate).getTime()) / 86_400_000)
+        const plan = recommendReintro(daysAway)
+        const dismissed = localStorage.getItem('cg_reintro_dismissed') === lastDate
+        if (plan && !dismissed) setReintroPlan(plan)
+      }
       // Auto-set week_started_at on first load if it's missing — ensures
       // ghost sessions from before this timestamp don't show as done
       let wsa = s.week_started_at
@@ -157,6 +178,20 @@ export default function Dashboard() {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
   const dateLine = now ? now.toLocaleDateString(undefined, { weekday:'long', month:'long', day:'numeric' }) : '\u00A0'
 
+  const startReintro = async (plan: ReintroPlan) => {
+    const patch = startReintroPatch(plan)
+    setReintroPlan(null); setReintroOn(true); setReintroLeft(plan.windowDays); setReintroLoad(plan.loadPct)
+    try { await updateSettings(patch) } catch (e) { console.error('startReintro:', e) }
+  }
+  const dismissReintro = () => {
+    if (lastWorkoutDate) localStorage.setItem('cg_reintro_dismissed', lastWorkoutDate)
+    setReintroPlan(null)
+  }
+  const endReintro = async () => {
+    setReintroOn(false)
+    try { await updateSettings({ reintro_until: new Date(Date.now() - 1000).toISOString() }) } catch (e) { console.error('endReintro:', e) }
+  }
+
   return (
     <div className="min-h-screen pb-tabs" style={{ background:'transparent' }}>
 
@@ -201,6 +236,54 @@ export default function Dashboard() {
             {dateLine}
           </h1>
         </div>
+
+        {/* ── Returning from a break: prompt ── */}
+        {reintroPlan && !reintroOn && (
+          <div className="fade-rise" style={{ borderRadius:20, overflow:'hidden',
+            background:'linear-gradient(150deg, color-mix(in srgb, var(--blue) 32%, #04161E), color-mix(in srgb, var(--green) 14%, #0B2A33) 70%, #0B2A33)',
+            border:'0.5px solid color-mix(in srgb, var(--blue) 35%, transparent)' }}>
+            <div style={{ padding:'18px 18px 16px' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+                <RotateCcw size={16} style={{ color:'var(--teal)' }} strokeWidth={2.4} />
+                <p style={{ fontSize:12, fontWeight:800, color:'var(--teal)', textTransform:'uppercase', letterSpacing:'0.1em' }}>Welcome back</p>
+              </div>
+              <p style={{ fontSize:20, fontWeight:800, color:'#fff', letterSpacing:'-0.4px' }}>
+                You&rsquo;ve been away ~{reintroPlan.label.replace(' off','')}
+              </p>
+              <p style={{ fontSize:13.5, color:'rgba(239,250,248,0.8)', lineHeight:1.5, marginTop:6 }}>{reintroPlan.blurb}</p>
+              <p style={{ fontSize:12.5, color:'rgba(239,250,248,0.62)', lineHeight:1.5, marginTop:8 }}>
+                Ease back in at <b style={{ color:'#fff' }}>~{Math.round(reintroPlan.loadPct*100)}% load</b>, <b style={{ color:'#fff' }}>{Math.round(reintroPlan.volumePct*100)}% volume</b>, RIR {reintroPlan.rirCap}+ for {reintroPlan.windowDays} days. Your 1RM and progression stay put.
+              </p>
+              <div style={{ display:'flex', gap:8, marginTop:14 }}>
+                <button onClick={()=>startReintro(reintroPlan)} style={{ flex:1, height:46, borderRadius:13,
+                  background:'#fff', color:'#04161E', fontWeight:700, fontSize:15 }}>
+                  Start ramp-back
+                </button>
+                <button onClick={dismissReintro} style={{ padding:'0 18px', height:46, borderRadius:13,
+                  background:'rgba(255,255,255,0.1)', color:'rgba(239,250,248,0.85)', fontWeight:600, fontSize:15,
+                  border:'0.5px solid rgba(255,255,255,0.16)' }}>
+                  Not now
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Returning from a break: active banner ── */}
+        {reintroOn && (
+          <div className="fade-rise" style={{ borderRadius:16, padding:'13px 16px', display:'flex', alignItems:'center', gap:12,
+            background:'color-mix(in srgb, var(--blue) 12%, #0B2A33)', border:'0.5px solid color-mix(in srgb, var(--blue) 32%, transparent)' }}>
+            <RotateCcw size={18} style={{ color:'var(--teal)', flexShrink:0 }} strokeWidth={2.2} />
+            <div style={{ flex:1, minWidth:0 }}>
+              <p style={{ fontSize:13.5, fontWeight:700, color:'#fff' }}>Reintroduction active{reintroLeft>0?` · ${reintroLeft} day${reintroLeft>1?'s':''} left`:''}</p>
+              <p style={{ fontSize:12, color:'rgba(239,250,248,0.6)', marginTop:1 }}>Loads ~{Math.round(reintroLoad*100)}%, RIR 3+, full ROM. Suggestions stay protected.</p>
+            </div>
+            <button onClick={endReintro} style={{ flexShrink:0, padding:'6px 12px', borderRadius:999, fontSize:12, fontWeight:700,
+              color:'var(--teal)', background:'color-mix(in srgb, var(--blue) 18%, transparent)', border:'0.5px solid color-mix(in srgb, var(--blue) 35%, transparent)' }}>
+              End
+            </button>
+          </div>
+        )}
 
         {/* ── 1RM prompt banner ── */}
         {!hasRms && (

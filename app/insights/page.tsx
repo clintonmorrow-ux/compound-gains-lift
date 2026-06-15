@@ -5,10 +5,11 @@ import { ChevronLeft, TrendingUp, Flame, Award, AlertTriangle } from 'lucide-rea
 import BottomNav from '@/components/BottomNav'
 import MuscleVolumeChart from '@/components/MuscleVolumeChart'
 import { createClient } from '@/lib/supabase/client'
-import { fetchAllLoggedSets, fetchCoachPrefs } from '@/lib/db'
+import { fetchAllLoggedSets, fetchCoachPrefs, fetchSettings } from '@/lib/db'
 import CoachSignals from '@/components/CoachSignals'
 import { detectRirTrends, detectDeloadReadiness, analyzeIntraSetFatigue, DEFAULT_COACH_PREFS, type CoachSet } from '@/lib/program/coach'
 import { WORKOUTS } from '@/lib/program/data'
+import { isReintroSet } from '@/lib/program/reintro'
 import {
   e1rmSeries, weeklyVolume, regionIntensity, muscleVolume,
   personalRecords, detectPlateaus, trainingIndex, cycleComparison, EXERCISE_MUSCLE, type RawSet, type CycleSet
@@ -57,6 +58,7 @@ function Sparkline({ data, color }: { data:number[]; color:string }) {
 export default function InsightsPage() {
   const router = useRouter()
   const [sets,    setSets]    = useState<RawSet[]>([])
+  const [reintroWin, setReintroWin] = useState<{reintro_started_at:string|null; reintro_until:string|null}>({ reintro_started_at:null, reintro_until:null })
   const [coachPrefs, setCoachPrefs] = useState(DEFAULT_COACH_PREFS)
   const [loading, setLoading] = useState(true)
 
@@ -65,8 +67,9 @@ export default function InsightsPage() {
       const sb = createClient()
       const { data:{ session } } = await sb.auth.getSession()
       if (!session) await sb.auth.signInAnonymously()
-      const [allSets, cp] = await Promise.all([fetchAllLoggedSets(), fetchCoachPrefs()])
+      const [allSets, cp, s] = await Promise.all([fetchAllLoggedSets(), fetchCoachPrefs(), fetchSettings()])
       setSets(allSets); setCoachPrefs(cp)
+      setReintroWin({ reintro_started_at: s.reintro_started_at ?? null, reintro_until: s.reintro_until ?? null })
     } catch(e) { console.error(e) }
     finally { setLoading(false) }
   }, [])
@@ -117,7 +120,11 @@ export default function InsightsPage() {
 
   // Compute analytics
   const idx       = trainingIndex(sets)
-  const cycleCmp  = cycleComparison(sets as unknown as CycleSet[])
+  // Cycle comparison excludes reintroduction-window sets so a ramp-back week
+  // doesn't show up as a regression against your normal training.
+  const cycleCmp  = cycleComparison(
+    (sets as any[]).filter(s => !isReintroSet(s.completed_at, reintroWin)) as unknown as CycleSet[]
+  )
   // Coach signals (computed from RIR + set order data)
   const coachSets   = sets as unknown as CoachSet[]
   const rirTrends   = detectRirTrends(coachSets)

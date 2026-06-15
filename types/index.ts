@@ -48,6 +48,9 @@ export interface UserSettings {
   active_program_id?: string
   current_week: number
   round_to_lbs: number
+  reintro_started_at?: string | null
+  reintro_until?: string | null
+  reintro_load_pct?: number | null
 }
 
 export interface LoggedSet {
