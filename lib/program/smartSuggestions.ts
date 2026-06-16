@@ -46,18 +46,17 @@ function weightedAvgOneRm(sets: RecentSet[]): number {
 /**
  * SMART WEIGHT SUGGESTION ENGINE
  *
- * Based on:
- * - Galpin: track RIR drift over consecutive sessions. If actual performance
- *   consistently deviates from prescribed RIR, adjust load to re-anchor.
- * - Norton (Double Progression): once an athlete completes ALL sets at the
- *   top of the rep range for the prescribed RIR, it is time to increase load.
- *   Conversely, if they cannot hit the bottom of the rep range, reduce load.
+ * Source of truth = your LOGGED SETS, not a manually entered number.
+ * - Estimate current 1RM directly from recent logged performance
+ *   (RIR-aware Epley, recency-weighted). The declared 1RM is only a seed
+ *   used before enough sets exist.
+ * - Norton (Double Progression): if you cleared the top of the rep range at
+ *   the prescribed weight, step the load up; if you came in under the rep
+ *   minimum, recalibrate down to that actual performance.
  *
- * Algorithm:
- * 1. Estimate current 1RM from recent logged sets (Epley formula, weighted).
- * 2. Compare to the user's declared 1RM to detect performance drift.
- * 3. Apply Norton's rep-completion signal from the most recent session.
- * 4. Produce a suggested weight for the upcoming week's prescription.
+ * Because the prescription is tied directly to your logged 1RM, it tracks
+ * your real strength automatically — there is no separate "baseline" for it
+ * to drift away from, so the coaching language always reflects your own data.
  */
 export function calculateSmartSuggestion(
   recentSets:   RecentSet[],     // most recent first, all sets for this exercise
@@ -79,61 +78,44 @@ export function calculateSmartSuggestion(
   const targetRir   = cfg.rir
   const pct         = cfg.percentages[exerciseType]
 
-  // ── Step 1: Estimate current 1RM from recent performance ──────────
-  const avgEstimate = weightedAvgOneRm(recentSets)
-  const baseline    = userOneRm > 0 ? userOneRm : avgEstimate
-
-  // ── Step 2: Detect performance drift vs declared 1RM ──────────────
-  const ratio = avgEstimate / baseline   // > 1 = stronger than baseline
-  let adjustedOneRm = baseline
+  // ── Source of truth: your 1RM DERIVED FROM LOGGED SETS ─────────────
+  // We estimate your current 1RM directly from what you've actually lifted
+  // (RIR-aware Epley, recency-weighted) rather than trusting a manually
+  // entered number. The declared 1RM is used only as a seed if the logged
+  // estimate is somehow unavailable.
+  const loggedOneRm = weightedAvgOneRm(recentSets)
+  let workingOneRm  = loggedOneRm > 0 ? loggedOneRm : userOneRm
   let direction: SuggestionDirection = 'maintain'
-  let reason = ''
+  let reason     = `Based on your logged sets, your estimated 1RM is ~${Math.round(workingOneRm)} lbs — weight set to match.`
   let confidence: 'high' | 'medium' | 'low' = recentSets.length >= 6 ? 'high' : 'medium'
 
-  if (ratio > 1.05) {
-    // Performing meaningfully above declared 1RM → Galpin: re-anchor load
-    adjustedOneRm = avgEstimate
-    direction     = 'up'
-    reason        = `Your recent sets estimate a 1RM of ~${Math.round(avgEstimate)} lbs — higher than your logged baseline. Weight increased to match.`
-  } else if (ratio < 0.93) {
-    // Performing below baseline → Galpin: fatigue or over-estimated 1RM
-    adjustedOneRm = avgEstimate
-    direction     = 'down'
-    confidence    = 'medium'
-    reason        = `Recent performance estimates a 1RM of ~${Math.round(avgEstimate)} lbs — below your baseline. Weight reduced to restore target RIR.`
-  } else {
-    adjustedOneRm = baseline
-    direction     = 'maintain'
-    reason        = `Performance is tracking with your logged 1RM. Staying the course.`
-  }
-
-  // ── Step 3: Norton double-progression signal ──────────────────────
-  // Use the most recent full session's sets (up to 5 most recent sets)
+  // ── Norton double-progression from your most recent session ────────
+  // The prescribed weight already tracks your logged 1RM; Norton adds the
+  // deliberate push (you cleared the top of the range) or pullback (you
+  // came in under the rep target) on top of it.
   const lastSession = recentSets.slice(0, Math.min(5, cfg.sets[exerciseType]))
   if (lastSession.length > 0) {
     const avgReps    = lastSession.reduce((a, s) => a + s.reps, 0) / lastSession.length
     const avgWeight  = lastSession.reduce((a, s) => a + s.weight_lbs, 0) / lastSession.length
-    const prescWt    = mround(adjustedOneRm * pct, roundTo)
+    const prescWt    = mround(workingOneRm * pct, roundTo)
 
     if (avgReps >= maxReps && Math.abs(avgWeight - prescWt) / prescWt < 0.08) {
-      // Hit top of rep range at prescribed weight → Norton: increase load
-      adjustedOneRm  = adjustedOneRm * 1.025   // ~2.5% progressive overload
-      direction      = 'up'
-      reason         = `You hit ${maxReps} reps (top of range) last session — progressive overload applied (+2.5% to 1RM estimate).`
-      confidence     = 'high'
+      // Cleared the top of the rep range at the prescribed weight → progress
+      workingOneRm = workingOneRm * 1.025   // ~2.5% progressive overload
+      direction    = 'up'
+      reason       = `You hit ${maxReps} reps (top of range) last session — your logged 1RM is now ~${Math.round(workingOneRm)} lbs, so the load steps up.`
+      confidence   = 'high'
     } else if (avgReps < minReps && Math.abs(avgWeight - prescWt) / prescWt < 0.08) {
-      // Couldn't reach min reps at prescribed weight → Norton: reduce load
-      // Recalculate 1RM from what they actually achieved
-      const actualEst = weightedAvgOneRm(lastSession)
-      adjustedOneRm   = actualEst * 0.98    // small additional buffer
-      direction       = 'down'
-      reason          = `Last session averaged ${Math.round(avgReps)} reps — below the ${minReps}-rep minimum. Weight recalibrated from actual performance.`
-      confidence      = 'high'
+      // Came in under the rep minimum → recalibrate to that actual performance
+      workingOneRm = weightedAvgOneRm(lastSession)
+      direction    = 'down'
+      reason       = `Last session averaged ${Math.round(avgReps)} reps — under the ${minReps}-rep target — so your logged 1RM recalibrates to ~${Math.round(workingOneRm)} lbs from that performance.`
+      confidence   = 'high'
     }
   }
 
-  // ── Step 4: Produce suggestion ────────────────────────────────────
-  const suggested = mround(adjustedOneRm * pct, roundTo)
+  // ── Produce suggestion ─────────────────────────────────────────────
+  const suggested = mround(workingOneRm * pct, roundTo)
 
   // Sanity check — don't suggest something ridiculous
   if (suggested <= 0 || !isFinite(suggested)) return null
@@ -142,7 +124,7 @@ export function calculateSmartSuggestion(
     weight:         suggested,
     direction,
     reason,
-    estimatedOneRm: Math.round(adjustedOneRm),
+    estimatedOneRm: Math.round(workingOneRm),
     confidence,
   }
 }
