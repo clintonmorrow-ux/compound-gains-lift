@@ -156,8 +156,10 @@ function CoachBubble({ target, lastWeight, suggestion, isBodyweight, accentColor
   const reason = suggestion?.reason
   if (!hasJump && !reason) return null
 
-  const dirColor = (suggestion?.direction === 'up' || (jump ?? 0) > 0) ? '#2DD4A0'
-                 : (suggestion?.direction === 'down' || (jump ?? 0) < 0) ? '#FFB23E' : accentColor
+  // At-a-glance color/arrow always means "change vs last time" (what you'll
+  // physically load differently). The 1RM-drift rationale lives in the reason.
+  const dirColor = (jump ?? 0) > 0 ? '#2DD4A0'
+                 : (jump ?? 0) < 0 ? '#FFB23E' : accentColor
   const label = hasJump
     ? (jump! > 0 ? `Up ${Math.round(jump!)} lbs from last time` : `Down ${Math.round(-jump!)} lbs from last time`)
     : 'Why this weight?'
@@ -1225,6 +1227,9 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
             : baseTgt
           const smart    = smartMap[origEx.name]
           const lastWt   = lasts[origEx.name] ?? null
+          // At-a-glance direction = change vs last time (consistent everywhere)
+          const wJump    = (!origEx.isBodyweight && lastWt != null && target > 0) ? target - lastWt : null
+          const wDir     = wJump == null ? 'none' : wJump > 0.5 ? 'up' : wJump < -0.5 ? 'down' : 'none'
           const nextSet  = exLogged.length + 1  // which set is active
 
           return (
@@ -1250,8 +1255,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                   <p style={{ fontSize:12, color:'#8E8E93', marginTop:2 }}>
                     {origEx.muscle}
                     {!origEx.isBodyweight && target>0 && (
-                      <span style={{ color: smart?.direction==='up'?'#2DD4A0':smart?.direction==='down'?'#FFB23E':accent }}>
-                        {` · ${target} lbs`}{smart?.direction==='up'?' ↑':smart?.direction==='down'?' ↓':''}
+                      <span style={{ color: wDir==='up'?'#2DD4A0':wDir==='down'?'#FFB23E':accent }}>
+                        {` · ${target} lbs`}{wDir==='up'?' ↑':wDir==='down'?' ↓':''}
                       </span>
                     )}
                   </p>
