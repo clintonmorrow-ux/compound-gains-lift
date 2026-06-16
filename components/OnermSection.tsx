@@ -1,8 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { ChevronDown, ChevronUp, Check } from 'lucide-react'
+import { ChevronDown, ChevronUp, Check, RotateCcw } from 'lucide-react'
 import { getProgram } from '@/lib/program/programLibrary'
-import { fetchAllOneRms, upsertOneRm } from '@/lib/db'
+import { fetchAllOneRms, upsertOneRm, fetchAllLoggedSets } from '@/lib/db'
+import { loggedDerivedOneRm } from '@/lib/program/smartSuggestions'
 import type { UserOneRm } from '@/types'
 
 const WC: Record<string,string> = {
@@ -14,6 +15,8 @@ export default function OnermSection({ programId }: { programId?: string }) {
   const [rms,   setRms]   = useState<Record<string,string>>({})
   const [group, setGroup] = useState<string>('')
   const [saved, setSaved] = useState<string|null>(null)
+  const [syncing, setSyncing] = useState(false)
+  const [syncMsg, setSyncMsg] = useState<string|null>(null)
 
   useEffect(() => {
     fetchAllOneRms().then(r => {
@@ -28,6 +31,29 @@ export default function OnermSection({ programId }: { programId?: string }) {
     if (!val || isNaN(n) || n <= 0) return
     try { await upsertOneRm(name, n); setSaved(name); setTimeout(()=>setSaved(null), 1800) }
     catch(e) { console.error(e) }
+  }
+
+  // Recalculate saved 1RMs from actual logged sets (RIR-aware, recency-weighted —
+  // the same number the suggestion engine derives). Only updates lifts with
+  // enough logged history; manual entries for un-logged lifts are left alone.
+  const syncFromLogs = async () => {
+    setSyncing(true); setSyncMsg(null)
+    try {
+      const sets = await fetchAllLoggedSets() as any[]
+      const byEx: Record<string, any[]> = {}
+      sets.filter(s => s.weight_lbs > 0 && s.reps > 0).forEach(s => { (byEx[s.exercise_name] ??= []).push(s) })
+      const next = { ...rms }
+      let updated = 0
+      for (const [name, arr] of Object.entries(byEx)) {
+        if (arr.length < 3) continue   // need enough data to be reliable
+        arr.sort((a, b) => (a.completed_at < b.completed_at ? 1 : -1))  // most recent first
+        const est = loggedDerivedOneRm(arr.slice(0, 15))
+        if (est > 0 && String(est) !== rms[name]) { await upsertOneRm(name, est); next[name] = String(est); updated++ }
+      }
+      setRms(next)
+      setSyncMsg(updated > 0 ? `Updated ${updated} lift${updated===1?'':'s'} from your logged sets` : 'Already in sync with your logs')
+    } catch (e) { console.error(e); setSyncMsg('Sync failed — try again') }
+    finally { setSyncing(false); setTimeout(()=>setSyncMsg(null), 3500) }
   }
 
   const list = getProgram(programId).workouts
@@ -49,9 +75,20 @@ export default function OnermSection({ programId }: { programId?: string }) {
           {totalEntered}/{allNonBW.length} set
         </span>
       </div>
-      <p className="t-footnote" style={{ color:'#8E8E93', marginBottom:14, lineHeight:1.6 }}>
-        Target weights and smart suggestions are calibrated from your 1RM. Tap a workout to enter or update.
+      <p className="t-footnote" style={{ color:'#8E8E93', marginBottom:12, lineHeight:1.6 }}>
+        Your 1RMs are estimated from your logged sets. Tap a workout to fine-tune by hand, or sync them from your logs.
       </p>
+
+      <button onClick={syncFromLogs} disabled={syncing}
+        style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, width:'100%', height:42, borderRadius:12, marginBottom:14,
+          background:'color-mix(in srgb, var(--blue) 14%, transparent)', border:'0.5px solid color-mix(in srgb, var(--blue) 32%, transparent)',
+          color:'var(--teal)', fontSize:14, fontWeight:700, opacity: syncing ? 0.6 : 1 }}>
+        <RotateCcw size={15} strokeWidth={2.3} style={{ animation: syncing ? 'spin 0.9s linear infinite' : 'none' }} />
+        {syncing ? 'Syncing…' : 'Sync 1RMs from logged sets'}
+      </button>
+      {syncMsg && (
+        <p style={{ fontSize:12.5, color:'var(--green)', marginTop:-8, marginBottom:14, textAlign:'center' }}>{syncMsg}</p>
+      )}
 
       <div className="space-y-2">
         {list.map(wkt => {

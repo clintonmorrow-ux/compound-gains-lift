@@ -44,6 +44,17 @@ function weightedAvgOneRm(sets: RecentSet[]): number {
 }
 
 /**
+ * Public helper: the 1RM derived from a set of logged lifts (RIR-aware,
+ * recency-weighted). Pass sets most-recent-first. Used to keep the saved
+ * 1RMs in sync with what was actually logged. Returns 0 if no usable sets.
+ */
+export function loggedDerivedOneRm(sets: { weight_lbs: number; reps: number; rir?: number | null }[]): number {
+  const usable = sets.filter(s => s.weight_lbs > 0 && s.reps > 0)
+  if (usable.length === 0) return 0
+  return Math.round(weightedAvgOneRm(usable as RecentSet[]))
+}
+
+/**
  * SMART WEIGHT SUGGESTION ENGINE
  *
  * Source of truth = your LOGGED SETS, not a manually entered number.
