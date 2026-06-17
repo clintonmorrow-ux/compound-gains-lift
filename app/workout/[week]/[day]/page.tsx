@@ -7,7 +7,7 @@ import { getProgram, getWeekConfig } from '@/lib/program/programLibrary'
 import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/calculator'
 import { fetchAllOneRms, fetchSettings, createSession, completeSession,
          logSet, getRecentSetsForExercise, fetchEquipment, fetchExercisePreferences,
-         deleteSession, findIncompleteSession, fetchAllLoggedSets } from '@/lib/db'
+         deleteSession, findIncompleteSession, fetchAllLoggedSets, upsertOneRm } from '@/lib/db'
 import { getRestSeconds, fireRestCompleteNotification, requestNotificationPermission } from '@/lib/program/restTimes'
 import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { calculateSmartSuggestion, type SmartSuggestion } from '@/lib/program/smartSuggestions'
@@ -147,17 +147,17 @@ function warmupScheme(working: number, round: number): { pct:number; weight:numb
 // includes the double-progression signal — e.g. "hit top of rep range,
 // load increased"). Collapsed by default so it never clutters the screen,
 // and it only renders when there's something worth saying.
-function CoachBubble({ target, lastWeight, suggestion, isBodyweight, accentColor }: {
-  target:number; lastWeight:number|null; suggestion:SmartSuggestion|null; isBodyweight:boolean; accentColor:string
+function CoachBubble({ target, lastWeight, isBodyweight, accentColor, reasonMain, loggedEst, drift }: {
+  target:number; lastWeight:number|null; isBodyweight:boolean; accentColor:string;
+  reasonMain:string; loggedEst:number|null;
+  drift: { pct:number; loggedEst:number; onRebaseline:()=>void; onDismiss:()=>void } | null
 }) {
   const [open, setOpen] = useState(false)
   const jump = (!isBodyweight && lastWeight != null && target > 0) ? target - lastWeight : null
   const hasJump = jump != null && Math.abs(jump) >= 0.5
-  const reason = suggestion?.reason
-  if (!hasJump && !reason) return null
+  if (!hasJump && !reasonMain && !drift) return null
 
-  // At-a-glance color/arrow always means "change vs last time" (what you'll
-  // physically load differently). The 1RM-drift rationale lives in the reason.
+  // At-a-glance color/arrow always means "change vs last time".
   const dirColor = (jump ?? 0) > 0 ? '#2DD4A0'
                  : (jump ?? 0) < 0 ? '#FFB23E' : accentColor
   const label = hasJump
@@ -168,8 +168,9 @@ function CoachBubble({ target, lastWeight, suggestion, isBodyweight, accentColor
     <div style={{ marginBottom:4 }}>
       <button onClick={()=>setOpen(o=>!o)} style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'6px 11px',
         borderRadius:999, background:'rgba(118,118,128,0.12)', border:'0.5px solid rgba(84,84,88,0.35)' }}>
-        <Lightbulb size={13} style={{ color:accentColor, flexShrink:0 }} strokeWidth={2.2} />
+        <Lightbulb size={13} style={{ color: drift ? '#FFB23E' : accentColor, flexShrink:0 }} strokeWidth={2.2} />
         <span style={{ fontSize:12, fontWeight:600, color: hasJump ? dirColor : '#fff' }}>{label}</span>
+        {drift && <span style={{ width:6, height:6, borderRadius:'50%', background:'#FFB23E', flexShrink:0 }} />}
         <span style={{ fontSize:11, color:'#8E8E93' }}>{open ? '⌃' : '⌄'}</span>
       </button>
       {open && (
@@ -181,11 +182,26 @@ function CoachBubble({ target, lastWeight, suggestion, isBodyweight, accentColor
               <span style={{ fontSize:13, color:'rgba(239,250,248,0.65)' }}>{lastWeight} → {target} lbs since last session</span>
             </div>
           )}
-          {reason && <p style={{ fontSize:13, color:'rgba(239,250,248,0.85)', lineHeight:1.5 }}>{reason}</p>}
-          {suggestion && (
-            <p style={{ fontSize:11, color:'#8E8E93' }}>
-              Confidence: {suggestion.confidence}{suggestion.estimatedOneRm ? ` · est. 1RM ~${suggestion.estimatedOneRm} lbs` : ''}
-            </p>
+          {reasonMain && <p style={{ fontSize:13, color:'rgba(239,250,248,0.85)', lineHeight:1.5 }}>{reasonMain}</p>}
+          {loggedEst != null && !drift && (
+            <p style={{ fontSize:11, color:'#8E8E93' }}>Your logged sets estimate a 1RM of ~{loggedEst} lbs.</p>
+          )}
+          {drift && (
+            <div style={{ borderRadius:10, padding:'11px 12px', background:'rgba(255,178,62,0.1)',
+              border:'0.5px solid rgba(255,178,62,0.35)', display:'flex', flexDirection:'column', gap:9 }}>
+              <p style={{ fontSize:12, fontWeight:800, color:'#FFB23E', textTransform:'uppercase', letterSpacing:'0.06em' }}>1RM check</p>
+              <p style={{ fontSize:12.5, color:'rgba(239,250,248,0.85)', lineHeight:1.5 }}>
+                Your recent sets estimate ~{drift.loggedEst} lbs — {drift.pct>0?'above':'below'} this cycle&rsquo;s training max by {Math.abs(Math.round(drift.pct*100))}%. If your starting number was off, re-baseline now; otherwise keep it and it&rsquo;ll update at the end of the cycle.
+              </p>
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={drift.onRebaseline} style={{ flex:1, height:38, borderRadius:10, background:'#FFB23E', color:'#04161E', fontSize:13, fontWeight:700 }}>
+                  Re-baseline to {drift.loggedEst} lbs
+                </button>
+                <button onClick={drift.onDismiss} style={{ padding:'0 16px', height:38, borderRadius:10, background:'rgba(118,118,128,0.18)', color:'#8E8E93', fontSize:13, fontWeight:600 }}>
+                  Keep
+                </button>
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -890,14 +906,29 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const pct    = total>0 ? logged/total : 0
 
   const effName = (ex:Exercise) => swapped[ex.name]?.name ?? progPrefs[ex.name]?.name ?? ex.name
+
+  // Re-baseline a lift's locked training max to the logged-derived estimate
+  // (used by the 1RM-check drift prompt). Persists + recomputes prescription.
+  const [driftBump, setDriftBump] = useState(0)  // forces re-render on dismiss
+  const rebaselineLift = async (name:string, newTM:number, dismissKey:string) => {
+    if (typeof window !== 'undefined') localStorage.setItem(dismissKey, '1')
+    setRms(r => ({ ...r, [name]: newTM }))
+    try { await upsertOneRm(name, newTM) } catch(e) { console.error('rebaseline:', e) }
+  }
+  const dismissDrift = (dismissKey:string) => {
+    if (typeof window !== 'undefined') localStorage.setItem(dismissKey, '1')
+    setDriftBump(b => b + 1)
+  }
   const effCue  = (ex:Exercise) => swapped[ex.name]?.cue  ?? progPrefs[ex.name]?.cue  ?? ex.cue
   const tgt     = (ex:Exercise) => {
     if (ex.isBodyweight) return 0
-    const sm = smartMap[ex.name]; if (sm) return sm.weight
-    // Check 1RM under effective name (preferred exercise) first, then original
-    const effectiveName = progPrefs[ex.name]?.name ?? ex.name
-    const oneRm = rms[effectiveName] ?? 0
-    return getTargetWeight(oneRm, ex.type, wk, round, cfg)
+    // Locked training max for this cycle (× the week's %) is the source of truth.
+    const eName = effName(ex)
+    const tm = rms[eName] ?? 0
+    if (tm > 0) return getTargetWeight(tm, ex.type, wk, round, cfg)
+    // No training max stored yet → fall back to a logged-derived estimate
+    const est = smartMap[ex.name]?.estimatedOneRm ?? 0
+    return est > 0 ? getTargetWeight(est, ex.type, wk, round, cfg) : 0
   }
 
   // When the user swaps an exercise mid-workout, pull the NEW exercise's own
@@ -1230,6 +1261,25 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           // At-a-glance direction = change vs last time (consistent everywhere)
           const wJump    = (!origEx.isBodyweight && lastWt != null && target > 0) ? target - lastWt : null
           const wDir     = wJump == null ? 'none' : wJump > 0.5 ? 'up' : wJump < -0.5 ? 'down' : 'none'
+
+          // Locked-training-max explanation + guarded 1RM-drift check
+          const eName     = effName(origEx)
+          const storedTM  = !origEx.isBodyweight ? (rms[eName] ?? 0) : 0
+          const usingTM   = storedTM > 0 ? storedTM : (smart?.estimatedOneRm ?? 0)
+          const pctType   = cfg.percentages[origEx.type] ?? 0
+          const reasonMain = origEx.isBodyweight ? ''
+            : reintro.active ? `Ramp-back week — ~${Math.round(reintro.loadPct*100)}% of week ${wk}'s prescription to ease you back in.`
+            : usingTM > 0 ? `Week ${wk}: ${Math.round(pctType*100)}% of your ${Math.round(usingTM)} lb ${storedTM > 0 ? 'training max (locked for this cycle)' : 'estimated max from logged sets'}.`
+            : ''
+          const driftPct  = (storedTM > 0 && smart?.estimatedOneRm) ? (smart.estimatedOneRm - storedTM) / storedTM : 0
+          const driftKey  = `cg_drift_${cycleNumber}_${eName}`
+          const driftSeen = typeof window !== 'undefined' && localStorage.getItem(driftKey) === '1'
+          const driftObj  = (!reintro.active && storedTM > 0 && smart?.confidence === 'high'
+                              && Math.abs(driftPct) >= 0.10 && !driftSeen && driftBump >= 0 && smart?.estimatedOneRm)
+            ? { pct: driftPct, loggedEst: smart.estimatedOneRm,
+                onRebaseline: () => rebaselineLift(eName, smart!.estimatedOneRm, driftKey),
+                onDismiss:    () => dismissDrift(driftKey) }
+            : null
           const nextSet  = exLogged.length + 1  // which set is active
 
           return (
@@ -1284,10 +1334,10 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                     </>}
                   </div>
 
-                  {/* Coaching — why this weight / jump since last session (tap to expand) */}
+                  {/* Coaching — why this weight / jump / 1RM check (tap to expand) */}
                   {!isComp && (
-                    <CoachBubble target={target} lastWeight={lastWt} suggestion={smart ?? null}
-                      isBodyweight={!!origEx.isBodyweight} accentColor={accent} />
+                    <CoachBubble target={target} lastWeight={lastWt} isBodyweight={!!origEx.isBodyweight}
+                      accentColor={accent} reasonMain={reasonMain} loggedEst={smart?.estimatedOneRm ?? null} drift={driftObj} />
                   )}
 
                   {/* Warm-up ramp — first primary lift of each muscle group, optional, not logged, no rest timer */}

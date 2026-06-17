@@ -7,9 +7,10 @@ import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
 import { WEEK_CONFIG, PHASE_LABELS } from '@/lib/program/data'
 import { getProgram, getWeekConfig } from '@/lib/program/programLibrary'
-import { fetchSettings, updateSettings, fetchRecentSessions, fetchAllOneRms, fetchAllLoggedSets, fetchCoachPrefs, fetchCycleStats } from '@/lib/db'
+import { fetchSettings, updateSettings, fetchRecentSessions, fetchAllOneRms, fetchAllLoggedSets, fetchCoachPrefs, fetchCycleStats, upsertOneRm } from '@/lib/db'
 import { detectDeloadReadiness, type CoachSet } from '@/lib/program/coach'
 import { recommendReintro, reintroActive, reintroDaysLeft, startReintroPatch, type ReintroPlan } from '@/lib/program/reintro'
+import { loggedDerivedOneRm } from '@/lib/program/smartSuggestions'
 import CycleComplete from '@/components/CycleComplete'
 import { Battery, Zap } from 'lucide-react'
 
@@ -155,6 +156,19 @@ export default function Dashboard() {
 
   const handleBeginNextCycle = async () => {
     const next = cycleNumber + 1
+    // New cycle, new training maxes: re-baseline each lift from the cycle it
+    // just finished, using the same logged-derived estimate the engine uses.
+    try {
+      const sets = (cycleStats?.sets ?? []) as any[]
+      const byEx: Record<string, any[]> = {}
+      sets.filter(s => s.weight_lbs > 0 && s.reps > 0).forEach(s => { (byEx[s.exercise_name] ??= []).push(s) })
+      for (const [name, arr] of Object.entries(byEx)) {
+        if (arr.length < 3) continue
+        arr.sort((a, b) => (a.completed_at < b.completed_at ? 1 : -1))  // most recent first
+        const tm = loggedDerivedOneRm(arr.slice(0, 15))
+        if (tm > 0) await upsertOneRm(name, tm)
+      }
+    } catch (e) { console.error('cycle re-baseline:', e) }
     setCycleNumber(next)
     setWeek(1)
     setDone([])
