@@ -7,8 +7,9 @@ import { createClient } from '@/lib/supabase/client'
 import { getProgram, PROGRAM_LIBRARY } from '@/lib/program/programLibrary'
 import type { Program } from '@/types'
 import { fetchSettings, updateSettings, fetchEquipment, saveEquipment,
-         fetchCoachPrefs, saveCoachPrefs } from '@/lib/db'
+         fetchCoachPrefs, saveCoachPrefs, fetchAllLoggedSets, upsertOneRm } from '@/lib/db'
 import { DEFAULT_COACH_PREFS } from '@/lib/program/coach'
+import { loggedDerivedOneRm } from '@/lib/program/smartSuggestions'
 import { EQUIPMENT_LABELS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 
 export default function SettingsPage() {
@@ -56,6 +57,22 @@ export default function SettingsPage() {
     if (id === activeProgramId) return
     setActiveProgramId(id)
     if (typeof window !== 'undefined') localStorage.setItem('cg_program', id)
+    try {
+      // A program switch is a cycle boundary — carry your CURRENT strength
+      // into the new program by re-baselining each lift's training max from
+      // your logged sets. Maxes are stored by exercise name, so every lift
+      // the two programs share (bench, squat, rows, RDL, curls, …) starts the
+      // new program at your updated max instead of a stale one.
+      const sets = await fetchAllLoggedSets() as any[]
+      const byEx: Record<string, any[]> = {}
+      sets.filter(s => s.weight_lbs > 0 && s.reps > 0).forEach(s => { (byEx[s.exercise_name] ??= []).push(s) })
+      for (const [name, arr] of Object.entries(byEx)) {
+        if (arr.length < 3) continue
+        arr.sort((a, b) => (a.completed_at < b.completed_at ? 1 : -1))  // most recent first
+        const tm = loggedDerivedOneRm(arr.slice(0, 15))
+        if (tm > 0) await upsertOneRm(name, tm)
+      }
+    } catch (e) { console.error('program-switch re-baseline:', e) }
     try {
       await updateSettings({ active_program_id: id, current_week: 1, cycle_number: 1,
         week_started_at: new Date().toISOString() })
