@@ -927,7 +927,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     const tm = rms[eName] ?? 0
     if (tm > 0) return getTargetWeight(tm, ex.type, wk, round, cfg)
     // No training max stored yet → fall back to a logged-derived estimate
-    const est = smartMap[ex.name]?.estimatedOneRm ?? 0
+    const est = smartMap[ex.name]?.loggedOneRm ?? 0
     return est > 0 ? getTargetWeight(est, ex.type, wk, round, cfg) : 0
   }
 
@@ -1265,19 +1265,19 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           // Locked-training-max explanation + guarded 1RM-drift check
           const eName     = effName(origEx)
           const storedTM  = !origEx.isBodyweight ? (rms[eName] ?? 0) : 0
-          const usingTM   = storedTM > 0 ? storedTM : (smart?.estimatedOneRm ?? 0)
+          const usingTM   = storedTM > 0 ? storedTM : (smart?.loggedOneRm ?? 0)
           const pctType   = cfg.percentages[origEx.type] ?? 0
           const reasonMain = origEx.isBodyweight ? ''
             : reintro.active ? `Ramp-back week — ~${Math.round(reintro.loadPct*100)}% of week ${wk}'s prescription to ease you back in.`
             : usingTM > 0 ? `Week ${wk}: ${Math.round(pctType*100)}% of your ${Math.round(usingTM)} lb ${storedTM > 0 ? 'training max (locked for this cycle)' : 'estimated max from logged sets'}.`
             : ''
-          const driftPct  = (storedTM > 0 && smart?.estimatedOneRm) ? (smart.estimatedOneRm - storedTM) / storedTM : 0
+          const driftPct  = (storedTM > 0 && smart?.loggedOneRm) ? (smart.loggedOneRm - storedTM) / storedTM : 0
           const driftKey  = `cg_drift_${cycleNumber}_${eName}`
           const driftSeen = typeof window !== 'undefined' && localStorage.getItem(driftKey) === '1'
           const driftObj  = (!reintro.active && storedTM > 0 && smart?.confidence === 'high'
-                              && Math.abs(driftPct) >= 0.10 && !driftSeen && driftBump >= 0 && smart?.estimatedOneRm)
-            ? { pct: driftPct, loggedEst: smart.estimatedOneRm,
-                onRebaseline: () => rebaselineLift(eName, smart!.estimatedOneRm, driftKey),
+                              && Math.abs(driftPct) >= 0.10 && !driftSeen && driftBump >= 0 && smart?.loggedOneRm)
+            ? { pct: driftPct, loggedEst: smart.loggedOneRm,
+                onRebaseline: () => rebaselineLift(eName, smart!.loggedOneRm, driftKey),
                 onDismiss:    () => dismissDrift(driftKey) }
             : null
           const nextSet  = exLogged.length + 1  // which set is active
@@ -1337,7 +1337,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                   {/* Coaching — why this weight / jump / 1RM check (tap to expand) */}
                   {!isComp && (
                     <CoachBubble target={target} lastWeight={lastWt} isBodyweight={!!origEx.isBodyweight}
-                      accentColor={accent} reasonMain={reasonMain} loggedEst={smart?.estimatedOneRm ?? null} drift={driftObj} />
+                      accentColor={accent} reasonMain={reasonMain} loggedEst={smart?.loggedOneRm ?? null} drift={driftObj} />
                   )}
 
                   {/* Warm-up ramp — first primary lift of each muscle group, optional, not logged, no rest timer */}

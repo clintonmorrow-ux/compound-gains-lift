@@ -8,7 +8,8 @@ export interface SmartSuggestion {
   weight:          number
   direction:       SuggestionDirection
   reason:          string
-  estimatedOneRm:  number
+  estimatedOneRm:  number   // working 1RM incl. any Norton progression bump (drives reason)
+  loggedOneRm:     number   // raw logged-derived 1RM (RIR-aware weighted avg, no bump) — the figure shown to the user and used everywhere consistently
   confidence:      'high' | 'medium' | 'low'
 }
 
@@ -136,6 +137,7 @@ export function calculateSmartSuggestion(
     direction,
     reason,
     estimatedOneRm: Math.round(workingOneRm),
+    loggedOneRm:    Math.round(loggedOneRm),
     confidence,
   }
 }
