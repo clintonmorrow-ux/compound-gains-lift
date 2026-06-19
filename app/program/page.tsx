@@ -114,6 +114,7 @@ export default function ProgramPage() {
   const [swapEx,    setSwapEx]    = useState<Exercise|null>(null)
   const [saved,     setSaved]     = useState<string|null>(null)
   const [saveErr,   setSaveErr]   = useState<string|null>(null)
+  const [tab,       setTab]       = useState<'workouts'|'structure'|'maxes'>('workouts')
 
 
   const init = useCallback(async () => {
@@ -199,11 +200,19 @@ export default function ProgramPage() {
             </div>
           )}
         </div>
+        {/* Sub-navigation */}
+        <div style={{ padding:'0 14px 11px' }}>
+          <div className="seg">
+            <button className="seg-btn" data-active={tab==='workouts'}  onClick={()=>setTab('workouts')}>Workouts</button>
+            <button className="seg-btn" data-active={tab==='structure'} onClick={()=>setTab('structure')}>Structure</button>
+            <button className="seg-btn" data-active={tab==='maxes'}     onClick={()=>setTab('maxes')}>1RM</button>
+          </div>
+        </div>
       </div>
 
       <div style={{ padding:'16px 14px', display:'flex', flexDirection:'column', gap:20 }}>
 
-        {/* Phase timeline */}
+        {tab === 'structure' && (
         <div>
           <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase',
             letterSpacing:'0.08em', marginBottom:12 }}>Program Structure</p>
@@ -225,7 +234,9 @@ export default function ProgramPage() {
             ))}
           </div>
         </div>
+        )}
 
+        {tab === 'workouts' && (<>
         {/* Customize note */}
         <div style={{ padding:'12px 16px', borderRadius:14, background:'rgba(255,178,62,0.08)',
           border:'0.5px solid rgba(255,178,62,0.25)', display:'flex', gap:10 }}>
@@ -351,9 +362,11 @@ export default function ProgramPage() {
             </div>
           )
         })}
+        </>)}
 
-        {/* ── 1RM Calibration (moved from Settings) ── */}
-        <OnermSection programId={typeof window !== 'undefined' ? localStorage.getItem('cg_program') ?? undefined : undefined} />
+        {tab === 'maxes' && (
+          <OnermSection programId={typeof window !== 'undefined' ? localStorage.getItem('cg_program') ?? undefined : undefined} />
+        )}
 
         <div style={{ height:8 }} />
       </div>

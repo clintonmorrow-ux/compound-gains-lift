@@ -68,38 +68,64 @@ export default function HistoryPage() {
             </div>
           </div>
         ) : (
-          <div className="ios-group">
-            {sessions.map((s: any, i: number) => {
-              const wkt  = WORKOUTS.find(w => w.key === s.workout_key)
-              const c    = WC[s.workout_key as WorkoutKey] ?? 'var(--accent)'
-              const d    = dur(s.started_at, s.completed_at)
-              const sets = s.logged_sets?.length ?? 0
-              return (
-                <div key={s.id} className={`ios-row fade-rise ${i===0?'ios-row-first':''}`}
-                   style={{ animationDelay:`${i*0.03}s`, cursor:'pointer' }}
-                   onClick={() => router.push(`/history/${s.id}`)}>
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 t-footnote sf-heavy"
-                       style={{ background:`color-mix(in srgb, ${c} 18%, transparent)`, color: c }}>
-                    {s.workout_key}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="t-subhead sf-semibold" style={{ color:'var(--label)' }}>{wkt?.shortName ?? s.workout_key}</p>
-                      {!s.completed_at &&
-                        <span className="t-caption2 px-2 py-0.5 rounded-full" style={{ background:'rgba(255,178,62,0.15)', color:'var(--orange)' }}>Incomplete</span>}
+          (() => {
+            // Group sessions into time buckets so a long log reads as distinct blocks
+            const now = Date.now()
+            const buckets: { label:string; items:any[] }[] = [
+              { label:'Today',     items:[] },
+              { label:'This Week', items:[] },
+              { label:'Earlier',   items:[] },
+            ]
+            sessions.forEach((s:any) => {
+              const days = Math.floor((now - new Date(s.started_at).getTime()) / 86400000)
+              if (days === 0) buckets[0].items.push(s)
+              else if (days < 7) buckets[1].items.push(s)
+              else buckets[2].items.push(s)
+            })
+            let idx = 0
+            return (
+              <div className="space-y-6">
+                {buckets.filter(b => b.items.length > 0).map(bucket => (
+                  <div key={bucket.label}>
+                    <p className="ios-section-label">{bucket.label}</p>
+                    <div className="ios-group">
+                      {bucket.items.map((s:any, j:number) => {
+                        const wkt  = WORKOUTS.find(w => w.key === s.workout_key)
+                        const c    = WC[s.workout_key as WorkoutKey] ?? 'var(--accent)'
+                        const d    = dur(s.started_at, s.completed_at)
+                        const sets = s.logged_sets?.length ?? 0
+                        const delay = idx++ * 0.03
+                        return (
+                          <div key={s.id} className={`ios-row fade-rise ${j===0?'ios-row-first':''}`}
+                             style={{ animationDelay:`${delay}s`, cursor:'pointer' }}
+                             onClick={() => router.push(`/history/${s.id}`)}>
+                            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 t-footnote sf-heavy"
+                                 style={{ background:`color-mix(in srgb, ${c} 18%, transparent)`, color: c }}>
+                              {s.workout_key}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="t-subhead sf-semibold" style={{ color:'var(--label)' }}>{wkt?.shortName ?? s.workout_key}</p>
+                                {!s.completed_at &&
+                                  <span className="t-caption2 px-2 py-0.5 rounded-full" style={{ background:'rgba(255,178,62,0.15)', color:'var(--orange)' }}>Incomplete</span>}
+                              </div>
+                              <p className="t-caption1 mt-1" style={{ color:'var(--label-3)' }}>
+                                Week {s.week_number}
+                                {sets > 0 && ` · ${sets} sets`}
+                                {d && ` · ${d}`}
+                                {` · ${relDate(s.started_at)}`}
+                              </p>
+                            </div>
+                            <ChevronRight size={16} style={{ color:'var(--label-4)', flexShrink:0 }} />
+                          </div>
+                        )
+                      })}
                     </div>
-                    <p className="t-caption1 mt-1" style={{ color:'var(--label-3)' }}>
-                      Week {s.week_number}
-                      {sets > 0 && ` · ${sets} sets`}
-                      {d && ` · ${d}`}
-                      {` · ${relDate(s.started_at)}`}
-                    </p>
                   </div>
-                  <ChevronRight size={16} style={{ color:'var(--label-4)', flexShrink:0 }} />
-                </div>
-              )
-            })}
-          </div>
+                ))}
+              </div>
+            )
+          })()
         )}
       </div>
       <div className="px-4 py-6">
