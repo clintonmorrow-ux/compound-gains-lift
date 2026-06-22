@@ -4,6 +4,7 @@ import { PHAT_PROGRAM, getPHATWeekConfig } from './phat'
 import { RP_PROGRAM } from './rpHypertrophy'
 import { SCULPT_PROGRAM } from './womensToning'
 import { VITALITY_PROGRAM } from './seniors'
+import { LONGEVITY_PROGRAM } from './longevity'
 
 // ── Galpin 5-Day — wrap existing data into Program interface ──────────────────
 const GALPIN_PROGRAM: Program = {
@@ -27,6 +28,7 @@ export const PROGRAM_LIBRARY: Program[] = [
   RP_PROGRAM,
   SCULPT_PROGRAM,
   VITALITY_PROGRAM,
+  LONGEVITY_PROGRAM,
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
