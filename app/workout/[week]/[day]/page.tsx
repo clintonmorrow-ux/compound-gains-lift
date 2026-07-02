@@ -8,7 +8,7 @@ import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/c
 import { fetchAllOneRms, fetchSettings, createSession, completeSession,
          logSet, getRecentSetsForExercise, fetchEquipment, fetchExercisePreferences,
          deleteSession, findIncompleteSession, fetchAllLoggedSets, upsertOneRm } from '@/lib/db'
-import { getRestSeconds, fireRestCompleteNotification, requestNotificationPermission } from '@/lib/program/restTimes'
+import { getRestSeconds, fireRestCompleteNotification, requestNotificationPermission, getSupersetPairs } from '@/lib/program/restTimes'
 import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { calculateSmartSuggestion, type SmartSuggestion } from '@/lib/program/smartSuggestions'
 import { EXERCISE_MUSCLE } from '@/lib/program/analytics'
@@ -726,6 +726,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     ? (localStorage.getItem('cg_program') ?? undefined) : undefined
   const activeProgram = getProgram(activeProgramId)
   const workout = activeProgram.workouts.find(w => w.key === key) ?? activeProgram.workouts[0]
+  // Time-saver: antagonist/non-competing pairs among isolation exercises
+  const ssPairs = getSupersetPairs(workout.exercises)
 
   // Guard: if someone navigates to a rest day URL, redirect to home
   if (workout.isRest) {
@@ -1310,6 +1312,11 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                       </span>
                     )}
                   </p>
+                  {ssPairs[origEx.name] && !isComp && (
+                    <p style={{ fontSize:11, color:'var(--teal)', marginTop:2 }}>
+                      ⚡ Time saver: superset with {ssPairs[origEx.name]} — alternate the two, ~60 sec between moves
+                    </p>
+                  )}
                 </div>
                 <span style={{ fontSize:14, fontWeight:800, color:isComp?'#2DD4A0':'#fff' }}>
                   {exLogged.length}<span style={{ color:'#8E8E93', fontWeight:500 }}>/{exSets}</span>

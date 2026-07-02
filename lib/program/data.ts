@@ -136,6 +136,7 @@ export const WORKOUTS_5DAY: Workout[] = [
       { name: 'Romanian Deadlift (RDL)',              muscle: 'Hamstrings', type: 'primary',   cue: 'Hinge at hips · push hips back · emphasise the stretched position at the bottom — Wolf & Schoenfeld research confirms stretch-mediated hypertrophy' },
       { name: 'Barbell Hip Thrust',                   muscle: 'Glutes',     type: 'secondary',   cue: "Chin tucked · drive through heels · full lockout · squeeze at top" },
       { name: 'Lying Leg Curl',                       muscle: 'Hamstrings', type: 'secondary', cue: 'Slow eccentric · plantarflex foot for peak contraction · emphasise the lengthened stretch position' },
+      { name: 'Seated Leg Curl',                      muscle: 'Hamstrings', type: 'isolation', cue: 'Seated position lengthens the hamstrings at the hip — Maeo 2021 showed ~50% more hamstring growth seated vs lying. 3 quick sets closes the weekly hamstring volume gap (8→11 sets, into the MAV band).' },
       { name: 'Cable Pull-Through',                   muscle: 'Glutes',     type: 'secondary', cue: "Hip hinge · drive hips forward forcefully · squeeze glutes at top" },
       { name: 'Seated Calf Raise',                    muscle: 'Calves',     type: 'secondary', cue: 'Knee bent 90° · targets soleus · full stretch at bottom · slow 2-sec contraction at top' },
       { name: 'Single-Leg Calf Raise',               muscle: 'Calves',     type: 'isolation', isBodyweight: true, cue: 'Stand on edge · hold DB for load · full ROM · emphasise the stretched position at the bottom' },

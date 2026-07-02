@@ -2,15 +2,20 @@ import { WEEK_CONFIG } from './data'
 import type { ExerciseType, DayType } from '@/types'
 
 // ── Phase-based rest prescriptions (seconds) ──────────────────────────
-// Galpin: heavier compound work demands longer inter-set rest to
-// maintain power output and allow full CNS recovery.
+// Evidence-based caps (Schoenfeld 2016; Grgic 2017; Singer 2024 meta):
+// compounds need MORE than ~60–90s to preserve volume load, with ~2–3 min
+// sufficient for hypertrophy — there is no evidence 3.5–4 min beats 2.5–3
+// when training at 1–3 RIR (this program never trains to failure).
+// Isolations recover in 60–90s. These caps keep every session ≤ ~75 min;
+// the old table escalated to 210–240s and pushed Phase-3 lower days
+// past 100 minutes.
 const REST_TABLE: Record<string, Record<ExerciseType, number>> = {
-  'Phase 1 — Accumulation':            { primary: 150, secondary: 120, isolation:  75 },
-  'Phase 2 — Volume Build':            { primary: 180, secondary: 150, isolation:  90 },
-  'Phase 3 — Intensification':         { primary: 210, secondary: 180, isolation: 120 },
-  'Phase 3 — Intensification  (PEAK)': { primary: 240, secondary: 210, isolation: 150 },
-  'DELOAD — Active Recovery':          { primary:  90, secondary:  75, isolation:  60 },
-  'FINAL DELOAD':                      { primary:  90, secondary:  75, isolation:  60 },
+  'Phase 1 — Accumulation':            { primary: 135, secondary: 100, isolation: 60 },
+  'Phase 2 — Volume Build':            { primary: 150, secondary: 110, isolation: 60 },
+  'Phase 3 — Intensification':         { primary: 150, secondary: 120, isolation: 65 },
+  'Phase 3 — Intensification  (PEAK)': { primary: 155, secondary: 125, isolation: 70 },
+  'DELOAD — Active Recovery':          { primary:  90, secondary:  75, isolation: 60 },
+  'FINAL DELOAD':                      { primary:  90, secondary:  75, isolation: 60 },
 }
 
 // ── PHAT-specific rest (very different per day type) ──────────────────
@@ -112,4 +117,33 @@ function playReadyBeep() {
       osc.start(t); osc.stop(t + 0.35)
     })
   } catch { /* silent fail in environments without Audio API */ }
+}
+
+// ── Antagonist / non-competing paired-set suggestions ─────────────────
+// Robbins et al.: pairing accessory exercises for opposing or unrelated
+// muscles ("superset" — alternate the two, ~60s between moves) cuts
+// accessory time ~40% with no measured loss in hypertrophy or volume load.
+// Only isolation work is paired (never compounds), and only when the two
+// muscles don't compete.
+export function getSupersetPairs(exercises: { name: string; muscle: string; type: string }[]): Record<string, string> {
+  // Pairable = all isolation work, plus small-muscle secondary work
+  // (calves/core) — never primary or large-muscle compounds.
+  const SMALL = new Set(['Calves', 'Core'])
+  const pool = exercises.filter(e =>
+    e.type === 'isolation' || (e.type === 'secondary' && SMALL.has(e.muscle)))
+  const pairs: Record<string, string> = {}
+  const used = new Set<string>()
+  for (let i = 0; i < pool.length; i++) {
+    if (used.has(pool[i].name)) continue
+    for (let j = i + 1; j < pool.length; j++) {
+      if (used.has(pool[j].name)) continue
+      if (pool[i].muscle !== pool[j].muscle) {
+        pairs[pool[i].name] = pool[j].name
+        pairs[pool[j].name] = pool[i].name
+        used.add(pool[i].name); used.add(pool[j].name)
+        break
+      }
+    }
+  }
+  return pairs
 }
