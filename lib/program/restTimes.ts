@@ -13,7 +13,7 @@ const REST_TABLE: Record<string, Record<ExerciseType, number>> = {
   'Phase 1 — Accumulation':            { primary: 135, secondary: 100, isolation: 60 },
   'Phase 2 — Volume Build':            { primary: 150, secondary: 110, isolation: 60 },
   'Phase 3 — Intensification':         { primary: 150, secondary: 120, isolation: 65 },
-  'Phase 3 — Intensification  (PEAK)': { primary: 155, secondary: 125, isolation: 70 },
+  'Phase 3 — Intensification (PEAK)': { primary: 150, secondary: 115, isolation: 65 },
   'DELOAD — Active Recovery':          { primary:  90, secondary:  75, isolation: 60 },
   'FINAL DELOAD':                      { primary:  90, secondary:  75, isolation: 60 },
 }
