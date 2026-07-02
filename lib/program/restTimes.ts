@@ -123,8 +123,34 @@ function playReadyBeep() {
 // Robbins et al.: pairing accessory exercises for opposing or unrelated
 // muscles ("superset" — alternate the two, ~60s between moves) cuts
 // accessory time ~40% with no measured loss in hypertrophy or volume load.
-// Only isolation work is paired (never compounds), and only when the two
-// muscles don't compete.
+// Only isolation work is paired (plus small-muscle calves/core secondary),
+// never compounds — and only when the two movements share NO working
+// muscles, including synergists. A face pull is elbow flexion under load
+// (biceps/brachialis assist), so it must never pair with a curl even
+// though its "muscle" label is Rear Delts.
+
+// Muscles actually working in a movement: the labelled target plus
+// synergists inferred from the movement pattern.
+function involvedMuscles(e: { name: string; muscle: string }): Set<string> {
+  const n = e.name.toLowerCase()
+  const s = new Set<string>([e.muscle])
+  const lowerBody = ['Quads', 'Hamstrings', 'Glutes', 'Calves']
+  if (!lowerBody.includes(e.muscle) && e.muscle !== 'Core') {
+    // Elbow flexion under load → biceps/brachialis work (curls, rows,
+    // pulldowns, face pulls). "Leg curl" is excluded via the lower-body gate.
+    if (/curl|face pull|row|pulldown|pull-up|pullup|chin/.test(n)) s.add('Biceps')
+    // Elbow extension under load → triceps work (presses, pushdowns,
+    // dips, skullcrushers, overhead extensions).
+    if (/press|pushdown|push-up|pushup|dip|skull|extension|tricep/.test(n)) s.add('Triceps')
+    // Pressing also loads front delts and chest to a degree — for pairing
+    // purposes, chest/shoulder presses conflict with each other.
+    if (/press|dip|push-up|pushup/.test(n) && (e.muscle === 'Chest' || e.muscle === 'Shoulders')) {
+      s.add('Chest'); s.add('Shoulders')
+    }
+  }
+  return s
+}
+
 export function getSupersetPairs(exercises: { name: string; muscle: string; type: string }[]): Record<string, string> {
   // Pairable = all isolation work, plus small-muscle secondary work
   // (calves/core) — never primary or large-muscle compounds.
@@ -135,9 +161,12 @@ export function getSupersetPairs(exercises: { name: string; muscle: string; type
   const used = new Set<string>()
   for (let i = 0; i < pool.length; i++) {
     if (used.has(pool[i].name)) continue
+    const mi = involvedMuscles(pool[i])
     for (let j = i + 1; j < pool.length; j++) {
       if (used.has(pool[j].name)) continue
-      if (pool[i].muscle !== pool[j].muscle) {
+      const mj = involvedMuscles(pool[j])
+      const overlap = [...mi].some(m => mj.has(m))
+      if (!overlap) {
         pairs[pool[i].name] = pool[j].name
         pairs[pool[j].name] = pool[i].name
         used.add(pool[i].name); used.add(pool[j].name)
