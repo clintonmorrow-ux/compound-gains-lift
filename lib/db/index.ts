@@ -83,6 +83,7 @@ export async function fetchSettings(): Promise<UserSettings> {
     reintro_started_at: data.reintro_started_at ?? null,
     reintro_until:      data.reintro_until      ?? null,
     reintro_load_pct:   data.reintro_load_pct   ?? null,
+    body_weight_lbs:    data.body_weight_lbs    ?? null,
   }
 }
 
