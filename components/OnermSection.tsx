@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp, Check, RotateCcw, TrendingUp } from 'lucide-react'
 import { getProgram } from '@/lib/program/programLibrary'
-import { fetchAllOneRms, upsertOneRm, fetchAllLoggedSets } from '@/lib/db'
-import { loggedDerivedOneRm } from '@/lib/program/smartSuggestions'
+import { fetchAllOneRms, upsertOneRm, fetchAllLoggedSets, fetchSettings } from '@/lib/db'
+import { loggedDerivedOneRm, isLoadableBodyweight, withBodyweight } from '@/lib/program/smartSuggestions'
 import type { UserOneRm } from '@/types'
 
 const WC: Record<string,string> = {
@@ -21,7 +21,8 @@ export default function OnermSection({ programId }: { programId?: string }) {
   const [loading,  setLoading]  = useState(true)
 
   useEffect(() => {
-    Promise.all([fetchAllOneRms(), fetchAllLoggedSets()]).then(([ormArr, sets]) => {
+    Promise.all([fetchAllOneRms(), fetchAllLoggedSets(), fetchSettings()]).then(([ormArr, sets, settings]) => {
+      const bw = settings.body_weight_lbs ?? 0
       // Stored training maxes
       const m: Record<string,string> = {}
       ;(ormArr as UserOneRm[]).forEach(x => { m[x.exercise_name] = String(x.weight_lbs) })
@@ -35,7 +36,9 @@ export default function OnermSection({ programId }: { programId?: string }) {
       for (const [name, arr] of Object.entries(byEx)) {
         if (arr.length < 3) continue
         arr.sort((a:any, b:any) => (a.completed_at < b.completed_at ? 1 : -1))
-        const est = loggedDerivedOneRm(arr.slice(0, 15))
+        // Weighted dips/pull-ups: 1RM is TOTAL system weight (body + belt)
+        const basis = (isLoadableBodyweight(name) && bw > 0) ? withBodyweight(arr.slice(0, 15), bw) : arr.slice(0, 15)
+        const est = loggedDerivedOneRm(basis)
         if (est > 0) d[name] = est
       }
       setDerived(d)
@@ -132,7 +135,7 @@ export default function OnermSection({ programId }: { programId?: string }) {
               </button>
 
               {isOpen && wkt.exercises.map(ex => {
-                if (ex.isBodyweight) return (
+                if (ex.isBodyweight && !isLoadableBodyweight(ex.name)) return (
                   <div key={ex.name} className="ios-row">
                     <div className="flex-1 min-w-0">
                       <p className="t-subhead" style={{ color:'var(--label-2)' }}>{ex.name}</p>

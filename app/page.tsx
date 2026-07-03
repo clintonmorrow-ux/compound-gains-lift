@@ -10,7 +10,7 @@ import { getProgram, getWeekConfig } from '@/lib/program/programLibrary'
 import { fetchSettings, updateSettings, fetchRecentSessions, fetchAllOneRms, fetchAllLoggedSets, fetchCoachPrefs, fetchCycleStats, upsertOneRm } from '@/lib/db'
 import { detectDeloadReadiness, type CoachSet } from '@/lib/program/coach'
 import { recommendReintro, reintroActive, reintroDaysLeft, startReintroPatch, type ReintroPlan } from '@/lib/program/reintro'
-import { loggedDerivedOneRm } from '@/lib/program/smartSuggestions'
+import { loggedDerivedOneRm, isLoadableBodyweight, withBodyweight } from '@/lib/program/smartSuggestions'
 import CycleComplete from '@/components/CycleComplete'
 import { Battery, Zap } from 'lucide-react'
 
@@ -159,13 +159,16 @@ export default function Dashboard() {
     // New cycle, new training maxes: re-baseline each lift from the cycle it
     // just finished, using the same logged-derived estimate the engine uses.
     try {
+      const __bw = (await fetchSettings()).body_weight_lbs ?? 0
       const sets = (cycleStats?.sets ?? []) as any[]
       const byEx: Record<string, any[]> = {}
       sets.filter(s => s.weight_lbs > 0 && s.reps > 0).forEach(s => { (byEx[s.exercise_name] ??= []).push(s) })
       for (const [name, arr] of Object.entries(byEx)) {
         if (arr.length < 3) continue
         arr.sort((a, b) => (a.completed_at < b.completed_at ? 1 : -1))  // most recent first
-        const tm = loggedDerivedOneRm(arr.slice(0, 15))
+        // Weighted dips/pull-ups: TM is total system weight (body + belt)
+        const basis = arr.slice(0, 15)
+        const tm = loggedDerivedOneRm((isLoadableBodyweight(name) && __bw > 0) ? withBodyweight(basis, __bw) : basis)
         if (tm > 0) await upsertOneRm(name, tm)
       }
     } catch (e) { console.error('cycle re-baseline:', e) }

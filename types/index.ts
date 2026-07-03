@@ -51,6 +51,7 @@ export interface UserSettings {
   reintro_started_at?: string | null
   reintro_until?: string | null
   reintro_load_pct?: number | null
+  body_weight_lbs?: number | null
 }
 
 export interface LoggedSet {

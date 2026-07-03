@@ -43,7 +43,7 @@ export async function fetchSettings(): Promise<UserSettings> {
 
   const { data, error } = await supabase
     .from('user_settings')
-    .select('current_week, round_to_lbs, program_format, cycle_number, week_started_at, active_program_id, reintro_started_at, reintro_until, reintro_load_pct')
+    .select('current_week, round_to_lbs, program_format, cycle_number, week_started_at, active_program_id, reintro_started_at, reintro_until, reintro_load_pct, body_weight_lbs')
     .eq('id', user.id)   // explicit filter — don't rely solely on RLS
     .maybeSingle()        // returns null (not error) when 0 rows exist
 

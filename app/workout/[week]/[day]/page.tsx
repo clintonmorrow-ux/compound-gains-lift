@@ -10,7 +10,7 @@ import { fetchAllOneRms, fetchSettings, createSession, completeSession,
          deleteSession, findIncompleteSession, fetchAllLoggedSets, upsertOneRm } from '@/lib/db'
 import { getRestSeconds, fireRestCompleteNotification, requestNotificationPermission, getSupersetPairs } from '@/lib/program/restTimes'
 import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
-import { calculateSmartSuggestion, type SmartSuggestion } from '@/lib/program/smartSuggestions'
+import { calculateSmartSuggestion, isLoadableBodyweight, withBodyweight, type SmartSuggestion } from '@/lib/program/smartSuggestions'
 import { EXERCISE_MUSCLE } from '@/lib/program/analytics'
 import { reintroActive, isReintroSet, REINTRO_VOLUME_PCT, REINTRO_RIR_CAP } from '@/lib/program/reintro'
 import type { Exercise, WorkoutKey } from '@/types'
@@ -260,15 +260,16 @@ function WarmupSets({ working, round, accentColor, exerciseName }: {
   )
 }
 
-function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBodyweight, accentColor, exerciseName, onLog }: {
+function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBodyweight, accentColor, exerciseName, onLog, beltMode = false }: {
+  // beltMode: weighted dips/pull-ups — target/wt are BELT (added) weight
   setNum:number; setCount:number; target:number; repsRange:string
-  lastWeight:number|null; isBodyweight:boolean; accentColor:string; exerciseName:string
+  lastWeight:number|null; isBodyweight:boolean; accentColor:string; exerciseName:string; beltMode?:boolean
   onLog:(w:number|null, r:number, rir:number, tempo:string)=>Promise<void>
 }) {
   const parts   = repsRange.replace('–','-').split('-').map(Number)
   const maxReps = parts[1] || parts[0] || 10
 
-  const [wt,    setWt]   = useState(isBodyweight ? 0 : (target > 0 ? target : lastWeight ?? 0))
+  const [wt,    setWt]   = useState(isBodyweight && !beltMode ? 0 : (target > 0 ? target : lastWeight ?? 0))
   const [reps,  setReps] = useState(maxReps)
   const [rir,   setRir]  = useState(3)
   const [tempo, setTempo]= useState<string>('Standard')
@@ -283,7 +284,7 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
   const userEdited = useRef(false)
 
   useEffect(() => {
-    if (isBodyweight || didSync.current || userEdited.current) return
+    if ((isBodyweight && !beltMode) || didSync.current || userEdited.current) return
     if (target > 0) {
       setWt(target)
       didSync.current = true
@@ -759,6 +760,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
   const [rms,       setRms]       = useState<Record<string,number>>({})
   const [round,     setRound]     = useState(5)
+  const [bodyWt,    setBodyWt]    = useState(0)   // athlete body weight (weighted dips/pull-ups)
   const [equipment, setEquipment] = useState<string[]>(['barbell','dumbbells','cables','machines'])
   const [sid,       setSid]       = useState<string|null>(null)
   const [sets,      setSets]      = useState<Record<string,any[]>>({})
@@ -790,6 +792,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       const rm:Record<string,number>={}
       rmArr.forEach((x:any)=>{rm[x.exercise_name]=x.weight_lbs})
       setRms(rm); setRound(settings.round_to_lbs); setEquipment(equip)
+      setBodyWt(settings.body_weight_lbs ?? 0)
       setCycleNumber(settings.cycle_number ?? 1)
       setReintro({ active: reintroActive(settings), loadPct: settings.reintro_load_pct ?? 0.88,
                    started: settings.reintro_started_at ?? null, until: settings.reintro_until ?? null })
@@ -808,7 +811,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       } catch (e) { console.error('priorBest:', e) }
       const lastMap:Record<string,number|null>={}, smartM:Record<string,SmartSuggestion|null>={}
       await Promise.all(workout.exercises.map(async ex=>{
-        if (ex.isBodyweight) { smartM[ex.name]=null; lastMap[ex.name]=null; return }
+        const loadableBW = ex.isBodyweight && isLoadableBodyweight(ex.name) && (settings.body_weight_lbs ?? 0) > 0
+        if (ex.isBodyweight && !loadableBW) { smartM[ex.name]=null; lastMap[ex.name]=null; return }
         // Use the preferred exercise name (from program prefs) for history lookup.
         // If user swapped "Bench Press" → "DB Bench Press" in Program, we look up
         // DB Bench Press history so suggestions are based on what they actually lift.
@@ -818,8 +822,10 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
         const recentRaw = await getRecentSetsForExercise(effectiveName, 15)
         // Exclude sets logged during the reintroduction window so an easy
         // ramp-back week never drags the suggestion / 1RM basis down.
-        const recent = recentRaw.filter((s:any) => !isReintroSet(s.completed_at, settings))
-        lastMap[ex.name]  = recent[0]?.weight_lbs ?? null
+        let recent = recentRaw.filter((s:any) => !isReintroSet(s.completed_at, settings))
+        lastMap[ex.name]  = recent[0]?.weight_lbs ?? null   // added weight for BW moves
+        // Weighted dips/pull-ups: 1RM math runs on TOTAL system weight
+        if (loadableBW) recent = withBodyweight(recent, settings.body_weight_lbs ?? 0)
         const exCfg = getWeekConfig(activeProgramId, wk, workout.dayType)
         smartM[ex.name]   = calculateSmartSuggestion(recent, ex.type, wk, oneRm, settings.round_to_lbs, exCfg)
       }))
@@ -923,7 +929,15 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   }
   const effCue  = (ex:Exercise) => swapped[ex.name]?.cue  ?? progPrefs[ex.name]?.cue  ?? ex.cue
   const tgt     = (ex:Exercise) => {
-    if (ex.isBodyweight) return 0
+    if (ex.isBodyweight) {
+      // Weighted dips/pull-ups: prescribe TOTAL system weight when we know
+      // the athlete's body weight (belt weight = system − body, floored at 0)
+      if (!(isLoadableBodyweight(ex.name) && bodyWt > 0)) return 0
+      const tmBW = rms[effName(ex)] ?? 0
+      if (tmBW > 0) return getTargetWeight(tmBW, ex.type, wk, round, cfg)
+      const estBW = smartMap[ex.name]?.loggedOneRm ?? 0
+      return estBW > 0 ? getTargetWeight(estBW, ex.type, wk, round, cfg) : 0
+    }
     // Locked training max for this cycle (× the week's %) is the source of truth.
     const eName = effName(ex)
     const tm = rms[eName] ?? 0
@@ -1261,15 +1275,21 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           const smart    = smartMap[origEx.name]
           const lastWt   = lasts[origEx.name] ?? null
           // At-a-glance direction = change vs last time (consistent everywhere)
-          const wJump    = (!origEx.isBodyweight && lastWt != null && target > 0) ? target - lastWt : null
+          const loadableBW = origEx.isBodyweight && isLoadableBodyweight(origEx.name) && bodyWt > 0
+          // Belt weight for weighted dips/pull-ups (target is SYSTEM weight)
+          const beltTgt  = loadableBW && target > 0 ? Math.max(0, Math.round((target - bodyWt) / round) * round) : 0
+          const shownTgt = loadableBW ? beltTgt : target
+          const wJump    = ((!origEx.isBodyweight || loadableBW) && lastWt != null && shownTgt >= 0 && (shownTgt > 0 || loadableBW)) ? shownTgt - lastWt : null
           const wDir     = wJump == null ? 'none' : wJump > 0.5 ? 'up' : wJump < -0.5 ? 'down' : 'none'
 
           // Locked-training-max explanation + guarded 1RM-drift check
           const eName     = effName(origEx)
-          const storedTM  = !origEx.isBodyweight ? (rms[eName] ?? 0) : 0
+          const storedTM  = (!origEx.isBodyweight || loadableBW) ? (rms[eName] ?? 0) : 0
           const usingTM   = storedTM > 0 ? storedTM : (smart?.loggedOneRm ?? 0)
           const pctType   = cfg.percentages[origEx.type] ?? 0
-          const reasonMain = origEx.isBodyweight ? ''
+          const reasonMain = (origEx.isBodyweight && loadableBW && usingTM > 0)
+            ? `Week ${wk}: ${Math.round(pctType*100)}% of your ${Math.round(usingTM)} lb system max (your ${Math.round(bodyWt)} lb bodyweight + belt)${storedTM > 0 ? ' — locked for this cycle' : ''}. ${beltTgt > 0 ? `Add ${beltTgt} lbs to the belt.` : 'Bodyweight only this week.'}`
+            : origEx.isBodyweight ? ''
             : reintro.active ? `Ramp-back week — ~${Math.round(reintro.loadPct*100)}% of week ${wk}'s prescription to ease you back in.`
             : usingTM > 0 ? `Week ${wk}: ${Math.round(pctType*100)}% of your ${Math.round(usingTM)} lb ${storedTM > 0 ? 'training max (locked for this cycle)' : 'estimated max from logged sets'}.`
             : ''
@@ -1311,6 +1331,11 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                         {` · ${target} lbs`}{wDir==='up'?' ↑':wDir==='down'?' ↓':''}
                       </span>
                     )}
+                    {loadableBW && target>0 && (
+                      <span style={{ color: wDir==='up'?'#2DD4A0':wDir==='down'?'#FFB23E':accent }}>
+                        {beltTgt > 0 ? ` · BW +${beltTgt} lbs belt` : ' · bodyweight only'}{wDir==='up'?' ↑':wDir==='down'?' ↓':''}
+                      </span>
+                    )}
                   </p>
                   {ssPairs[origEx.name] && !isComp && (
                     <p style={{ fontSize:11, color:'var(--teal)', marginTop:2 }}>
@@ -1343,7 +1368,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
                   {/* Coaching — why this weight / jump / 1RM check (tap to expand) */}
                   {!isComp && (
-                    <CoachBubble target={target} lastWeight={lastWt} isBodyweight={!!origEx.isBodyweight}
+                    <CoachBubble target={shownTgt} lastWeight={lastWt} isBodyweight={!!origEx.isBodyweight && !loadableBW}
                       accentColor={accent} reasonMain={reasonMain} loggedEst={smart?.loggedOneRm ?? null} drift={driftObj} />
                   )}
 
@@ -1361,8 +1386,9 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                   {!isComp && (
                     <ActiveSetCard
                       setNum={nextSet} setCount={exSets}
-                      target={target} repsRange={exReps}
+                      target={shownTgt} repsRange={exReps}
                       lastWeight={lastWt} isBodyweight={!!origEx.isBodyweight}
+                      beltMode={loadableBW}
                       accentColor={accent}
                       exerciseName={effName(origEx)}
                       onLog={(w,r,rir,tempo) => handleLog(origEx, nextSet, w, r, rir, tempo)}
@@ -1371,7 +1397,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
                   {/* Pending sets */}
                   {!isComp && Array.from({length: exSets - nextSet}, (_,i) => (
-                    <PendingRow key={i} setNum={nextSet+1+i} target={target} />
+                    <PendingRow key={i} setNum={nextSet+1+i} target={shownTgt} />
                   ))}
 
                   {/* Cue + swap */}

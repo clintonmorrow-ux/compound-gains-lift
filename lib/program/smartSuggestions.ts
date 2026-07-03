@@ -141,3 +141,18 @@ export function calculateSmartSuggestion(
     confidence,
   }
 }
+
+// ── Weighted bodyweight exercises (dips, pull-ups, chin-ups) ───────────
+// For these, the true load is TOTAL SYSTEM WEIGHT: body weight + added
+// (belt) weight. Sets are logged as ADDED weight only, so any 1RM math
+// must add the athlete's body weight first, and any prescription must
+// subtract it to give a belt target.
+export function isLoadableBodyweight(name: string): boolean {
+  return /pull-?up|chin-?up|\bdip(s)?\b/i.test(name)
+}
+
+/** Convert added-weight sets to total-system-weight sets. */
+export function withBodyweight<T extends { weight_lbs: number }>(sets: T[], bodyWeight: number): T[] {
+  if (!bodyWeight || bodyWeight <= 0) return sets
+  return sets.map(s => ({ ...s, weight_lbs: (s.weight_lbs ?? 0) + bodyWeight }))
+}

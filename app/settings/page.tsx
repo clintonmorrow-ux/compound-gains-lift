@@ -9,12 +9,13 @@ import type { Program } from '@/types'
 import { fetchSettings, updateSettings, fetchEquipment, saveEquipment,
          fetchCoachPrefs, saveCoachPrefs, fetchAllLoggedSets, upsertOneRm } from '@/lib/db'
 import { DEFAULT_COACH_PREFS } from '@/lib/program/coach'
-import { loggedDerivedOneRm } from '@/lib/program/smartSuggestions'
+import { loggedDerivedOneRm, isLoadableBodyweight, withBodyweight } from '@/lib/program/smartSuggestions'
 import { EQUIPMENT_LABELS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 
 export default function SettingsPage() {
   const router = useRouter()
   const [round,         setRound]         = useState(5)
+  const [bodyWt, setBodyWt] = useState('')
   const [equip,         setEquip]         = useState<string[]>(['barbell','dumbbells','cables','machines'])
   const [loading,       setLoading]       = useState(true)
   const [coachPrefs,    setCoachPrefs]    = useState(DEFAULT_COACH_PREFS)
@@ -38,6 +39,7 @@ export default function SettingsPage() {
       setActiveProgramId(pid)
       if (typeof window !== 'undefined') localStorage.setItem('cg_program', pid)
       setRound(s.round_to_lbs)
+      setBodyWt(s.body_weight_lbs ? String(s.body_weight_lbs) : '')
       setEquip(eq)
     } catch(e) { console.error(e) }
     finally { setLoading(false) }
@@ -63,13 +65,16 @@ export default function SettingsPage() {
       // your logged sets. Maxes are stored by exercise name, so every lift
       // the two programs share (bench, squat, rows, RDL, curls, …) starts the
       // new program at your updated max instead of a stale one.
+      const __bw = parseFloat(bodyWt) > 0 ? parseFloat(bodyWt) : ((await fetchSettings()).body_weight_lbs ?? 0)
       const sets = await fetchAllLoggedSets() as any[]
       const byEx: Record<string, any[]> = {}
       sets.filter(s => s.weight_lbs > 0 && s.reps > 0).forEach(s => { (byEx[s.exercise_name] ??= []).push(s) })
       for (const [name, arr] of Object.entries(byEx)) {
         if (arr.length < 3) continue
         arr.sort((a, b) => (a.completed_at < b.completed_at ? 1 : -1))  // most recent first
-        const tm = loggedDerivedOneRm(arr.slice(0, 15))
+        // Weighted dips/pull-ups: TM is total system weight (body + belt)
+        const basis = arr.slice(0, 15)
+        const tm = loggedDerivedOneRm((isLoadableBodyweight(name) && __bw > 0) ? withBodyweight(basis, __bw) : basis)
         if (tm > 0) await upsertOneRm(name, tm)
       }
     } catch (e) { console.error('program-switch re-baseline:', e) }
@@ -248,7 +253,31 @@ export default function SettingsPage() {
           </div>
         </div>
 
-
+        {/* ── Body Weight (weighted dips / pull-ups) ── */}
+        <div>
+          <p className="ios-section-label mb-2">Body Weight</p>
+          <div className="ios-group">
+            <div className="ios-row ios-row-first" style={{ alignItems:'center' }}>
+              <div className="flex-1">
+                <p className="t-body" style={{ color:'var(--label)' }}>Your body weight</p>
+                <p className="t-caption1 mt-0.5" style={{ color:'var(--label-3)' }}>
+                  Used for weighted dips & pull-ups: belt targets and 1RM tracking count bodyweight + added weight
+                </p>
+              </div>
+              <div style={{ display:'flex', alignItems:'baseline', gap:4 }}>
+                <input type="number" inputMode="decimal" placeholder="—" value={bodyWt}
+                  onChange={e => setBodyWt(e.target.value)}
+                  onBlur={async e => {
+                    const n = parseFloat(e.target.value)
+                    try { await updateSettings({ body_weight_lbs: (!isNaN(n) && n > 0) ? n : null }) } catch {}
+                  }}
+                  style={{ width:70, fontSize:17, fontWeight:700, color:'var(--label)', textAlign:'right',
+                    background:'transparent', outline:'none', border:'none' }} />
+                <span className="t-caption1" style={{ color:'var(--label-3)' }}>lbs</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* ── Coaching Intelligence ── */}
         <div>
