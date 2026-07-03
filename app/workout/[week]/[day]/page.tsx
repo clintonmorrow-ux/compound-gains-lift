@@ -1288,7 +1288,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           const usingTM   = storedTM > 0 ? storedTM : (smart?.loggedOneRm ?? 0)
           const pctType   = cfg.percentages[origEx.type] ?? 0
           const reasonMain = (origEx.isBodyweight && loadableBW && usingTM > 0)
-            ? `Week ${wk}: ${Math.round(pctType*100)}% of your ${Math.round(usingTM)} lb system max (your ${Math.round(bodyWt)} lb bodyweight + belt)${storedTM > 0 ? ' — locked for this cycle' : ''}. ${beltTgt > 0 ? `Add ${beltTgt} lbs to the belt.` : 'Bodyweight only this week.'}`
+            ? `Week ${wk}: ${Math.round(pctType*100)}% of your ${Math.round(usingTM)} lb system max (your ${Math.round(bodyWt)} lb bodyweight + belt)${storedTM > 0 ? ' — locked for this cycle' : ''}. ${beltTgt > 0 ? `Add ${beltTgt} lbs to the belt.` : `Bodyweight only — your bodyweight alone is ${Math.round(bodyWt / usingTM * 100)}% of your max, above this week's target, so every rep is already heavier than prescribed. Progress by reps at RIR ${cfg.rir}; it's fine to fall short of the listed range. Belt weight kicks in once the weekly % clears your bodyweight.`}`
             : origEx.isBodyweight ? ''
             : reintro.active ? `Ramp-back week — ~${Math.round(reintro.loadPct*100)}% of week ${wk}'s prescription to ease you back in.`
             : usingTM > 0 ? `Week ${wk}: ${Math.round(pctType*100)}% of your ${Math.round(usingTM)} lb ${storedTM > 0 ? 'training max (locked for this cycle)' : 'estimated max from logged sets'}.`
