@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp, Check, RotateCcw, TrendingUp } from 'lucide-react'
 import { getProgram } from '@/lib/program/programLibrary'
-import { fetchAllOneRms, upsertOneRm, fetchAllLoggedSets, fetchSettings } from '@/lib/db'
+import { fetchAllOneRms, upsertOneRm, fetchAllLoggedSets, fetchSettings, fetchExercisePreferences } from '@/lib/db'
 import { loggedDerivedOneRm, isLoadableBodyweight, withBodyweight } from '@/lib/program/smartSuggestions'
 import type { UserOneRm } from '@/types'
 
@@ -12,6 +12,9 @@ const WC: Record<string,string> = {
 }
 
 export default function OnermSection({ programId }: { programId?: string }) {
+  // Program-wide exercise swaps: the 1RM screen must show the lift the user
+  // will ACTUALLY train (and key its TM to that name), not the original slot.
+  const [prefs, setPrefs] = useState<Record<string,{name:string;cue:string}>>({})
   const [rms,      setRms]      = useState<Record<string,string>>({})
   const [derived,  setDerived]  = useState<Record<string,number>>({})   // logged-derived estimates
   const [group,    setGroup]    = useState<string>('')
@@ -21,7 +24,8 @@ export default function OnermSection({ programId }: { programId?: string }) {
   const [loading,  setLoading]  = useState(true)
 
   useEffect(() => {
-    Promise.all([fetchAllOneRms(), fetchAllLoggedSets(), fetchSettings()]).then(([ormArr, sets, settings]) => {
+    Promise.all([fetchAllOneRms(), fetchAllLoggedSets(), fetchSettings(), fetchExercisePreferences()]).then(([ormArr, sets, settings, prefsMap]) => {
+      setPrefs(prefsMap)
       const bw = settings.body_weight_lbs ?? 0
       // Stored training maxes
       const m: Record<string,string> = {}
@@ -71,8 +75,9 @@ export default function OnermSection({ programId }: { programId?: string }) {
   }
 
   const list    = getProgram(programId).workouts
+  const effOf   = (n: string) => prefs[n]?.name ?? n   // swap-aware name
   const allNonBW = list.flatMap(w => w.exercises).filter(e => !e.isBodyweight)
-  const totalEntered = allNonBW.filter(e => rms[e.name] && parseFloat(rms[e.name]) > 0).length
+  const totalEntered = allNonBW.filter(e => rms[effOf(e.name)] && parseFloat(rms[effOf(e.name)]) > 0).length
 
   return (
     <div>
@@ -112,7 +117,7 @@ export default function OnermSection({ programId }: { programId?: string }) {
           const c = WC[wkt.key] ?? '#8E8E93'
           const isOpen  = group === wkt.key
           const nonBW   = wkt.exercises.filter(e => !e.isBodyweight)
-          const entered = nonBW.filter(e => rms[e.name] && parseFloat(rms[e.name]) > 0).length
+          const entered = nonBW.filter(e => rms[effOf(e.name)] && parseFloat(rms[effOf(e.name)]) > 0).length
           const wktDone = entered === nonBW.length
 
           return (
@@ -135,20 +140,22 @@ export default function OnermSection({ programId }: { programId?: string }) {
               </button>
 
               {isOpen && wkt.exercises.map(ex => {
-                if (ex.isBodyweight && !isLoadableBodyweight(ex.name)) return (
+                const eff       = prefs[ex.name]?.name ?? ex.name   // swapped-in lift, if any
+                const isSwapped = eff !== ex.name
+                if (ex.isBodyweight && !isLoadableBodyweight(eff)) return (
                   <div key={ex.name} className="ios-row">
                     <div className="flex-1 min-w-0">
-                      <p className="t-subhead" style={{ color:'var(--label-2)' }}>{ex.name}</p>
-                      <p className="t-caption1 mt-0.5" style={{ color:'#8E8E93' }}>Bodyweight</p>
+                      <p className="t-subhead" style={{ color:'var(--label-2)' }}>{eff}</p>
+                      <p className="t-caption1 mt-0.5" style={{ color:'#8E8E93' }}>Bodyweight{isSwapped ? ` · was ${ex.name}` : ''}</p>
                     </div>
                     <span className="t-caption2 px-2 py-1 rounded-lg"
                           style={{ background:'var(--fill-3)', color:'#8E8E93' }}>BW</span>
                   </div>
                 )
 
-                const isSaved    = saved === ex.name
-                const tmVal      = parseFloat(rms[ex.name] ?? '0') || 0
-                const loggedEst  = derived[ex.name] ?? 0
+                const isSaved    = saved === eff
+                const tmVal      = parseFloat(rms[eff] ?? '0') || 0
+                const loggedEst  = derived[eff] ?? 0
                 const diff       = tmVal > 0 && loggedEst > 0 ? loggedEst - tmVal : 0
                 const diffPct    = tmVal > 0 ? diff / tmVal : 0
                 const hasGain    = diff > 0.5
@@ -163,8 +170,11 @@ export default function OnermSection({ programId }: { programId?: string }) {
                     {/* top row: name + muscle */}
                     <div style={{ display:'flex', alignItems:'center', gap:8, paddingBottom:10 }}>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <p className="t-subhead sf-semibold" style={{ color:'var(--label)' }}>{ex.name}</p>
-                        <p className="t-caption1 mt-0.5" style={{ color:'#8E8E93' }}>{ex.muscle}</p>
+                        <p className="t-subhead sf-semibold" style={{ color:'var(--label)' }}>{eff}</p>
+                        <p className="t-caption1 mt-0.5" style={{ color:'#8E8E93' }}>
+                          {ex.muscle}
+                          {isSwapped && <span style={{ color:'#FFB23E' }}>{' · custom · was '}{ex.name}</span>}
+                        </p>
                       </div>
                       {isSaved && <Check size={14} strokeWidth={3} style={{ color:'var(--green)', flexShrink:0 }} />}
                     </div>
@@ -180,9 +190,9 @@ export default function OnermSection({ programId }: { programId?: string }) {
                         <div style={{ display:'flex', alignItems:'baseline', gap:4 }}>
                           <input
                             type="number" inputMode="decimal" placeholder="—"
-                            value={rms[ex.name] ?? ''}
-                            onChange={e => setRms(p => ({ ...p, [ex.name]: e.target.value }))}
-                            onBlur={e => save(ex.name, e.target.value)}
+                            value={rms[eff] ?? ''}
+                            onChange={e => setRms(p => ({ ...p, [eff]: e.target.value }))}
+                            onBlur={e => save(eff, e.target.value)}
                             style={{ width:'100%', fontSize:20, fontWeight:800, color:'var(--label)',
                               background:'transparent', outline:'none', border:'none', padding:0 }}
                           />
