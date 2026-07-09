@@ -594,6 +594,38 @@ function DropSetRow({ lastWeight, repsRange, accentColor, onLog }: {
   )
 }
 
+// ── Rest-timer countdown beeps ─────────────────────────────────────
+// Web Audio chirp at 3-2-1 seconds remaining: "get ready to work."
+// Context is created lazily and resumed on RestPill mount — the timer
+// always starts from a tap (Log Set), which satisfies iOS's
+// user-gesture requirement for audio.
+let _beepCtx: AudioContext | null = null
+function ensureBeepCtx() {
+  try {
+    const AC = window.AudioContext ?? (window as any).webkitAudioContext
+    if (!AC) return null
+    if (!_beepCtx) _beepCtx = new AC()
+    if (_beepCtx.state === 'suspended') _beepCtx.resume()
+    return _beepCtx
+  } catch { return null }
+}
+function countdownBeep(final = false) {
+  const ctx = ensureBeepCtx()
+  if (!ctx) return
+  try {
+    const o = ctx.createOscillator()
+    const g = ctx.createGain()
+    o.type = 'sine'
+    o.frequency.value = final ? 1175 : 880   // last beep a step higher: GO
+    const t = ctx.currentTime
+    g.gain.setValueAtTime(0.0001, t)
+    g.gain.exponentialRampToValueAtTime(0.35, t + 0.012)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + (final ? 0.28 : 0.15))
+    o.connect(g); g.connect(ctx.destination)
+    o.start(t); o.stop(t + (final ? 0.3 : 0.17))
+  } catch {}
+}
+
 // ── Rest Timer ────────────────────────────────────────────────────
 function RestPill({ seconds, exName, onDone, onRestPause }: {
   seconds:number; exName:string; onDone:()=>void; onRestPause:()=>void
@@ -602,11 +634,19 @@ function RestPill({ seconds, exName, onDone, onRestPause }: {
   // the iPhone screen locks (JS setTimeout freezes while screen is off)
   const [endTime] = useState(() => Date.now() + seconds * 1000)
   const [rem, setRem] = useState(seconds)
+  const lastBeepedAt = useRef<number>(0)   // which remaining-second we last beeped for
 
   useEffect(() => {
+    ensureBeepCtx()   // unlock audio while we're still in the tap's gesture chain
     const tick = () => {
       const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000))
       setRem(remaining)
+      // 3-2-1 countdown chirps (each second beeps exactly once; the guard
+      // also prevents a burst if the phone was locked through the window)
+      if (remaining >= 1 && remaining <= 3 && lastBeepedAt.current !== remaining) {
+        lastBeepedAt.current = remaining
+        countdownBeep(remaining === 1)
+      }
       if (remaining <= 0) {
         fireRestCompleteNotification(exName)
         onDone()
