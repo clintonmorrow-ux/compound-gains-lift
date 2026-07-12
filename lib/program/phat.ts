@@ -145,7 +145,7 @@ const DELOAD: (power: boolean) => WeekConfig = (power) => ({
   rir:         4,
   phase:       'Deload',
   isDeload:    true,
-  note:        'Deload week — reduce load ~40%, focus on technique and recovery.',
+  note:        'Deload week — reduce load ~30%, focus on technique and recovery.',
   percentages: power
                  ? { primary: 0.60, secondary: 0.60, isolation: 0.60 }
                  : { primary: 0.55, secondary: 0.55, isolation: 0.55 },
@@ -165,12 +165,12 @@ export function getPHATWeekConfig(week: number, dayType?: DayType): WeekConfig {
         isDeload: false,
         note: 'Build your power base. Conservative loads to perfect mechanics and establish baseline strength.',
         percentages: { primary: 0.80, secondary: 0.78, isolation: 0.75 } }
-    : { sets: { primary: 4, secondary: 3, isolation: 3 },
-        reps: { primary: '8–12', secondary: '10–12', isolation: '12–15' },
+    : { sets: { primary: 5, secondary: 3, isolation: 3 },
+        reps: { primary: '3 — explosive', secondary: '10–12', isolation: '12–15' },
         rir: 2, phase: 'Phase 1 — Hypertrophy Accumulation',
         isDeload: false,
-        note: 'High volume at moderate intensity. Prioritise full ROM and muscle feel over load.',
-        percentages: { primary: 0.67, secondary: 0.65, isolation: 0.62 } }
+        note: 'Speed work first (explosive triples at ~65–70% of power-day weight), then high-volume hypertrophy work. Full ROM, muscle feel over load.',
+        percentages: { primary: 0.55, secondary: 0.65, isolation: 0.62 } }
 
   // Phase 2 — Intensification (Weeks 5–7): increase load and intensity
   if (week <= 7) return isPower
@@ -180,27 +180,27 @@ export function getPHATWeekConfig(week: number, dayType?: DayType): WeekConfig {
         isDeload: false,
         note: 'Increase loads significantly. Leave only 1 rep in reserve on your last power set.',
         percentages: { primary: 0.84, secondary: 0.82, isolation: 0.78 } }
-    : { sets: { primary: 3, secondary: 3, isolation: 3 },
-        reps: { primary: '8–12', secondary: '10–15', isolation: '12–20' },
+    : { sets: { primary: 6, secondary: 3, isolation: 3 },
+        reps: { primary: '3 — explosive', secondary: '10–15', isolation: '12–20' },
         rir: 2, phase: 'Phase 2 — Hypertrophy Intensification',
         isDeload: false,
-        note: 'Moderate volume, better muscle-mind connection. Slow your eccentrics.',
-        percentages: { primary: 0.70, secondary: 0.68, isolation: 0.64 } }
+        note: 'Six explosive triples on the speed movement, then hypertrophy work with slow eccentrics and strong mind-muscle connection.',
+        percentages: { primary: 0.58, secondary: 0.68, isolation: 0.64 } }
 
   // Phase 3 — Peak (Weeks 9–11): peak strength and size expression
   return isPower
-    ? { sets: { primary: 4, secondary: 3, isolation: 2 },
+    ? { sets: { primary: 4, secondary: 2, isolation: 2 },
         reps: { primary: '2–4', secondary: '3–5', isolation: '5–8' },
         rir: 1, phase: 'Phase 3 — Power Peak',
         isDeload: false,
         note: 'Heaviest loads of the cycle. Push your 3-5RM to new levels.',
         percentages: { primary: 0.87, secondary: 0.84, isolation: 0.80 } }
-    : { sets: { primary: 3, secondary: 3, isolation: 3 },
-        reps: { primary: '6–10', secondary: '8–12', isolation: '10–15' },
+    : { sets: { primary: 6, secondary: 3, isolation: 3 },
+        reps: { primary: '3 — explosive', secondary: '8–12', isolation: '10–15' },
         rir: 1, phase: 'Phase 3 — Hypertrophy Peak',
         isDeload: false,
-        note: 'Higher intensity, lower rep range. Maximum mechanical tension for size gains.',
-        percentages: { primary: 0.73, secondary: 0.71, isolation: 0.68 } }
+        note: 'Speed work at its heaviest (still explosive — quality over load), then hypertrophy work at higher intensity for maximum mechanical tension.',
+        percentages: { primary: 0.60, secondary: 0.71, isolation: 0.68 } }
 }
 
 // ── Program export ────────────────────────────────────────────────────────────

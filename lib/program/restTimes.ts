@@ -23,7 +23,7 @@ const REST_TABLE: Record<string, Record<ExerciseType, number>> = {
 //   Research: ~3–5 min rest restores 95%+ of phosphocreatine stores.
 // Hypertrophy days: shorter rest maintains metabolic stress (lactate,
 //   hydrogen ions, growth hormone response) — the adaptation signal.
-const PHAT_POWER_REST:      Record<ExerciseType, number> = { primary: 240, secondary: 180, isolation: 90  }
+const PHAT_POWER_REST:      Record<ExerciseType, number> = { primary: 240, secondary: 160, isolation: 90  }
 const PHAT_HYPERTROPHY_REST: Record<ExerciseType, number> = { primary:  90, secondary:  75, isolation: 60  }
 const PHAT_DELOAD_REST:      Record<ExerciseType, number> = { primary:  75, secondary:  60, isolation: 45  }
 
