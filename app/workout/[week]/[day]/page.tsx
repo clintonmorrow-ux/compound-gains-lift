@@ -1,7 +1,7 @@
 'use client'
 import { use, useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus, Flame, Award, Lightbulb, RotateCcw } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus, Flame, Award, Lightbulb, RotateCcw, Zap } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getProgram, getWeekConfig } from '@/lib/program/programLibrary'
 import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/calculator'
@@ -260,10 +260,10 @@ function WarmupSets({ working, round, accentColor, exerciseName }: {
   )
 }
 
-function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBodyweight, accentColor, exerciseName, onLog, beltMode = false }: {
+function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBodyweight, accentColor, exerciseName, onLog, beltMode = false, speedMode = false }: {
   // beltMode: weighted dips/pull-ups — target/wt are BELT (added) weight
   setNum:number; setCount:number; target:number; repsRange:string
-  lastWeight:number|null; isBodyweight:boolean; accentColor:string; exerciseName:string; beltMode?:boolean
+  lastWeight:number|null; isBodyweight:boolean; accentColor:string; exerciseName:string; beltMode?:boolean; speedMode?:boolean
   onLog:(w:number|null, r:number, rir:number, tempo:string)=>Promise<void>
 }) {
   const parts   = repsRange.replace('–','-').split('-').map(Number)
@@ -319,13 +319,22 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
   }
 
   return (
-    <div style={{ borderRadius:16, border:`1px solid ${accentColor}55`,
-      background:`linear-gradient(160deg, color-mix(in srgb, ${accentColor} 9%, transparent) 0%, rgba(13,13,20,0) 100%)`,
+    <div style={{ borderRadius:16,
+      border: speedMode ? '1px dashed rgba(255,214,10,0.5)' : `1px solid ${accentColor}55`,
+      background: speedMode
+        ? 'linear-gradient(160deg, rgba(255,214,10,0.07) 0%, rgba(13,13,20,0) 100%)'
+        : `linear-gradient(160deg, color-mix(in srgb, ${accentColor} 9%, transparent) 0%, rgba(13,13,20,0) 100%)`,
       padding:'16px' }}>
 
       <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase',
-        letterSpacing:'0.1em', marginBottom:14 }}>
+        letterSpacing:'0.1em', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
         Set {setNum} of {setCount}
+        {speedMode && (
+          <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:6,
+            background:'rgba(255,214,10,0.14)', color:'#FFD60A', letterSpacing:'0.06em' }}>
+            <Zap size={10} strokeWidth={2.6} /> SPEED
+          </span>
+        )}
       </p>
 
       {/* Weight stepper — always shown; for BW exercises it means added load */}
@@ -470,18 +479,22 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
 }
 
 // ── Logged set row (compact) ──────────────────────────────────────
-function LoggedRow({ setNum, weight, reps, rir }: { setNum:number; weight:number|null; reps:number; rir?:number }) {
+function LoggedRow({ setNum, weight, reps, rir, speed = false }: { setNum:number; weight:number|null; reps:number; rir?:number ; speed?:boolean }) {
   return (
     <div style={{ display:'flex', alignItems:'center', gap:12, height:44, paddingInline:14,
       borderRadius:12, background:'rgba(45,212,160,0.1)', border:'0.5px solid rgba(45,212,160,0.35)' }}>
-      <div style={{ width:24, height:24, borderRadius:'50%', background:'#2DD4A0',
+      <div style={{ width:24, height:24, borderRadius:'50%', background: speed ? '#FFD60A' : '#2DD4A0',
         display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-        <Check size={13} strokeWidth={3} style={{ color:'#000' }} />
+        {speed ? <Zap size={12} strokeWidth={2.6} style={{ color:'#000' }} /> : <Check size={13} strokeWidth={3} style={{ color:'#000' }} />}
       </div>
-      <span style={{ fontSize:13, fontWeight:700, color:'#fff' }}>Set {setNum}</span>
+      <span style={{ fontSize:13, fontWeight:700, color: speed ? '#FFD60A' : '#fff' }}>
+        {speed ? '⚡ ' : ''}Set {setNum}
+      </span>
       <span style={{ fontSize:13, color:'#8E8E93', flex:1 }}>
         {weight != null ? `${weight} lbs` : 'Bodyweight'} × {reps} reps
-        {rir !== undefined && <span style={{ color:'rgba(45,212,160,0.8)' }}> · RIR {rir}</span>}
+        {speed
+          ? <span style={{ color:'rgba(255,214,10,0.75)' }}> · speed</span>
+          : rir !== undefined && <span style={{ color:'rgba(45,212,160,0.8)' }}> · RIR {rir}</span>}
       </span>
     </div>
   )
@@ -1320,6 +1333,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           const lastWt   = lasts[origEx.name] ?? null
           // At-a-glance direction = change vs last time (consistent everywhere)
           const loadableBW = origEx.isBodyweight && isLoadableBodyweight(origEx.name) && bodyWt > 0
+          // Dynamic-effort (speed) slot — distinct visual structure, like warm-ups
+          const isSpeedEx  = origEx.type === 'primary' && String(cfg.reps.primary).includes('explosive')
           // Belt weight for weighted dips/pull-ups (target is SYSTEM weight)
           const beltTgt  = loadableBW && target > 0 ? Math.max(0, Math.round((target - bodyWt) / round) * round) : 0
           const shownTgt = loadableBW ? beltTgt : target
@@ -1416,14 +1431,30 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                       accentColor={accent} reasonMain={reasonMain} loggedEst={smart?.loggedOneRm ?? null} drift={driftObj} />
                   )}
 
-                  {/* Warm-up ramp — first primary lift of each muscle group, optional, not logged, no rest timer */}
-                  {!isComp && warmupTargets.has(origEx.name) && target > 0 && (
+                  {/* Warm-up ramp — first primary lift of each muscle group, optional, not logged, no rest timer.
+                      Skipped on speed slots: the working weight is already light. */}
+                  {!isComp && !isSpeedEx && warmupTargets.has(origEx.name) && target > 0 && (
                     <WarmupSets working={target} round={round} accentColor={accent} exerciseName={effName(origEx)} />
+                  )}
+
+                  {/* Speed-work banner — dynamic-effort sets look structurally different */}
+                  {!isComp && isSpeedEx && (
+                    <div style={{ borderRadius:12, border:'1px dashed rgba(255,214,10,0.45)',
+                      background:'rgba(255,214,10,0.07)', padding:'10px 12px', marginBottom:4 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        <Zap size={14} style={{ color:'#FFD60A', flexShrink:0 }} strokeWidth={2.4} />
+                        <span style={{ fontSize:12, fontWeight:700, color:'#FFD60A', textTransform:'uppercase', letterSpacing:'0.06em' }}>Speed Work</span>
+                        <span style={{ fontSize:11, color:'#8E8E93' }}>· not counted toward your 1RM</span>
+                      </div>
+                      <p style={{ fontSize:11, color:'rgba(239,250,248,0.5)', lineHeight:1.45, marginTop:6 }}>
+                        Explosive triples at a deliberately light load — move the bar as fast as possible with crisp form, and stop the set the moment bar speed drops.
+                      </p>
+                    </div>
                   )}
 
                   {/* Logged sets */}
                   {exLogged.map((l:any, i:number) => (
-                    <LoggedRow key={i} setNum={i+1} weight={l.weight_lbs} reps={l.reps} rir={l.rir} />
+                    <LoggedRow key={i} setNum={i+1} weight={l.weight_lbs} reps={l.reps} rir={l.rir} speed={isSpeedEx || !!l.is_speed} />
                   ))}
 
                   {/* Active set card */}
@@ -1432,7 +1463,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                       setNum={nextSet} setCount={exSets}
                       target={shownTgt} repsRange={exReps}
                       lastWeight={lastWt} isBodyweight={!!origEx.isBodyweight}
-                      beltMode={loadableBW}
+                      beltMode={loadableBW} speedMode={isSpeedEx}
                       accentColor={accent}
                       exerciseName={effName(origEx)}
                       onLog={(w,r,rir,tempo) => handleLog(origEx, nextSet, w, r, rir, tempo)}
