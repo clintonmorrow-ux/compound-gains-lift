@@ -19,7 +19,7 @@ const PHASES = [
   { label:'Phase 2',    subtitle:'Volume Build',      weeks:'Wk 5–7',  color:'#2DD4A0', note:'8–10 reps · RIR 2 · Peak volume' },
   { label:'Deload',     subtitle:'Active Recovery',   weeks:'Wk 8',    color:'#8E8E93', note:'50% volume · RIR 4+ · Full recovery' },
   { label:'Phase 3',    subtitle:'Intensification',   weeks:'Wk 9–11', color:'#A885F2', note:'6–8 reps · RIR 1–2 · Strength peak' },
-  { label:'Deload',     subtitle:'Final Recovery',    weeks:'Wk 12',   color:'#8E8E93', note:'50% volume · RIR 4+ · PR attempts' },
+  { label:'Deload',     subtitle:'Final Recovery',    weeks:'Wk 12',   color:'#8E8E93', note:'50% volume · RIR 4+ · full recovery' },
 ]
 
 // ── Swap Sheet ────────────────────────────────────────────────────
