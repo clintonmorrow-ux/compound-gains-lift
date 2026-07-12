@@ -92,7 +92,7 @@ export const PHAT_WORKOUTS: Workout[] = [
     duration: '~60 min',
     dayType: 'hypertrophy',
     exercises: [
-      { name: 'Barbell Back Squat',            muscle: 'Quads',      type: 'secondary', cue: 'Hypertrophy session — lighter than power day, higher reps, controlled tempo throughout. Pause at bottom for extra time under tension' },
+      { name: 'Barbell Back Squat',            muscle: 'Quads',      type: 'primary',   cue: 'SPEED SQUATS (Norton dynamic effort): ~65–70% of your power-day weight · 3 explosive reps per set · descend controlled, drive UP as fast as possible · stop the set the moment bar speed slows' },
       { name: 'Leg Press',                     muscle: 'Quads',      type: 'secondary', cue: 'Full ROM · feet low and narrow · 2-sec eccentric · don\'t lock out' },
       { name: 'Leg Extension',                 muscle: 'Quads',      type: 'isolation', cue: 'Pause at top 2 sec · 3-sec eccentric · high reps for maximum pump and metabolic stress' },
       { name: 'Romanian Deadlift (RDL)',        muscle: 'Hamstrings', type: 'secondary', cue: 'Hypertrophy session — emphasise the stretch even more than power day. Pause at bottom of each rep' },
@@ -111,7 +111,7 @@ export const PHAT_WORKOUTS: Workout[] = [
     duration: '~58 min',
     dayType: 'hypertrophy',
     exercises: [
-      { name: 'Barbell Bench Press',           muscle: 'Chest',     type: 'secondary', cue: 'Hypertrophy session — lighter than power day, controlled tempo, full range of motion. Emphasise the stretched position at bottom' },
+      { name: 'Barbell Bench Press',           muscle: 'Chest',     type: 'primary',   cue: 'SPEED BENCH (Norton dynamic effort): ~65–70% of your power-day weight · 3 explosive reps per set · controlled down, explode UP · stop the set the moment bar speed drops' },
       { name: 'Incline Dumbbell Press',        muscle: 'Chest',     type: 'secondary', cue: 'Full ROM · pause at full pec stretch · wrists neutral · elbows ~45° from body' },
       { name: 'Cable Chest Fly',              muscle: 'Chest',     type: 'isolation', cue: 'Wide arc · pause at full stretch — lengthened position is the primary hypertrophic driver. High reps, feel the chest working' },
       { name: 'Barbell Curl',                  muscle: 'Biceps',    type: 'secondary', cue: 'Hypertrophy session — elbows fixed, full ROM, supinate at top, 2-sec eccentric' },
