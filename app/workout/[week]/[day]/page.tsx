@@ -10,7 +10,7 @@ import { fetchAllOneRms, fetchSettings, createSession, completeSession,
          deleteSession, findIncompleteSession, fetchAllLoggedSets, upsertOneRm } from '@/lib/db'
 import { getRestSeconds, fireRestCompleteNotification, requestNotificationPermission, getSupersetPairs } from '@/lib/program/restTimes'
 import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
-import { calculateSmartSuggestion, isLoadableBodyweight, withBodyweight, type SmartSuggestion } from '@/lib/program/smartSuggestions'
+import { calculateSmartSuggestion, isLoadableBodyweight, withBodyweight, excludeSpeedSets, type SmartSuggestion } from '@/lib/program/smartSuggestions'
 import { EXERCISE_MUSCLE } from '@/lib/program/analytics'
 import { reintroActive, isReintroSet, REINTRO_VOLUME_PCT, REINTRO_RIR_CAP } from '@/lib/program/reintro'
 import type { Exercise, WorkoutKey } from '@/types'
@@ -862,7 +862,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
         const recentRaw = await getRecentSetsForExercise(effectiveName, 15)
         // Exclude sets logged during the reintroduction window so an easy
         // ramp-back week never drags the suggestion / 1RM basis down.
-        let recent = recentRaw.filter((s:any) => !isReintroSet(s.completed_at, settings))
+        let recent = excludeSpeedSets(recentRaw).filter((s:any) => !isReintroSet(s.completed_at, settings))
         lastMap[ex.name]  = recent[0]?.weight_lbs ?? null   // added weight for BW moves
         // Weighted dips/pull-ups: 1RM math runs on TOTAL system weight
         if (loadableBW) recent = withBodyweight(recent, settings.body_weight_lbs ?? 0)
@@ -1045,8 +1045,12 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                       weight_lbs: weight, reps, rir, pending: true }
     setSets(prev => ({...prev, [origEx.name]: [...(prev[origEx.name]??[]), tempSet]}))
 
+    // Dynamic-effort (speed) work — PHAT hypertrophy-day primary slot. Tagged
+    // so these deliberately submaximal sets never feed 1RM estimation.
+    const isSpeedSet = origEx.type === 'primary' && String(cfg.reps.primary).includes('explosive')
+
     // Sync to Supabase in background with retry
-    logWithRetry(sessionId!, effName(origEx), setNum, weight, reps, false, rir, tempo)  // 3 retries
+    logWithRetry(sessionId!, effName(origEx), setNum, weight, reps, false, rir, tempo, isSpeedSet)  // 3 retries
       .then(row => {
         // Replace temp set with confirmed row
         setSets(prev => ({

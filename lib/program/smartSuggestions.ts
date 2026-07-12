@@ -151,6 +151,15 @@ export function isLoadableBodyweight(name: string): boolean {
   return /pull-?up|chin-?up|\bdip(s)?\b/i.test(name)
 }
 
+/** Sets that must never feed 1RM estimation: dynamic-effort (speed) work.
+ *  Speed sets are deliberately submaximal (~15+ true reps in reserve) — far
+ *  beyond what the RIR picker can express — so RIR-aware Epley would read
+ *  them as huge strength LOSSES (e.g. 105x3 "@RIR 4" → e1RM ~130 vs a true
+ *  180 max). Filter them at the source, in every consumer. */
+export function excludeSpeedSets<T extends { is_speed?: boolean | null }>(sets: T[]): T[] {
+  return sets.filter(s => !s.is_speed)
+}
+
 /** Convert added-weight sets to total-system-weight sets. */
 export function withBodyweight<T extends { weight_lbs: number }>(sets: T[], bodyWeight: number): T[] {
   if (!bodyWeight || bodyWeight <= 0) return sets

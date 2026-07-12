@@ -10,7 +10,7 @@ import { getProgram, getWeekConfig } from '@/lib/program/programLibrary'
 import { fetchSettings, updateSettings, fetchRecentSessions, fetchAllOneRms, fetchAllLoggedSets, fetchCoachPrefs, fetchCycleStats, upsertOneRm } from '@/lib/db'
 import { detectDeloadReadiness, type CoachSet } from '@/lib/program/coach'
 import { recommendReintro, reintroActive, reintroDaysLeft, startReintroPatch, type ReintroPlan } from '@/lib/program/reintro'
-import { loggedDerivedOneRm, isLoadableBodyweight, withBodyweight } from '@/lib/program/smartSuggestions'
+import { loggedDerivedOneRm, isLoadableBodyweight, withBodyweight, excludeSpeedSets } from '@/lib/program/smartSuggestions'
 import CycleComplete from '@/components/CycleComplete'
 import { Battery, Zap } from 'lucide-react'
 
@@ -162,7 +162,7 @@ export default function Dashboard() {
       const __bw = (await fetchSettings()).body_weight_lbs ?? 0
       const sets = (cycleStats?.sets ?? []) as any[]
       const byEx: Record<string, any[]> = {}
-      sets.filter(s => s.weight_lbs > 0 && s.reps > 0).forEach(s => { (byEx[s.exercise_name] ??= []).push(s) })
+      excludeSpeedSets(sets).filter(s => s.weight_lbs > 0 && s.reps > 0).forEach(s => { (byEx[s.exercise_name] ??= []).push(s) })
       for (const [name, arr] of Object.entries(byEx)) {
         if (arr.length < 3) continue
         arr.sort((a, b) => (a.completed_at < b.completed_at ? 1 : -1))  // most recent first

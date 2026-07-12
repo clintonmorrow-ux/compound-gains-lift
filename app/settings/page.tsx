@@ -9,7 +9,7 @@ import type { Program } from '@/types'
 import { fetchSettings, updateSettings, fetchEquipment, saveEquipment,
          fetchCoachPrefs, saveCoachPrefs, fetchAllLoggedSets, upsertOneRm } from '@/lib/db'
 import { DEFAULT_COACH_PREFS } from '@/lib/program/coach'
-import { loggedDerivedOneRm, isLoadableBodyweight, withBodyweight } from '@/lib/program/smartSuggestions'
+import { loggedDerivedOneRm, isLoadableBodyweight, withBodyweight, excludeSpeedSets } from '@/lib/program/smartSuggestions'
 import { EQUIPMENT_LABELS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 
 export default function SettingsPage() {
@@ -68,7 +68,7 @@ export default function SettingsPage() {
       const __bw = parseFloat(bodyWt) > 0 ? parseFloat(bodyWt) : ((await fetchSettings()).body_weight_lbs ?? 0)
       const sets = await fetchAllLoggedSets() as any[]
       const byEx: Record<string, any[]> = {}
-      sets.filter(s => s.weight_lbs > 0 && s.reps > 0).forEach(s => { (byEx[s.exercise_name] ??= []).push(s) })
+      excludeSpeedSets(sets).filter(s => s.weight_lbs > 0 && s.reps > 0).forEach(s => { (byEx[s.exercise_name] ??= []).push(s) })
       for (const [name, arr] of Object.entries(byEx)) {
         if (arr.length < 3) continue
         arr.sort((a, b) => (a.completed_at < b.completed_at ? 1 : -1))  // most recent first

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp, Check, RotateCcw, TrendingUp } from 'lucide-react'
 import { getProgram } from '@/lib/program/programLibrary'
 import { fetchAllOneRms, upsertOneRm, fetchAllLoggedSets, fetchSettings, fetchExercisePreferences } from '@/lib/db'
-import { loggedDerivedOneRm, isLoadableBodyweight, withBodyweight } from '@/lib/program/smartSuggestions'
+import { loggedDerivedOneRm, isLoadableBodyweight, withBodyweight, excludeSpeedSets } from '@/lib/program/smartSuggestions'
 import type { UserOneRm } from '@/types'
 
 const WC: Record<string,string> = {

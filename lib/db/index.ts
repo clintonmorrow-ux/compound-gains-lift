@@ -145,12 +145,13 @@ export async function logSet(
   reps: number | null,
   skipped = false,
   rir: number | null = null,
-  tempo: string | null = null
+  tempo: string | null = null,
+  isSpeed = false   // dynamic-effort (speed) sets: excluded from all 1RM estimation
 ) {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('logged_sets')
-    .insert({ session_id: sessionId, exercise_name: exerciseName, set_number: setNumber, weight_lbs: weightLbs, reps, skipped, rir, tempo })
+    .insert({ session_id: sessionId, exercise_name: exerciseName, set_number: setNumber, weight_lbs: weightLbs, reps, skipped, rir, tempo, is_speed: isSpeed })
     .select()
     .single()
   if (error) throw error
@@ -186,14 +187,14 @@ export async function getRecentSetsForExercise(exerciseName: string, limit = 15)
   const supabase = createClient()
   const { data, error } = await supabase
     .from('logged_sets')
-    .select('weight_lbs, reps, completed_at, rir')
+    .select('weight_lbs, reps, completed_at, rir, is_speed')
     .eq('exercise_name', exerciseName)
     .not('weight_lbs', 'is', null)
     .not('reps', 'is', null)
     .order('completed_at', { ascending: false })
     .limit(limit)
   if (error) throw error
-  return (data ?? []) as { weight_lbs: number; reps: number; completed_at: string; rir: number | null }[]
+  return (data ?? []) as { weight_lbs: number; reps: number; completed_at: string; rir: number | null; is_speed?: boolean | null }[]
 }
 
 export async function fetchEquipment(): Promise<string[]> {
@@ -224,7 +225,7 @@ export async function fetchAllLoggedSets(): Promise<{
   // each set so charts group by program week and compare across cycles
   const [{ data: setsData, error }, { data: sessData }] = await Promise.all([
     supabase.from('logged_sets')
-      .select('exercise_name, weight_lbs, reps, completed_at, rir, set_number, session_id')
+      .select('exercise_name, weight_lbs, reps, completed_at, rir, set_number, session_id, is_speed')
       .not('reps', 'is', null)
       .order('completed_at', { ascending: true }),
     supabase.from('sessions').select('id, week_number, cycle_number'),
@@ -412,7 +413,7 @@ export async function fetchCycleStats(cycleNumber: number): Promise<{
   const ids = sessions.map((s:any) => s.id)
   const { data: sets } = await supabase
     .from('logged_sets')
-    .select('exercise_name, weight_lbs, reps, completed_at')
+    .select('exercise_name, weight_lbs, reps, completed_at, rir, is_speed')
     .in('session_id', ids)
     .not('weight_lbs', 'is', null)
     .not('reps', 'is', null)
