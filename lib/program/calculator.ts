@@ -52,3 +52,21 @@ export function estimateOneRm(weight: number, reps: number): number {
   if (reps === 1) return weight
   return Math.round(weight * (1 + reps / 30))
 }
+
+
+// ── Dumbbell increments ────────────────────────────────────────────────
+// Racks run in 2.5 lb steps up to 30 lbs, then 5s. Dumbbell exercises
+// round and step accordingly.
+const DUMBBELL_EXTRA = new Set(['Hammer Curl', 'Walking Lunge'])
+export function isDumbbellExercise(name: string): boolean {
+  return /\bdb\b|dumbbell|goblet/i.test(name) || DUMBBELL_EXTRA.has(name)
+}
+/** Round a raw dumbbell weight: 2.5s at/below 30 lbs, caller's rounding above. */
+export function dumbbellRound(raw: number, fallbackRound: number): number {
+  if (raw <= 31.25) return Math.max(2.5, Math.round(raw / 2.5) * 2.5)
+  return Math.round(raw / fallbackRound) * fallbackRound
+}
+/** Step size at a given weight, per direction. */
+export function dumbbellStep(current: number, dir: 1 | -1): number {
+  return (dir > 0 ? current < 30 : current <= 30) ? 2.5 : 5
+}

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus, Flame, Award, Lightbulb, RotateCcw, Zap } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getProgram, getWeekConfig } from '@/lib/program/programLibrary'
-import { getTargetWeight, getSetsForWeek, getRepsForWeek } from '@/lib/program/calculator'
+import { getTargetWeight, getSetsForWeek, getRepsForWeek, isDumbbellExercise, dumbbellRound, dumbbellStep } from '@/lib/program/calculator'
 import { fetchAllOneRms, fetchSettings, createSession, completeSession,
          logSet, getRecentSetsForExercise, fetchEquipment, fetchExercisePreferences,
          deleteSession, findIncompleteSession, fetchAllLoggedSets, upsertOneRm } from '@/lib/db'
@@ -265,9 +265,9 @@ function WarmupSets({ working, round, accentColor, exerciseName }: {
 // Duration-based sets: a large adjustable countdown instead of reps.
 // Completing (or stopping) the hold logs the set through the normal
 // path, so the rest timer starts automatically like any logged set.
-function TimedSetCard({ setNum, setCount, suggestSec, suggestWt, note, accentColor, onLog }: {
+function TimedSetCard({ setNum, setCount, suggestSec, suggestWt, note, accentColor, onLog, dbMode = false }: {
   setNum:number; setCount:number; suggestSec:number; suggestWt:number; note:string
-  accentColor:string; onLog:(weight:number|null, seconds:number)=>void
+  accentColor:string; onLog:(weight:number|null, seconds:number)=>void; dbMode?:boolean
 }) {
   const [targetSec, setTargetSec] = useState(suggestSec)
   const [wt, setWt]               = useState(suggestWt)
@@ -352,13 +352,13 @@ function TimedSetCard({ setNum, setCount, suggestSec, suggestWt, note, accentCol
         <div style={{ marginBottom:16 }}>
           <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>Added weight (optional)</p>
           <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-            <button onClick={()=>setWt(w=>Math.max(0, w-5))} style={{ width:44, height:44, borderRadius:12,
+            <button onClick={()=>setWt(w=>Math.max(0, w - (dbMode ? dumbbellStep(w,-1) : 5)))} style={{ width:44, height:44, borderRadius:12,
               background:'rgba(118,118,128,0.14)', border:'0.5px solid rgba(84,84,88,0.35)', color:'#fff' }}><Minus size={18} style={{ margin:'0 auto' }} /></button>
             <div style={{ flex:1, textAlign:'center' }}>
               <span style={{ fontSize:26, fontWeight:800, color: wt>0 ? '#fff' : '#8E8E93', fontVariantNumeric:'tabular-nums' }}>{wt>0 ? `+${wt}` : 'BW'}</span>
               {wt>0 && <span style={{ fontSize:13, color:'#8E8E93', fontWeight:600 }}> lbs</span>}
             </div>
-            <button onClick={()=>setWt(w=>w+5)} style={{ width:44, height:44, borderRadius:12,
+            <button onClick={()=>setWt(w=>w + (dbMode ? dumbbellStep(w,1) : 5))} style={{ width:44, height:44, borderRadius:12,
               background:'rgba(118,118,128,0.14)', border:'0.5px solid rgba(84,84,88,0.35)', color:'#fff' }}><Plus size={18} style={{ margin:'0 auto' }} /></button>
           </div>
         </div>
@@ -390,10 +390,10 @@ function TimedSetCard({ setNum, setCount, suggestSec, suggestWt, note, accentCol
   )
 }
 
-function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBodyweight, accentColor, exerciseName, onLog, beltMode = false, speedMode = false }: {
+function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBodyweight, accentColor, exerciseName, onLog, beltMode = false, speedMode = false, dbMode = false }: {
   // beltMode: weighted dips/pull-ups — target/wt are BELT (added) weight
   setNum:number; setCount:number; target:number; repsRange:string
-  lastWeight:number|null; isBodyweight:boolean; accentColor:string; exerciseName:string; beltMode?:boolean; speedMode?:boolean
+  lastWeight:number|null; isBodyweight:boolean; accentColor:string; exerciseName:string; beltMode?:boolean; speedMode?:boolean; dbMode?:boolean
   onLog:(w:number|null, r:number, rir:number, tempo:string)=>Promise<void>
 }) {
   const parts   = repsRange.replace('–','-').split('-').map(Number)
@@ -482,7 +482,7 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
           )}
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <button onClick={()=>adjust('wt',-5)} style={{ width:44, height:44, borderRadius:12,
+          <button onClick={()=>adjust('wt', dbMode ? -dumbbellStep(wt,-1) : -5)} style={{ width:44, height:44, borderRadius:12,
             background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
             <Minus size={18} strokeWidth={2.5} style={{ color:'#fff' }} />
           </button>
@@ -498,13 +498,13 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
               {isBodyweight ? (wt > 0 ? 'lbs added' : 'bodyweight') : 'lbs'}
             </p>
           </div>
-          <button onClick={()=>adjust('wt',+5)} style={{ width:44, height:44, borderRadius:12,
+          <button onClick={()=>adjust('wt', dbMode ? dumbbellStep(wt,1) : +5)} style={{ width:44, height:44, borderRadius:12,
             background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
             <Plus size={18} strokeWidth={2.5} style={{ color:accentColor }} />
           </button>
         </div>
         <div style={{ display:'flex', gap:8, marginTop:10 }}>
-          {([-10,-5,+5,+10]).map(d => (
+          {(dbMode ? [-5,-2.5,+2.5,+5] : [-10,-5,+5,+10]).map(d => (
             <button key={d} onClick={()=>adjust('wt',d)} style={{ flex:1, height:36, borderRadius:10,
               background:'rgba(118,118,128,0.15)', fontSize:13, fontWeight:700,
               color: d<0 ? '#8E8E93' : accentColor }}>
@@ -650,9 +650,9 @@ function PendingRow({ setNum, target }: { setNum:number; target:number }) {
 }
 
 // ── Drop Set Row ─────────────────────────────────────────────────
-function DropSetRow({ lastWeight, repsRange, accentColor, onLog }: {
+function DropSetRow({ lastWeight, repsRange, accentColor, onLog, dbMode = false }: {
   lastWeight:number; repsRange:string; accentColor:string
-  onLog:(w:number,r:number)=>Promise<void>
+  onLog:(w:number,r:number)=>Promise<void>; dbMode?:boolean
 }) {
   const suggestedWt = Math.round(lastWeight * 0.80 / 5) * 5  // 80% rounded to 5
   const [_, maxR]   = repsRange.replace('–','-').split('-').map(Number)
@@ -702,7 +702,7 @@ function DropSetRow({ lastWeight, repsRange, accentColor, onLog }: {
             <div style={{ flex:1 }}>
               <p style={{ fontSize:10, color:'#8E8E93', marginBottom:4 }}>WEIGHT</p>
               <div style={{ display:'flex', gap:6 }}>
-                {([-10,-5,+5,+10]).map(d => (
+                {(dbMode ? [-5,-2.5,+2.5,+5] : [-10,-5,+5,+10]).map(d => (
                   <button key={d} onClick={()=>setWt(w=>Math.max(0,w+d))} style={{ flex:1,
                     height:34, borderRadius:8, background:'rgba(118,118,128,0.2)',
                     fontSize:12, fontWeight:700, color: d<0?'#8E8E93':accentColor }}>
@@ -1124,6 +1124,14 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       if (tmBW > 0) return getTargetWeight(tmBW, ex.type, wk, round, cfg)
       const estBW = smartMap[ex.name]?.loggedOneRm ?? 0
       return estBW > 0 ? getTargetWeight(estBW, ex.type, wk, round, cfg) : 0
+    }
+    // Dumbbell lifts: racks run 2.5 lb steps up to 30 lbs, then 5s —
+    // compute at 2.5 granularity and re-round above 30 to the user's setting.
+    if (isDumbbellExercise(ex.name)) {
+      const tmDB = rms[effName(ex)] ?? 0
+      if (tmDB > 0) return dumbbellRound(getTargetWeight(tmDB, ex.type, wk, 2.5, cfg), round)
+      const estDB = smartMap[ex.name]?.loggedOneRm ?? 0
+      return estDB > 0 ? dumbbellRound(getTargetWeight(estDB, ex.type, wk, 2.5, cfg), round) : 0
     }
     // Locked training max for this cycle (× the week's %) is the source of truth.
     const eName = effName(ex)
@@ -1602,7 +1610,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                   {!isComp && isTimedEx && timedSugg && (
                     <TimedSetCard key={nextSet} setNum={nextSet} setCount={exSets}
                       suggestSec={timedSugg.seconds} suggestWt={timedSugg.weight} note={timedSugg.note}
-                      accentColor={accent}
+                      accentColor={accent} dbMode={isDumbbellExercise(origEx.name)}
                       onLog={(w, secs) => handleLog(origEx, nextSet, w, secs, 0, 'timed')} />
                   )}
                   {!isComp && !isTimedEx && (
@@ -1610,7 +1618,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                       setNum={nextSet} setCount={exSets}
                       target={shownTgt} repsRange={exReps}
                       lastWeight={lastWt} isBodyweight={!!origEx.isBodyweight}
-                      beltMode={loadableBW} speedMode={isSpeedEx}
+                      beltMode={loadableBW} speedMode={isSpeedEx} dbMode={isDumbbellExercise(origEx.name)}
                       accentColor={accent}
                       exerciseName={effName(origEx)}
                       onLog={(w,r,rir,tempo) => handleLog(origEx, nextSet, w, r, rir, tempo)}
