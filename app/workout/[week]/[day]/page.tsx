@@ -1156,7 +1156,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     }
     try {
       const recentRaw = await getRecentSetsForExercise(newName, 15)
-      const recent = recentRaw.filter((s:any) => !isReintroSet(s.completed_at, { reintro_started_at: reintro.started, reintro_until: reintro.until }))
+      const recent = excludeSpeedSets(recentRaw).filter((s:any) => !isReintroSet(s.completed_at, { reintro_started_at: reintro.started, reintro_until: reintro.until }))
       const oneRm  = rms[newName] ?? 0
       const exCfg  = getWeekConfig(activeProgramId, wk, workout.dayType)
       const sug    = calculateSmartSuggestion(recent, ex.type, wk, oneRm, round, exCfg)

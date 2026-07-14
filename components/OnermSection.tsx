@@ -34,7 +34,7 @@ export default function OnermSection({ programId }: { programId?: string }) {
 
       // Logged-derived estimates — compute once on load
       const byEx: Record<string, any[]> = {}
-      ;(sets as any[]).filter(s => s.weight_lbs > 0 && s.reps > 0)
+      ;excludeSpeedSets(sets as any[]).filter(s => s.weight_lbs > 0 && s.reps > 0)
         .forEach(s => { (byEx[s.exercise_name] ??= []).push(s) })
       const d: Record<string,number> = {}
       for (const [name, arr] of Object.entries(byEx)) {
