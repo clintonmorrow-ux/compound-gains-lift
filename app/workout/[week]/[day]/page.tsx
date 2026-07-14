@@ -11,6 +11,7 @@ import { fetchAllOneRms, fetchSettings, createSession, completeSession,
 import { getRestSeconds, fireRestCompleteNotification, requestNotificationPermission, getSupersetPairs } from '@/lib/program/restTimes'
 import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { calculateSmartSuggestion, isLoadableBodyweight, withBodyweight, excludeSpeedSets, type SmartSuggestion } from '@/lib/program/smartSuggestions'
+import { isTimedExercise, suggestTimedTarget } from '@/lib/program/timed'
 import { EXERCISE_MUSCLE } from '@/lib/program/analytics'
 import { reintroActive, isReintroSet, REINTRO_VOLUME_PCT, REINTRO_RIR_CAP } from '@/lib/program/reintro'
 import type { Exercise, WorkoutKey } from '@/types'
@@ -260,6 +261,135 @@ function WarmupSets({ working, round, accentColor, exerciseName }: {
   )
 }
 
+// ── Timed hold card (planks, wall sits, carries) ────────────────────
+// Duration-based sets: a large adjustable countdown instead of reps.
+// Completing (or stopping) the hold logs the set through the normal
+// path, so the rest timer starts automatically like any logged set.
+function TimedSetCard({ setNum, setCount, suggestSec, suggestWt, note, accentColor, onLog }: {
+  setNum:number; setCount:number; suggestSec:number; suggestWt:number; note:string
+  accentColor:string; onLog:(weight:number|null, seconds:number)=>void
+}) {
+  const [targetSec, setTargetSec] = useState(suggestSec)
+  const [wt, setWt]               = useState(suggestWt)
+  const [running, setRunning]     = useState(false)
+  const [endTime, setEndTime]     = useState(0)
+  const [rem, setRem]             = useState(suggestSec)
+  const lastBeeped = useRef(0)
+  const loggedRef  = useRef(false)
+
+  useEffect(() => { if (!running) setRem(targetSec) }, [targetSec, running])
+
+  useEffect(() => {
+    if (!running) return
+    ensureBeepCtx()
+    const id = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000))
+      setRem(remaining)
+      if (remaining >= 1 && remaining <= 3 && lastBeeped.current !== remaining) {
+        lastBeeped.current = remaining
+        countdownBeep(remaining === 1)
+      }
+      if (remaining <= 0 && !loggedRef.current) {
+        loggedRef.current = true
+        setRunning(false)
+        onLog(wt > 0 ? wt : null, targetSec)   // full hold completed → log + rest starts
+      }
+    }, 250)
+    return () => clearInterval(id)
+  }, [running, endTime, targetSec, wt, onLog])
+
+  const start = () => {
+    ensureBeepCtx()
+    loggedRef.current = false
+    lastBeeped.current = 0
+    setEndTime(Date.now() + targetSec * 1000)
+    setRem(targetSec)
+    setRunning(true)
+  }
+  const stopAndLog = () => {
+    if (loggedRef.current) return
+    loggedRef.current = true
+    setRunning(false)
+    const held = Math.max(1, targetSec - rem)   // actual seconds held
+    onLog(wt > 0 ? wt : null, held)
+  }
+
+  const mm = Math.floor(rem / 60), ss = rem % 60
+  const pct = targetSec > 0 ? (targetSec - rem) / targetSec : 0
+
+  return (
+    <div style={{ borderRadius:16, border:`1px solid ${accentColor}55`,
+      background:`linear-gradient(160deg, color-mix(in srgb, ${accentColor} 9%, transparent) 0%, rgba(13,13,20,0) 100%)`,
+      padding:'16px' }}>
+      <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase',
+        letterSpacing:'0.1em', marginBottom:10, display:'flex', alignItems:'center', gap:8 }}>
+        Set {setNum} of {setCount}
+        <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:6,
+          background:`color-mix(in srgb, ${accentColor} 16%, transparent)`, color:accentColor, letterSpacing:'0.06em' }}>
+          ⏱ TIMED HOLD
+        </span>
+      </p>
+
+      {!running ? (<>
+        <p style={{ fontSize:12, color:'rgba(239,250,248,0.55)', lineHeight:1.5, marginBottom:14 }}>{note}</p>
+
+        {/* Duration stepper */}
+        <div style={{ marginBottom:14 }}>
+          <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>Hold duration</p>
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <button onClick={()=>setTargetSec(s=>Math.max(10, s-5))} style={{ width:44, height:44, borderRadius:12,
+              background:'rgba(118,118,128,0.14)', border:'0.5px solid rgba(84,84,88,0.35)', color:'#fff' }}><Minus size={18} style={{ margin:'0 auto' }} /></button>
+            <div style={{ flex:1, textAlign:'center' }}>
+              <span style={{ fontSize:40, fontWeight:800, color:'#fff', fontVariantNumeric:'tabular-nums' }}>{targetSec}</span>
+              <span style={{ fontSize:14, color:'#8E8E93', fontWeight:600 }}> sec</span>
+            </div>
+            <button onClick={()=>setTargetSec(s=>s+5)} style={{ width:44, height:44, borderRadius:12,
+              background:'rgba(118,118,128,0.14)', border:'0.5px solid rgba(84,84,88,0.35)', color:'#fff' }}><Plus size={18} style={{ margin:'0 auto' }} /></button>
+          </div>
+        </div>
+
+        {/* Optional added load */}
+        <div style={{ marginBottom:16 }}>
+          <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>Added weight (optional)</p>
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <button onClick={()=>setWt(w=>Math.max(0, w-5))} style={{ width:44, height:44, borderRadius:12,
+              background:'rgba(118,118,128,0.14)', border:'0.5px solid rgba(84,84,88,0.35)', color:'#fff' }}><Minus size={18} style={{ margin:'0 auto' }} /></button>
+            <div style={{ flex:1, textAlign:'center' }}>
+              <span style={{ fontSize:26, fontWeight:800, color: wt>0 ? '#fff' : '#8E8E93', fontVariantNumeric:'tabular-nums' }}>{wt>0 ? `+${wt}` : 'BW'}</span>
+              {wt>0 && <span style={{ fontSize:13, color:'#8E8E93', fontWeight:600 }}> lbs</span>}
+            </div>
+            <button onClick={()=>setWt(w=>w+5)} style={{ width:44, height:44, borderRadius:12,
+              background:'rgba(118,118,128,0.14)', border:'0.5px solid rgba(84,84,88,0.35)', color:'#fff' }}><Plus size={18} style={{ margin:'0 auto' }} /></button>
+          </div>
+        </div>
+
+        <button onClick={start} style={{ width:'100%', padding:'15px', borderRadius:14,
+          background:accentColor, color:'#04161E', fontSize:16, fontWeight:800,
+          display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+          Start Hold
+        </button>
+      </>) : (<>
+        {/* Running: the big countdown */}
+        <div style={{ textAlign:'center', padding:'8px 0 14px' }}>
+          <span style={{ fontSize:76, fontWeight:800, color:'#fff', fontVariantNumeric:'tabular-nums', lineHeight:1 }}>
+            {mm > 0 ? `${mm}:${String(ss).padStart(2,'0')}` : ss}
+          </span>
+          {mm === 0 && <span style={{ fontSize:20, color:'#8E8E93', fontWeight:700 }}> s</span>}
+          {wt > 0 && <p style={{ fontSize:13, color:'#8E8E93', marginTop:6 }}>holding +{wt} lbs</p>}
+        </div>
+        <div style={{ height:6, borderRadius:3, background:'rgba(118,118,128,0.18)', overflow:'hidden', marginBottom:16 }}>
+          <div style={{ height:'100%', width:`${pct*100}%`, background:accentColor, transition:'width 0.25s linear' }} />
+        </div>
+        <button onClick={stopAndLog} style={{ width:'100%', padding:'15px', borderRadius:14,
+          background:'rgba(255,178,62,0.16)', border:'1px solid rgba(255,178,62,0.45)', color:'#FFB23E',
+          fontSize:15, fontWeight:800 }}>
+          Stop & Log ({Math.max(1, targetSec - rem)}s held)
+        </button>
+      </>)}
+    </div>
+  )
+}
+
 function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBodyweight, accentColor, exerciseName, onLog, beltMode = false, speedMode = false }: {
   // beltMode: weighted dips/pull-ups — target/wt are BELT (added) weight
   setNum:number; setCount:number; target:number; repsRange:string
@@ -479,7 +609,7 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
 }
 
 // ── Logged set row (compact) ──────────────────────────────────────
-function LoggedRow({ setNum, weight, reps, rir, speed = false }: { setNum:number; weight:number|null; reps:number; rir?:number ; speed?:boolean }) {
+function LoggedRow({ setNum, weight, reps, rir, speed = false, timed = false }: { setNum:number; weight:number|null; reps:number; rir?:number ; speed?:boolean ; timed?:boolean }) {
   return (
     <div style={{ display:'flex', alignItems:'center', gap:12, height:44, paddingInline:14,
       borderRadius:12, background:'rgba(45,212,160,0.1)', border:'0.5px solid rgba(45,212,160,0.35)' }}>
@@ -491,10 +621,12 @@ function LoggedRow({ setNum, weight, reps, rir, speed = false }: { setNum:number
         {speed ? '⚡ ' : ''}Set {setNum}
       </span>
       <span style={{ fontSize:13, color:'#8E8E93', flex:1 }}>
-        {weight != null ? `${weight} lbs` : 'Bodyweight'} × {reps} reps
+        {timed
+          ? <>{`${reps} sec hold`}{weight != null && weight > 0 && ` · +${weight} lbs`}</>
+          : <>{weight != null ? `${weight} lbs` : 'Bodyweight'} × {reps} reps</>}
         {speed
           ? <span style={{ color:'rgba(255,214,10,0.75)' }}> · speed</span>
-          : rir !== undefined && <span style={{ color:'rgba(45,212,160,0.8)' }}> · RIR {rir}</span>}
+          : !timed && rir !== undefined && <span style={{ color:'rgba(45,212,160,0.8)' }}> · RIR {rir}</span>}
       </span>
     </div>
   )
@@ -818,6 +950,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const [sid,       setSid]       = useState<string|null>(null)
   const [sets,      setSets]      = useState<Record<string,any[]>>({})
   const [lasts,     setLasts]     = useState<Record<string,number|null>>({})
+  const [lastDurs,  setLastDurs]  = useState<Record<string,number|null>>({})   // timed holds: last duration (sec)
   const [smartMap,  setSmartMap]  = useState<Record<string,SmartSuggestion|null>>({})
   const [open,      setOpen]      = useState<string>(workout.exercises[0]?.name ?? '')
   const [swapped,   setSwapped]   = useState<Record<string,{name:string;cue:string}>>({})
@@ -863,6 +996,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
         setPriorBest(pb)
       } catch (e) { console.error('priorBest:', e) }
       const lastMap:Record<string,number|null>={}, smartM:Record<string,SmartSuggestion|null>={}
+      const durMap:Record<string,number|null>={}
       await Promise.all(workout.exercises.map(async ex=>{
         const loadableBW = ex.isBodyweight && isLoadableBodyweight(ex.name) && (settings.body_weight_lbs ?? 0) > 0
         if (ex.isBodyweight && !loadableBW) { smartM[ex.name]=null; lastMap[ex.name]=null; return }
@@ -882,7 +1016,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
         const exCfg = getWeekConfig(activeProgramId, wk, workout.dayType)
         smartM[ex.name]   = calculateSmartSuggestion(recent, ex.type, wk, oneRm, settings.round_to_lbs, exCfg)
       }))
-      setLasts(lastMap); setSmartMap(smartM)
+      setLasts(lastMap); setSmartMap(smartM); setLastDurs(durMap)
       // Check for an incomplete session from a previous interrupted workout
       const incomplete = await findIncompleteSession(wk, key)
       if (incomplete && incomplete.logged_sets?.length > 0) {
@@ -1335,6 +1469,9 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           const loadableBW = origEx.isBodyweight && isLoadableBodyweight(origEx.name) && bodyWt > 0
           // Dynamic-effort (speed) slot — distinct visual structure, like warm-ups
           const isSpeedEx  = origEx.type === 'primary' && String(cfg.reps.primary).includes('explosive')
+          // Timed isometric hold (plank / wall sit / carry) — duration, not reps
+          const isTimedEx  = isTimedExercise(origEx.name)
+          const timedSugg  = isTimedEx ? suggestTimedTarget(lastDurs[origEx.name] ?? null, lastWt, cfg.isDeload) : null
           // Belt weight for weighted dips/pull-ups (target is SYSTEM weight)
           const beltTgt  = loadableBW && target > 0 ? Math.max(0, Math.round((target - bodyWt) / round) * round) : 0
           const shownTgt = loadableBW ? beltTgt : target
@@ -1416,9 +1553,13 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                     background:'rgba(118,118,128,0.1)', border:'0.5px solid rgba(84,84,88,0.3)', marginBottom:4 }}>
                     <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>{exSets} sets</span>
                     <span style={{ color:'#8E8E93' }}>·</span>
-                    <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>{exReps} reps</span>
-                    <span style={{ color:'#8E8E93' }}>·</span>
-                    <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>RIR {exRir}</span>
+                    {isTimedEx ? (
+                      <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>~{timedSugg?.seconds ?? 30}s holds</span>
+                    ) : (<>
+                      <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>{exReps} reps</span>
+                      <span style={{ color:'#8E8E93' }}>·</span>
+                      <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>RIR {exRir}</span>
+                    </>)}
                     {lastWt && <>
                       <span style={{ color:'#8E8E93', marginLeft:'auto' }}>·</span>
                       <span style={{ fontSize:12, color:'#8E8E93' }}>Last: {lastWt} lbs</span>
@@ -1426,7 +1567,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                   </div>
 
                   {/* Coaching — why this weight / jump / 1RM check (tap to expand) */}
-                  {!isComp && (
+                  {!isComp && !isTimedEx && (
                     <CoachBubble target={shownTgt} lastWeight={lastWt} isBodyweight={!!origEx.isBodyweight && !loadableBW}
                       accentColor={accent} reasonMain={reasonMain} loggedEst={smart?.loggedOneRm ?? null} drift={driftObj} />
                   )}
@@ -1454,11 +1595,17 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
                   {/* Logged sets */}
                   {exLogged.map((l:any, i:number) => (
-                    <LoggedRow key={i} setNum={i+1} weight={l.weight_lbs} reps={l.reps} rir={l.rir} speed={isSpeedEx || !!l.is_speed} />
+                    <LoggedRow key={i} setNum={i+1} weight={l.weight_lbs} reps={l.reps} rir={l.rir} speed={isSpeedEx || !!l.is_speed} timed={isTimedEx} />
                   ))}
 
-                  {/* Active set card */}
-                  {!isComp && (
+                  {/* Active set card — timed holds get the countdown card */}
+                  {!isComp && isTimedEx && timedSugg && (
+                    <TimedSetCard key={nextSet} setNum={nextSet} setCount={exSets}
+                      suggestSec={timedSugg.seconds} suggestWt={timedSugg.weight} note={timedSugg.note}
+                      accentColor={accent}
+                      onLog={(w, secs) => handleLog(origEx, nextSet, w, secs, 0, 'timed')} />
+                  )}
+                  {!isComp && !isTimedEx && (
                     <ActiveSetCard
                       setNum={nextSet} setCount={exSets}
                       target={shownTgt} repsRange={exReps}
