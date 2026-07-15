@@ -58,6 +58,7 @@ function Sparkline({ data, color }: { data:number[]; color:string }) {
 export default function InsightsPage() {
   const router = useRouter()
   const [sets,    setSets]    = useState<RawSet[]>([])
+  const [activeProgramId, setActiveProgramId] = useState<string>('')
   const [reintroWin, setReintroWin] = useState<{reintro_started_at:string|null; reintro_until:string|null}>({ reintro_started_at:null, reintro_until:null })
   const [coachPrefs, setCoachPrefs] = useState(DEFAULT_COACH_PREFS)
   const [loading, setLoading] = useState(true)
@@ -69,6 +70,7 @@ export default function InsightsPage() {
       if (!session) await sb.auth.signInAnonymously()
       const [allSets, cp, s] = await Promise.all([fetchAllLoggedSets(), fetchCoachPrefs(), fetchSettings()])
       setSets(allSets); setCoachPrefs(cp)
+      setActiveProgramId(s.active_program_id ?? '')
       setReintroWin({ reintro_started_at: s.reintro_started_at ?? null, reintro_until: s.reintro_until ?? null })
     } catch(e) { console.error(e) }
     finally { setLoading(false) }
@@ -122,8 +124,14 @@ export default function InsightsPage() {
   const idx       = trainingIndex(sets)
   // Cycle comparison excludes reintroduction-window sets so a ramp-back week
   // doesn't show up as a regression against your normal training.
+  // Scoped to the ACTIVE program: cycles from other programs are a different
+  // training context and must not pollute this-cycle-vs-last. Sessions logged
+  // before program tagging existed (program_id null) are included so history
+  // doesn't vanish; they age out as tagged sessions accumulate.
   const cycleCmp  = cycleComparison(
-    (sets as any[]).filter(s => !isReintroSet(s.completed_at, reintroWin)) as unknown as CycleSet[]
+    (sets as any[])
+      .filter(s => !isReintroSet(s.completed_at, reintroWin))
+      .filter(s => !activeProgramId || s.program_id == null || s.program_id === activeProgramId) as unknown as CycleSet[]
   )
   // Coach signals (computed from RIR + set order data)
   const coachSets   = sets as unknown as CoachSet[]

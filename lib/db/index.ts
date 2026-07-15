@@ -115,13 +115,13 @@ export async function updateSettings(settings: Partial<UserSettings>): Promise<v
 
 // ── Sessions ─────────────────────────────────────────────────────────────
 
-export async function createSession(weekNumber: number, workoutKey: string, cycleNumber: number = 1) {
+export async function createSession(weekNumber: number, workoutKey: string, cycleNumber: number = 1, programId: string | null = null) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
   const { data, error } = await supabase
     .from('sessions')
-    .insert({ user_id: user.id, week_number: weekNumber, workout_key: workoutKey, cycle_number: cycleNumber })
+    .insert({ user_id: user.id, week_number: weekNumber, workout_key: workoutKey, cycle_number: cycleNumber, program_id: programId })
     .select()
     .single()
   if (error) throw error
@@ -218,7 +218,7 @@ export async function saveEquipment(types: string[]): Promise<void> {
 export async function fetchAllLoggedSets(): Promise<{
   exercise_name: string; weight_lbs: number|null; reps: number|null;
   completed_at: string; rir: number|null; set_number: number;
-  session_id: string; week_number: number|null; cycle_number: number|null
+  session_id: string; week_number: number|null; cycle_number: number|null; program_id: string|null
 }[]> {
   const supabase = createClient()
   // Fetch sets + sessions in parallel; merge week_number + cycle_number onto
@@ -228,16 +228,18 @@ export async function fetchAllLoggedSets(): Promise<{
       .select('exercise_name, weight_lbs, reps, completed_at, rir, set_number, session_id, is_speed')
       .not('reps', 'is', null)
       .order('completed_at', { ascending: true }),
-    supabase.from('sessions').select('id, week_number, cycle_number'),
+    supabase.from('sessions').select('id, week_number, cycle_number, program_id'),
   ])
   if (error) { console.error(error); return [] }
   const weekMap: Record<string, number> = {}
   const cycleMap: Record<string, number> = {}
-  ;(sessData ?? []).forEach((s: any) => { weekMap[s.id] = s.week_number; cycleMap[s.id] = s.cycle_number ?? 1 })
+  const progMap: Record<string, string|null> = {}
+  ;(sessData ?? []).forEach((s: any) => { weekMap[s.id] = s.week_number; cycleMap[s.id] = s.cycle_number ?? 1; progMap[s.id] = s.program_id ?? null })
   return (setsData ?? []).map((s: any) => ({
     ...s,
     week_number: weekMap[s.session_id] ?? null,
     cycle_number: cycleMap[s.session_id] ?? 1,
+    program_id:   progMap[s.session_id] ?? null,
   })) as any[]
 }
 

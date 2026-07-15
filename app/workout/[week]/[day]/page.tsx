@@ -1282,7 +1282,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     let sessionId = sid
     if (!sessionId) {
       try {
-        const sess = await createSession(wk, key, cycleNumber)
+        const sess = await createSession(wk, key, cycleNumber, activeProgramId)
         sessionId = sess.id
         setSid(sessionId)
       } catch(e:any) {

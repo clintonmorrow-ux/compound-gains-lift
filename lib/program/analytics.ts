@@ -1,4 +1,5 @@
 import { WORKOUTS } from './data'
+import { isTimedExercise } from './timed'
 import { PROGRAM_LIBRARY } from './programLibrary'
 import { EXERCISE_ALTS } from './alternatives'
 
@@ -36,14 +37,21 @@ export const MUSCLE_REGION: Record<string,string> = {
   'Glutes':'glutes', 'Calves':'calves',
 }
 
-export interface RawSet { exercise_name:string; weight_lbs:number|null; reps:number|null; completed_at:string }
+export interface RawSet { exercise_name:string; weight_lbs:number|null; reps:number|null; completed_at:string; is_speed?:boolean|null }
+
+// ── Sanitizers ───────────────────────────────────────────────────────
+// Speed (dynamic-effort) sets are deliberately submaximal and must never
+// read as strength data. Timed holds store SECONDS in the reps column, so
+// they must never enter rep-based strength math or tonnage.
+export const strengthSets = (sets: RawSet[]) =>
+  sets.filter(s => !s.is_speed && !isTimedExercise(s.exercise_name))
 
 const epley = (w:number, r:number) => w * (1 + r/30)
 
 // ── e1RM time series for one exercise (best set per day) ────────────
 export function e1rmSeries(sets: RawSet[], exerciseName: string): { date:string; e1rm:number }[] {
   const byDay: Record<string, number> = {}
-  sets.filter(s => s.exercise_name===exerciseName && s.weight_lbs && s.reps)
+  strengthSets(sets).filter(s => s.exercise_name===exerciseName && s.weight_lbs && s.reps)
       .forEach(s => {
         const day = s.completed_at.slice(0,10)
         const est = Math.round(epley(s.weight_lbs!, s.reps!))
@@ -57,6 +65,7 @@ export function weeklyVolume(sets: RawSet[]): { week:string; volume:number }[] {
   const byWeek: Record<string, number> = {}
   sets.forEach(s => {
     if (!s.weight_lbs || !s.reps) return
+    if (isTimedExercise(s.exercise_name)) return   // seconds ≠ reps; tonnage undefined for holds
     const d = new Date(s.completed_at)
     const onejan = new Date(d.getFullYear(),0,1)
     const wk = Math.ceil((((d.getTime()-onejan.getTime())/86400000)+onejan.getDay()+1)/7)
@@ -75,8 +84,12 @@ export function muscleVolume(sets: RawSet[], days = 30): Record<string, number> 
     if (new Date(s.completed_at).getTime() < cutoff) return
     const muscle = EXERCISE_MUSCLE[s.exercise_name]
     if (!muscle) return
-    // Volume = weight×reps (bodyweight counts reps only)
-    const vol = (s.weight_lbs ?? 0) > 0 ? s.weight_lbs! * s.reps! : s.reps! * 10
+    // Volume = weight×reps (bodyweight counts reps only).
+    // Timed holds log SECONDS in reps → contribute seconds directly
+    // (a 45s plank ≈ one hard set, not 45 reps).
+    const vol = isTimedExercise(s.exercise_name)
+      ? s.reps!
+      : (s.weight_lbs ?? 0) > 0 ? s.weight_lbs! * s.reps! : s.reps! * 10
     byMuscle[muscle] = (byMuscle[muscle] ?? 0) + vol
   })
   return byMuscle
@@ -99,7 +112,7 @@ export function regionIntensity(sets: RawSet[], days = 30): Record<string, numbe
 // ── Personal records (best e1RM ever) per exercise ──────────────────
 export function personalRecords(sets: RawSet[]): { exercise:string; e1rm:number; weight:number; reps:number; date:string }[] {
   const best: Record<string, { e1rm:number; weight:number; reps:number; date:string }> = {}
-  sets.forEach(s => {
+  strengthSets(sets).forEach(s => {
     if (!s.weight_lbs || !s.reps) return
     const est = epley(s.weight_lbs, s.reps)
     if (!best[s.exercise_name] || est > best[s.exercise_name].e1rm) {
@@ -124,7 +137,8 @@ export interface CycleComparison {
   total: number
   avgPctChange: number
 }
-export function cycleComparison(sets: CycleSet[]): CycleComparison | null {
+export function cycleComparison(rawSets: CycleSet[]): CycleComparison | null {
+  const sets = strengthSets(rawSets) as CycleSet[]
   const cycles = Array.from(new Set(sets.map(s => s.cycle_number ?? 1))).sort((a,b)=>a-b)
   if (cycles.length < 2) return null
   const current  = cycles[cycles.length-1]
@@ -157,7 +171,7 @@ export function cycleComparison(sets: CycleSet[]): CycleComparison | null {
 
 export function detectPlateaus(sets: RawSet[]): { exercise:string; sessions:number }[] {
   const out: { exercise:string; sessions:number }[] = []
-  const exercises = Array.from(new Set(sets.map(s => s.exercise_name)))
+  const exercises = Array.from(new Set(strengthSets(sets).map(s => s.exercise_name)))
   exercises.forEach(ex => {
     const series = e1rmSeries(sets, ex)
     if (series.length < 3) return
@@ -175,7 +189,7 @@ export function detectPlateaus(sets: RawSet[]): { exercise:string; sessions:numb
 export function trainingIndex(sets: RawSet[]): number {
   if (sets.length === 0) return 0
   const sessions = new Set(sets.map(s => s.completed_at.slice(0,10))).size
-  const totalVol = sets.reduce((a,s) => a + ((s.weight_lbs??0)*(s.reps??0)), 0)
+  const totalVol = sets.reduce((a,s) => a + (isTimedExercise(s.exercise_name) ? 0 : (s.weight_lbs??0)*(s.reps??0)), 0)
   const prs = personalRecords(sets)
   const avgE1rm = prs.length ? prs.reduce((a,p)=>a+p.e1rm,0)/prs.length : 0
   // Weighted composite, capped at 1000
