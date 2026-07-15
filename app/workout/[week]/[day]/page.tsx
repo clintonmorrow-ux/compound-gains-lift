@@ -1,13 +1,13 @@
 'use client'
 import { use, useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus, Flame, Award, Lightbulb, RotateCcw, Zap } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus, Flame, Award, Lightbulb, RotateCcw, Zap, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getProgram, getWeekConfig } from '@/lib/program/programLibrary'
 import { getTargetWeight, getSetsForWeek, getRepsForWeek, isDumbbellExercise, dumbbellRound, dumbbellStep } from '@/lib/program/calculator'
 import { fetchAllOneRms, fetchSettings, createSession, completeSession,
          logSet, getRecentSetsForExercise, fetchEquipment, fetchExercisePreferences,
-         deleteSession, findIncompleteSession, fetchAllLoggedSets, upsertOneRm } from '@/lib/db'
+         deleteSession, findIncompleteSession, fetchAllLoggedSets, upsertOneRm, updateLoggedSet } from '@/lib/db'
 import { getRestSeconds, fireRestCompleteNotification, requestNotificationPermission, getSupersetPairs } from '@/lib/program/restTimes'
 import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { calculateSmartSuggestion, isLoadableBodyweight, withBodyweight, excludeSpeedSets, type SmartSuggestion } from '@/lib/program/smartSuggestions'
@@ -609,10 +609,80 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
 }
 
 // ── Logged set row (compact) ──────────────────────────────────────
-function LoggedRow({ setNum, weight, reps, rir, speed = false, timed = false }: { setNum:number; weight:number|null; reps:number; rir?:number ; speed?:boolean ; timed?:boolean }) {
+function LoggedRow({ setNum, weight, reps, rir, speed = false, timed = false, editable = false, onSave }: {
+  setNum:number; weight:number|null; reps:number; rir?:number; speed?:boolean; timed?:boolean
+  editable?:boolean; onSave?:(patch:{ weight_lbs:number|null; reps:number; rir?:number|null })=>Promise<void>
+}) {
+  const [editing, setEditing] = useState(false)
+  const [busy, setBusy]       = useState(false)
+  const [eWt, setEWt]         = useState(weight ?? 0)
+  const [eReps, setEReps]     = useState(reps)
+  const [eRir, setERir]       = useState<number|undefined>(rir)
+
+  const openEdit = () => { setEWt(weight ?? 0); setEReps(reps); setERir(rir); setEditing(true) }
+  const save = async () => {
+    if (busy || !onSave) return
+    setBusy(true)
+    try {
+      await onSave({ weight_lbs: eWt > 0 ? eWt : null, reps: Math.max(1, eReps), rir: (speed || timed) ? undefined : eRir ?? null })
+      setEditing(false)
+    } catch {}
+    setBusy(false)
+  }
+
+  if (editing) return (
+    <div style={{ padding:'12px 14px', borderRadius:12,
+      background:'rgba(45,212,160,0.08)', border:'1px solid rgba(45,212,160,0.45)' }}>
+      <p style={{ fontSize:11, fontWeight:700, color:'#2DD4A0', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:10 }}>
+        Editing Set {setNum}
+      </p>
+      <div style={{ display:'flex', gap:10, marginBottom:10 }}>
+        <div style={{ flex:1 }}>
+          <p style={{ fontSize:10, color:'#8E8E93', marginBottom:4 }}>{timed ? 'ADDED LBS' : 'WEIGHT (LBS)'}</p>
+          <input type="number" inputMode="decimal" value={eWt || ''}
+            onChange={e => setEWt(parseFloat(e.target.value) || 0)}
+            style={{ width:'100%', height:42, borderRadius:10, background:'rgba(118,118,128,0.16)',
+              border:'0.5px solid rgba(84,84,88,0.4)', color:'#fff', fontSize:17, fontWeight:700,
+              textAlign:'center', outline:'none' }} />
+        </div>
+        <div style={{ flex:1 }}>
+          <p style={{ fontSize:10, color:'#8E8E93', marginBottom:4 }}>{timed ? 'SECONDS' : 'REPS'}</p>
+          <input type="number" inputMode="numeric" value={eReps || ''}
+            onChange={e => setEReps(parseInt(e.target.value) || 0)}
+            style={{ width:'100%', height:42, borderRadius:10, background:'rgba(118,118,128,0.16)',
+              border:'0.5px solid rgba(84,84,88,0.4)', color:'#fff', fontSize:17, fontWeight:700,
+              textAlign:'center', outline:'none' }} />
+        </div>
+      </div>
+      {!speed && !timed && (
+        <div style={{ marginBottom:12 }}>
+          <p style={{ fontSize:10, color:'#8E8E93', marginBottom:6 }}>RIR</p>
+          <div style={{ display:'flex', gap:6 }}>
+            {[0,1,2,3,4].map(v => (
+              <button key={v} onClick={()=>setERir(v)} style={{ flex:1, height:34, borderRadius:8,
+                background: eRir===v ? 'rgba(45,212,160,0.25)' : 'rgba(118,118,128,0.15)',
+                border: eRir===v ? '1px solid rgba(45,212,160,0.6)' : '0.5px solid transparent',
+                color: eRir===v ? '#2DD4A0' : '#8E8E93', fontSize:13, fontWeight:700 }}>{v}</button>
+            ))}
+          </div>
+        </div>
+      )}
+      <div style={{ display:'flex', gap:8 }}>
+        <button onClick={()=>setEditing(false)} style={{ flex:1, height:42, borderRadius:10,
+          background:'rgba(118,118,128,0.16)', color:'#8E8E93', fontSize:14, fontWeight:700 }}>Cancel</button>
+        <button onClick={save} disabled={busy} style={{ flex:2, height:42, borderRadius:10,
+          background:'#2DD4A0', color:'#04161E', fontSize:14, fontWeight:800, opacity: busy ? 0.6 : 1 }}>
+          {busy ? 'Saving…' : 'Save Changes'}
+        </button>
+      </div>
+    </div>
+  )
+
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:12, height:44, paddingInline:14,
-      borderRadius:12, background:'rgba(45,212,160,0.1)', border:'0.5px solid rgba(45,212,160,0.35)' }}>
+    <div onClick={editable ? openEdit : undefined}
+      style={{ display:'flex', alignItems:'center', gap:12, height:44, paddingInline:14,
+      borderRadius:12, background:'rgba(45,212,160,0.1)', border:'0.5px solid rgba(45,212,160,0.35)',
+      cursor: editable ? 'pointer' : 'default' }}>
       <div style={{ width:24, height:24, borderRadius:'50%', background: speed ? '#FFD60A' : '#2DD4A0',
         display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
         {speed ? <Zap size={12} strokeWidth={2.6} style={{ color:'#000' }} /> : <Check size={13} strokeWidth={3} style={{ color:'#000' }} />}
@@ -628,6 +698,7 @@ function LoggedRow({ setNum, weight, reps, rir, speed = false, timed = false }: 
           ? <span style={{ color:'rgba(255,214,10,0.75)' }}> · speed</span>
           : !timed && rir !== undefined && <span style={{ color:'rgba(45,212,160,0.8)' }}> · RIR {rir}</span>}
       </span>
+      {editable && <Pencil size={13} style={{ color:'rgba(142,142,147,0.7)', flexShrink:0 }} />}
     </div>
   )
 }
@@ -1178,6 +1249,32 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     }
   }
 
+  // Edit a previously logged set mid-workout (fix mis-entered weight/reps/RIR).
+  // Optimistic local update; server update with revert on failure.
+  const handleEditSet = async (exName:string, setId:string, patch:{ weight_lbs:number|null; reps:number; rir?:number|null }) => {
+    let prevRow:any = null
+    setSets(prev => ({
+      ...prev,
+      [exName]: (prev[exName] ?? []).map(s => {
+        if (String(s.id) !== setId) return s
+        prevRow = s
+        return { ...s, weight_lbs: patch.weight_lbs, reps: patch.reps, ...(patch.rir !== undefined ? { rir: patch.rir } : {}) }
+      })
+    }))
+    try {
+      const updates:any = { weight_lbs: patch.weight_lbs, reps: patch.reps }
+      if (patch.rir !== undefined) updates.rir = patch.rir
+      await updateLoggedSet(setId, updates)
+    } catch (e) {
+      // revert on failure so the screen never lies about what's stored
+      if (prevRow) setSets(prev => ({
+        ...prev,
+        [exName]: (prev[exName] ?? []).map(s => String(s.id) === setId ? prevRow : s)
+      }))
+      throw e
+    }
+  }
+
   const handleLog = async (origEx:Exercise, setNum:number, weight:number|null, reps:number, rir:number, tempo:string='Standard') => {
     // Lazy session creation — only hit the DB when user actually logs a set
     let sessionId = sid
@@ -1603,7 +1700,9 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
                   {/* Logged sets */}
                   {exLogged.map((l:any, i:number) => (
-                    <LoggedRow key={i} setNum={i+1} weight={l.weight_lbs} reps={l.reps} rir={l.rir} speed={isSpeedEx || !!l.is_speed} timed={isTimedEx} />
+                    <LoggedRow key={l.id ?? i} setNum={i+1} weight={l.weight_lbs} reps={l.reps} rir={l.rir} speed={isSpeedEx || !!l.is_speed} timed={isTimedEx}
+                      editable={!!l.id && !String(l.id).startsWith('pending')}
+                      onSave={(patch) => handleEditSet(origEx.name, String(l.id), patch)} />
                   ))}
 
                   {/* Active set card — timed holds get the countdown card */}

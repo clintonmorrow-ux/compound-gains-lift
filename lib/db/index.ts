@@ -261,7 +261,7 @@ export async function fetchSessionWithSets(sessionId: string) {
 
 export async function updateLoggedSet(
   setId: string,
-  updates: { weight_lbs?: number | null; reps?: number | null }
+  updates: { weight_lbs?: number | null; reps?: number | null; rir?: number | null }
 ) {
   const supabase = createClient()
   const { data, error } = await supabase
