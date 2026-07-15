@@ -831,14 +831,16 @@ function countdownBeep(final = false) {
   try {
     const o = ctx.createOscillator()
     const g = ctx.createGain()
-    o.type = 'sine'
+    // Triangle wave cuts through music far better than sine at the same
+    // gain, and 0.95 puts the chirp at media volume instead of ~9 dB under.
+    o.type = 'triangle'
     o.frequency.value = final ? 1175 : 880   // last beep a step higher: GO
     const t = ctx.currentTime
     g.gain.setValueAtTime(0.0001, t)
-    g.gain.exponentialRampToValueAtTime(0.35, t + 0.012)
-    g.gain.exponentialRampToValueAtTime(0.0001, t + (final ? 0.28 : 0.15))
+    g.gain.exponentialRampToValueAtTime(0.95, t + 0.012)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + (final ? 0.3 : 0.18))
     o.connect(g); g.connect(ctx.destination)
-    o.start(t); o.stop(t + (final ? 0.3 : 0.17))
+    o.start(t); o.stop(t + (final ? 0.32 : 0.2))
   } catch {}
 }
 
@@ -857,9 +859,9 @@ function RestPill({ seconds, exName, onDone, onRestPause }: {
     const tick = () => {
       const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000))
       setRem(remaining)
-      // 3-2-1 countdown chirps (each second beeps exactly once; the guard
+      // 5-4-3-2-1 countdown chirps (each second beeps exactly once; the guard
       // also prevents a burst if the phone was locked through the window)
-      if (remaining >= 1 && remaining <= 3 && lastBeepedAt.current !== remaining) {
+      if (remaining >= 1 && remaining <= 5 && lastBeepedAt.current !== remaining) {
         lastBeepedAt.current = remaining
         countdownBeep(remaining === 1)
       }
