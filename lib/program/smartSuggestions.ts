@@ -165,3 +165,22 @@ export function withBodyweight<T extends { weight_lbs: number }>(sets: T[], body
   if (!bodyWeight || bodyWeight <= 0) return sets
   return sets.map(s => ({ ...s, weight_lbs: (s.weight_lbs ?? 0) + bodyWeight }))
 }
+
+
+// ── TM re-baseline rule (cycle end / program switch / manual sync) ─────
+// Sub-max prescriptions put a structural ceiling on logged-derived e1RM:
+// perfectly completing "65% × 12 @ RIR 2" derives ~95% of the true TM
+// (prescriptions carry a completion buffer, Epley compresses high-rep
+// sets, and the recency average includes fatigued later sets). For
+// exercises that only appear on hypertrophy days, derived therefore
+// hovers ~5-8% under TM FOREVER even at perfect performance — so adopting
+// the derived value unconditionally ratchets the TM downward every cycle.
+//
+// Rule: adopt upward moves; HOLD the TM inside the sub-max artifact band;
+// only adopt a downward move beyond it (a genuine regression).
+export function resolveNewTm(oldTm: number, derived: number): number {
+  if (!oldTm || oldTm <= 0) return derived            // no prior TM — take the evidence
+  if (derived >= oldTm) return derived                // strength up — always adopt
+  if (derived >= oldTm * 0.92) return oldTm           // inside artifact band — hold
+  return derived                                      // real regression — adopt honestly
+}

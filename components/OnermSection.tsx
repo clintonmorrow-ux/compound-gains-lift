@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp, Check, RotateCcw, TrendingUp } from 'lucide-react'
 import { getProgram } from '@/lib/program/programLibrary'
 import { fetchAllOneRms, upsertOneRm, fetchAllLoggedSets, fetchSettings, fetchExercisePreferences } from '@/lib/db'
-import { loggedDerivedOneRm, isLoadableBodyweight, withBodyweight, excludeSpeedSets } from '@/lib/program/smartSuggestions'
+import { loggedDerivedOneRm, isLoadableBodyweight, withBodyweight, excludeSpeedSets, resolveNewTm } from '@/lib/program/smartSuggestions'
 import type { UserOneRm } from '@/types'
 
 const WC: Record<string,string> = {
@@ -62,8 +62,11 @@ export default function OnermSection({ programId }: { programId?: string }) {
       const next = { ...rms }
       let updated = 0
       for (const [name, est] of Object.entries(derived)) {
-        if (est > 0 && String(est) !== rms[name]) {
-          await upsertOneRm(name, est); next[name] = String(est); updated++
+        if (est <= 0) continue
+        const oldTm = parseFloat(rms[name] ?? '0') || 0
+        const resolved = resolveNewTm(oldTm, est)   // hold inside the sub-max artifact band
+        if (resolved !== oldTm) {
+          await upsertOneRm(name, resolved); next[name] = String(resolved); updated++
         }
       }
       setRms(next)
@@ -228,7 +231,9 @@ export default function OnermSection({ programId }: { programId?: string }) {
                               {isBig
                                 ? (hasGain
                                   ? `↑ ${Math.round(diff)} lbs gain — syncs at cycle end`
-                                  : `↓ ${Math.round(-diff)} lbs below TM — syncs at cycle end`)
+                                  : loggedEst >= tmVal * 0.92
+                                    ? `↓ ${Math.round(-diff)} lbs — expected on sub-max work; TM holds`
+                                    : `↓ ${Math.round(-diff)} lbs below TM — adjusts at cycle end`)
                                 : diff > 0.5 ? `↑ ${Math.round(diff)} lbs ahead`
                                 : diff < -0.5 ? `↓ ${Math.round(-diff)} lbs behind`
                                 : 'tracking with TM'}

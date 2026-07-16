@@ -10,7 +10,7 @@ import { getProgram, getWeekConfig } from '@/lib/program/programLibrary'
 import { fetchSettings, updateSettings, fetchRecentSessions, fetchAllOneRms, fetchAllLoggedSets, fetchCoachPrefs, fetchCycleStats, upsertOneRm } from '@/lib/db'
 import { detectDeloadReadiness, type CoachSet } from '@/lib/program/coach'
 import { recommendReintro, reintroActive, reintroDaysLeft, startReintroPatch, type ReintroPlan } from '@/lib/program/reintro'
-import { loggedDerivedOneRm, isLoadableBodyweight, withBodyweight, excludeSpeedSets } from '@/lib/program/smartSuggestions'
+import { loggedDerivedOneRm, isLoadableBodyweight, withBodyweight, excludeSpeedSets, resolveNewTm } from '@/lib/program/smartSuggestions'
 import CycleComplete from '@/components/CycleComplete'
 import { Battery, Zap } from 'lucide-react'
 
@@ -160,6 +160,8 @@ export default function Dashboard() {
     // just finished, using the same logged-derived estimate the engine uses.
     try {
       const __bw = (await fetchSettings()).body_weight_lbs ?? 0
+      const __oldTms: Record<string,number> = {}
+      ;(await fetchAllOneRms()).forEach((o:any) => { __oldTms[o.exercise_name] = o.weight_lbs })
       const sets = (cycleStats?.sets ?? []) as any[]
       const byEx: Record<string, any[]> = {}
       excludeSpeedSets(sets).filter(s => s.weight_lbs > 0 && s.reps > 0).forEach(s => { (byEx[s.exercise_name] ??= []).push(s) })
@@ -168,8 +170,10 @@ export default function Dashboard() {
         arr.sort((a, b) => (a.completed_at < b.completed_at ? 1 : -1))  // most recent first
         // Weighted dips/pull-ups: TM is total system weight (body + belt)
         const basis = arr.slice(0, 15)
-        const tm = loggedDerivedOneRm((isLoadableBodyweight(name) && __bw > 0) ? withBodyweight(basis, __bw) : basis)
-        if (tm > 0) await upsertOneRm(name, tm)
+        const derived = loggedDerivedOneRm((isLoadableBodyweight(name) && __bw > 0) ? withBodyweight(basis, __bw) : basis)
+        if (derived <= 0) continue
+        const tm = resolveNewTm(__oldTms[name] ?? 0, derived)
+        if (tm !== (__oldTms[name] ?? 0) || !(name in __oldTms)) await upsertOneRm(name, tm)
       }
     } catch (e) { console.error('cycle re-baseline:', e) }
     setCycleNumber(next)
