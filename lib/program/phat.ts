@@ -79,6 +79,7 @@ export const PHAT_WORKOUTS: Workout[] = [
       { name: 'Dumbbell Row',                  muscle: 'Back',       type: 'secondary', cue: 'Brace on bench · elbow to ceiling · full stretch at bottom · no hip rotation' },
       { name: 'Seated DB Shoulder Press',      muscle: 'Shoulders',  type: 'secondary', cue: 'Hypertrophy session — lighter than power day, higher reps, controlled eccentric throughout' },
       { name: 'DB Lateral Raise',              muscle: 'Side Delts', type: 'isolation', cue: '3-sec eccentric · slight lean forward · thumb down at top · no momentum' },
+      { name: 'Machine Lateral Raise',         muscle: 'Side Delts', type: 'isolation', cue: 'Supported by the machine · raise smoothly to shoulder height · brings weekly side-delt volume to a hypertrophy-effective dose (pressing alone leaves them under-trained)' },
       { name: 'Face Pull',                     muscle: 'Rear Delts', type: 'isolation', cue: 'Pull to face · elbows high · externally rotate at end · squeeze and hold' },
     ],
   },

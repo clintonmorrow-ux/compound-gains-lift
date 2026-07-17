@@ -33,6 +33,14 @@ export function getRestSeconds(
   programId?: string,
   dayType?: DayType,
 ): number {
+  // RP: pure hypertrophy at 1-3 RIR — compounds recover in ~2:15, isolation
+  // in ~60s. Without this, RP fell to the heavier defaults and its MRV-week
+  // volume (set ramps peaking near 6 sets/lift) blew sessions past 100 min.
+  if (programId === 'rp-hypertrophy') {
+    const isDeload = ((weekNumber - 1) % 4) === 3
+    if (isDeload) return { primary: 90, secondary: 75, isolation: 60 }[exerciseType]
+    return { primary: 135, secondary: 105, isolation: 60 }[exerciseType]
+  }
   // PHAT uses fundamentally different rest prescriptions per day type
   if (programId === 'layne-norton-phat') {
     const cfg = WEEK_CONFIG[weekNumber]

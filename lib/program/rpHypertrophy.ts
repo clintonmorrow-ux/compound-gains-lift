@@ -126,7 +126,9 @@ export function getRPWeekConfig(week: number, _dayType?: DayType): WeekConfig {
   const wk = ((week - 1) % 4)   // 0,1,2 for the three accumulation weeks
   const meso = Math.floor((week - 1) / 4) // 0,1,2 — later blocks add a touch more
   const rir = [3, 2, 1][wk] - (meso > 0 ? 0 : 0)  // 3 → 2 → 1 within block
-  const baseSets = { primary: 3 + wk + meso, secondary: 3 + wk, isolation: 2 + wk }
+  // Set ramp toward MRV, CAPPED so peak-volume weeks stay humanly schedulable
+  // (uncapped, meso-3 peak hit 7 sets/primary and 100+ minute sessions).
+  const baseSets = { primary: Math.min(3 + wk + meso, 6), secondary: Math.min(3 + wk, 4), isolation: Math.min(2 + wk, 3) }
   const phaseNames = ['Accumulation', 'Overreach', 'Peak Volume']
 
   return {
