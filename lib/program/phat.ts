@@ -21,7 +21,7 @@ export const PHAT_WORKOUTS: Workout[] = [
     shortName: 'Upper Power',
     day: 'Day 1',
     focus: 'Back · Chest · Shoulders · Biceps · Triceps',
-    restTimes: '3–4 min compounds · 90 sec accessory',
+    restTimes: '4 min power movements · ~2.5 min assistance',
     duration: '~60 min',
     dayType: 'power',
     exercises: [
@@ -40,13 +40,13 @@ export const PHAT_WORKOUTS: Workout[] = [
     shortName: 'Lower Power',
     day: 'Day 2',
     focus: 'Quads · Hamstrings · Calves',
-    restTimes: '3–4 min compounds · 90–120 sec accessory',
+    restTimes: '4 min power movements · ~2.5 min assistance',
     duration: '~58 min',
     dayType: 'power',
     exercises: [
       { name: 'Barbell Back Squat',            muscle: 'Quads',      type: 'primary',   cue: 'Brace hard · break at hips and knees simultaneously · drive knees out · sit to depth — heaviest quad movement of the week' },
       { name: 'Leg Press',                     muscle: 'Quads',      type: 'secondary', cue: 'Feet low and narrow · full ROM · don\'t lock out at top' },
-      { name: 'Romanian Deadlift (RDL)',        muscle: 'Hamstrings', type: 'primary',   cue: 'Push hips back hard · bar stays close · emphasise the stretched position — lengthened hamstring is the primary hypertrophic driver' },
+      { name: 'Romanian Deadlift (RDL)',        muscle: 'Hamstrings', type: 'secondary', cue: 'Assistance hinge (First Edition: one power movement per lower session) · push hips back hard · bar stays close · emphasise the stretched position' },
       { name: 'Lying Leg Curl',                muscle: 'Hamstrings', type: 'secondary', cue: 'Slow eccentric · plantarflex foot at peak contraction · full stretch at bottom' },
       { name: 'Leg Extension',                 muscle: 'Quads',      type: 'isolation', cue: 'Pause at the top · slow 3-sec eccentric · high mind-muscle connection' },
       { name: 'Standing Calf Raise',           muscle: 'Calves',     type: 'secondary', cue: 'Full dorsiflexion stretch at bottom · pause at top · gastrocnemius dominant' },
@@ -69,11 +69,11 @@ export const PHAT_WORKOUTS: Workout[] = [
     shortName: 'Back & Shoulders',
     day: 'Day 3',
     focus: 'Back · Rear Delts · Side Delts · Shoulders',
-    restTimes: '90 sec compounds · 60 sec isolation',
+    restTimes: '≤3 min volume work · 1–2 min hypertrophy work',
     duration: '~60 min',
     dayType: 'hypertrophy',
     exercises: [
-      { name: 'Barbell Bent-Over Row',         muscle: 'Back',       type: 'primary',   cue: 'Second back session — moderate load, full ROM, control the eccentric. Aim for more total reps than power day at ~65% of power day weight' },
+      { name: 'Barbell Bent-Over Row',         muscle: 'Back',       type: 'primary',   cue: 'VOLUME WORK (First Edition): ~85% of your power-day weight · 4×8–10 · drive every concentric as FAST as possible · if you cannot complete the reps with good form, it is too heavy' },
       { name: 'Lat Pulldown',                  muscle: 'Back',       type: 'secondary', cue: 'Wide grip · pull to chest · full arm extension at top — emphasise the lengthened stretch position at the top' },
       { name: 'Seated Cable Row',              muscle: 'Back',       type: 'secondary', cue: 'Tall spine · drive elbows back · squeeze at end ROM · 2-sec hold at contraction' },
       { name: 'Dumbbell Row',                  muscle: 'Back',       type: 'secondary', cue: 'Brace on bench · elbow to ceiling · full stretch at bottom · no hip rotation' },
@@ -89,11 +89,11 @@ export const PHAT_WORKOUTS: Workout[] = [
     shortName: 'Lower Hyper',
     day: 'Day 4',
     focus: 'Quads · Hamstrings · Calves',
-    restTimes: '90 sec compounds · 60 sec isolation',
+    restTimes: '≤3 min volume work · 1–2 min hypertrophy work',
     duration: '~60 min',
     dayType: 'hypertrophy',
     exercises: [
-      { name: 'Barbell Back Squat',            muscle: 'Quads',      type: 'primary',   cue: 'SPEED SQUATS (Norton dynamic effort): ~65–70% of your power-day weight · 3 explosive reps per set · descend controlled, drive UP as fast as possible · stop the set the moment bar speed slows' },
+      { name: 'Barbell Back Squat',            muscle: 'Quads',      type: 'primary',   cue: 'VOLUME WORK (First Edition): ~85% of your power-day weight · 4×8–10 · controlled down, drive UP as fast as possible · too heavy to finish cleanly means too heavy' },
       { name: 'Leg Press',                     muscle: 'Quads',      type: 'secondary', cue: 'Full ROM · feet low and narrow · 2-sec eccentric · don\'t lock out' },
       { name: 'Leg Extension',                 muscle: 'Quads',      type: 'isolation', cue: 'Pause at top 2 sec · 3-sec eccentric · high reps for maximum pump and metabolic stress' },
       { name: 'Romanian Deadlift (RDL)',        muscle: 'Hamstrings', type: 'secondary', cue: 'Hypertrophy session — emphasise the stretch even more than power day. Pause at bottom of each rep' },
@@ -108,11 +108,11 @@ export const PHAT_WORKOUTS: Workout[] = [
     shortName: 'Chest & Arms',
     day: 'Day 5',
     focus: 'Chest · Biceps · Triceps',
-    restTimes: '90 sec compounds · 60 sec isolation',
+    restTimes: '≤3 min volume work · 1–2 min hypertrophy work',
     duration: '~58 min',
     dayType: 'hypertrophy',
     exercises: [
-      { name: 'Barbell Bench Press',           muscle: 'Chest',     type: 'primary',   cue: 'SPEED BENCH (Norton dynamic effort): ~65–70% of your power-day weight · 3 explosive reps per set · controlled down, explode UP · stop the set the moment bar speed drops' },
+      { name: 'Barbell Bench Press',           muscle: 'Chest',     type: 'primary',   cue: 'VOLUME WORK (First Edition): ~85% of your power-day weight · 4×8–10 · controlled down, explode UP on every rep · full clean completion or drop the load' },
       { name: 'Incline Dumbbell Press',        muscle: 'Chest',     type: 'secondary', cue: 'Full ROM · pause at full pec stretch · wrists neutral · elbows ~45° from body' },
       { name: 'Cable Chest Fly',              muscle: 'Chest',     type: 'isolation', cue: 'Wide arc · pause at full stretch — lengthened position is the primary hypertrophic driver. High reps, feel the chest working' },
       { name: 'Barbell Curl',                  muscle: 'Biceps',    type: 'secondary', cue: 'Hypertrophy session — elbows fixed, full ROM, supinate at top, 2-sec eccentric' },
@@ -141,7 +141,7 @@ export const PHAT_WORKOUTS: Workout[] = [
 const DELOAD: (power: boolean) => WeekConfig = (power) => ({
   sets:        { primary: 2, secondary: 2, isolation: 2 },
   reps:        power
-                 ? { primary: '3–5', secondary: '3–5', isolation: '5–8' }
+                 ? { primary: '3–5', secondary: '6–10', isolation: '6–10' }
                  : { primary: '10–12', secondary: '10–12', isolation: '12–15' },
   rir:         4,
   phase:       'Deload',
@@ -161,47 +161,47 @@ export function getPHATWeekConfig(week: number, dayType?: DayType): WeekConfig {
   // Phase 1 — Accumulation (Weeks 1–3): build work capacity
   if (week <= 3) return isPower
     ? { sets: { primary: 3, secondary: 2, isolation: 2 },
-        reps: { primary: '3–5', secondary: '3–5', isolation: '5–8' },
+        reps: { primary: '3–5', secondary: '6–10', isolation: '6–10' },
         rir: 2, phase: 'Phase 1 — Power Accumulation',
         isDeload: false,
-        note: 'Build your power base. Conservative loads to perfect mechanics and establish baseline strength.',
-        percentages: { primary: 0.80, secondary: 0.78, isolation: 0.75 } }
-    : { sets: { primary: 5, secondary: 3, isolation: 3 },
-        reps: { primary: '3 — explosive', secondary: '10–12', isolation: '12–15' },
+        note: 'Build your power base: 3–5 heavy reps on the power movements, assistance at 6–10 (First Edition). Conservative loads, perfect mechanics.',
+        percentages: { primary: 0.80, secondary: 0.72, isolation: 0.68 } }
+    : { sets: { primary: 4, secondary: 3, isolation: 3 },
+        reps: { primary: '8–10 · fast concentric', secondary: '10–12', isolation: '12–15' },
         rir: 2, phase: 'Phase 1 — Hypertrophy Accumulation',
         isDeload: false,
-        note: 'Speed work first (explosive triples at ~65–70% of power-day weight), then high-volume hypertrophy work. Full ROM, muscle feel over load.',
-        percentages: { primary: 0.55, secondary: 0.65, isolation: 0.62 } }
+        note: 'Volume work first (First Edition): 4×8–10 at ~85% of your power-day weight, every concentric as fast as possible, ≤3 min rest. Then bodybuilding work — full ROM, muscle feel over load. No failure in the first weeks.',
+        percentages: { primary: 0.68, secondary: 0.65, isolation: 0.62 } }
 
   // Phase 2 — Intensification (Weeks 5–7): increase load and intensity
   if (week <= 7) return isPower
     ? { sets: { primary: 3, secondary: 2, isolation: 2 },
-        reps: { primary: '3–5', secondary: '3–5', isolation: '5–8' },
+        reps: { primary: '3–5', secondary: '6–10', isolation: '6–10' },
         rir: 1, phase: 'Phase 2 — Power Intensification',
         isDeload: false,
-        note: 'Increase loads significantly. Leave only 1 rep in reserve on your last power set.',
-        percentages: { primary: 0.84, secondary: 0.82, isolation: 0.78 } }
-    : { sets: { primary: 6, secondary: 3, isolation: 3 },
-        reps: { primary: '3 — explosive', secondary: '10–15', isolation: '12–20' },
+        note: 'Increase loads significantly. Leave only 1 rep in reserve on your last power set; assistance stays at 6–10.',
+        percentages: { primary: 0.84, secondary: 0.74, isolation: 0.70 } }
+    : { sets: { primary: 4, secondary: 3, isolation: 3 },
+        reps: { primary: '8–10 · fast concentric', secondary: '10–15', isolation: '12–20' },
         rir: 2, phase: 'Phase 2 — Hypertrophy Intensification',
         isDeload: false,
-        note: 'Six explosive triples on the speed movement, then hypertrophy work with slow eccentrics and strong mind-muscle connection.',
-        percentages: { primary: 0.58, secondary: 0.68, isolation: 0.64 } }
+        note: 'Volume work first (4×8–10 @ ~85% of power weight, fast concentric), then hypertrophy work with slow eccentrics and strong mind-muscle connection. Failure only on the final 1–2 sets of an exercise.',
+        percentages: { primary: 0.71, secondary: 0.68, isolation: 0.64 } }
 
   // Phase 3 — Peak (Weeks 9–11): peak strength and size expression
   return isPower
     ? { sets: { primary: 4, secondary: 2, isolation: 2 },
-        reps: { primary: '2–4', secondary: '3–5', isolation: '5–8' },
+        reps: { primary: '2–4', secondary: '6–10', isolation: '6–10' },
         rir: 1, phase: 'Phase 3 — Power Peak',
         isDeload: false,
-        note: 'Heaviest loads of the cycle. Push your 3-5RM to new levels.',
-        percentages: { primary: 0.87, secondary: 0.84, isolation: 0.80 } }
-    : { sets: { primary: 6, secondary: 3, isolation: 3 },
-        reps: { primary: '3 — explosive', secondary: '8–12', isolation: '10–15' },
+        note: 'Heaviest loads of the cycle. Push your 3-5RM to new levels; assistance stays at 6–10.',
+        percentages: { primary: 0.87, secondary: 0.76, isolation: 0.72 } }
+    : { sets: { primary: 4, secondary: 3, isolation: 3 },
+        reps: { primary: '8–10 · fast concentric', secondary: '8–12', isolation: '10–15' },
         rir: 1, phase: 'Phase 3 — Hypertrophy Peak',
         isDeload: false,
-        note: 'Speed work at its heaviest (still explosive — quality over load), then hypertrophy work at higher intensity for maximum mechanical tension.',
-        percentages: { primary: 0.60, secondary: 0.71, isolation: 0.68 } }
+        note: 'Volume work at its heaviest (4×8–10 @ ~85% of power weight — bar speed is still the intent), then hypertrophy work at higher intensity for maximum mechanical tension.',
+        percentages: { primary: 0.74, secondary: 0.71, isolation: 0.68 } }
 }
 
 // ── Program export ────────────────────────────────────────────────────────────
