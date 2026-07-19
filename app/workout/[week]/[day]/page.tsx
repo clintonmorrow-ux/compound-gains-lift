@@ -820,28 +820,50 @@ function ensureBeepCtx() {
   try {
     const AC = window.AudioContext ?? (window as any).webkitAudioContext
     if (!AC) return null
-    if (!_beepCtx) _beepCtx = new AC()
-    if (_beepCtx.state === 'suspended') _beepCtx.resume()
+    // iOS can CLOSE the context after interruptions — recreate, don't reuse a corpse
+    if (!_beepCtx || _beepCtx.state === 'closed') _beepCtx = new AC()
+    if (_beepCtx.state === 'suspended') _beepCtx.resume().catch(() => {})
     return _beepCtx
   } catch { return null }
+}
+// One-tap re-priming: every rest-complete push notification INTERRUPTS web
+// audio on iOS (suspending the context), which silently killed the beeps for
+// whichever exercise came next. Any tap is a user gesture that can revive it,
+// so the workout page re-primes on every pointerdown (cheap: state check).
+function primeBeepAudio() {
+  const ctx = ensureBeepCtx()
+  if (!ctx || ctx.state !== 'running') return
+  try {
+    // 1-sample silent buffer: the canonical iOS unlock, keeps the graph hot
+    const b = ctx.createBuffer(1, 1, 22050)
+    const s = ctx.createBufferSource()
+    s.buffer = b; s.connect(ctx.destination); s.start(0)
+  } catch {}
 }
 function countdownBeep(final = false) {
   const ctx = ensureBeepCtx()
   if (!ctx) return
-  try {
-    const o = ctx.createOscillator()
-    const g = ctx.createGain()
-    // Triangle wave cuts through music far better than sine at the same
-    // gain, and 0.95 puts the chirp at media volume instead of ~9 dB under.
-    o.type = 'triangle'
-    o.frequency.value = final ? 1175 : 880   // last beep a step higher: GO
-    const t = ctx.currentTime
-    g.gain.setValueAtTime(0.0001, t)
-    g.gain.exponentialRampToValueAtTime(0.95, t + 0.012)
-    g.gain.exponentialRampToValueAtTime(0.0001, t + (final ? 0.3 : 0.18))
-    o.connect(g); g.connect(ctx.destination)
-    o.start(t); o.stop(t + (final ? 0.32 : 0.2))
-  } catch {}
+  const play = () => {
+    try {
+      const o = ctx.createOscillator()
+      const g = ctx.createGain()
+      // Triangle wave cuts through music far better than sine at the same
+      // gain, and 0.95 puts the chirp at media volume instead of ~9 dB under.
+      o.type = 'triangle'
+      o.frequency.value = final ? 1175 : 880   // last beep a step higher: GO
+      const t = ctx.currentTime
+      g.gain.setValueAtTime(0.0001, t)
+      g.gain.exponentialRampToValueAtTime(0.95, t + 0.012)
+      g.gain.exponentialRampToValueAtTime(0.0001, t + (final ? 0.3 : 0.18))
+      o.connect(g); g.connect(ctx.destination)
+      o.start(t); o.stop(t + (final ? 0.32 : 0.2))
+    } catch {}
+  }
+  // NEVER schedule on a non-running context: a suspended context's clock is
+  // frozen, so tones scheduled 'now' land in the past when it resumes —
+  // that race is why some rests beeped and others were silent.
+  if (ctx.state === 'running') play()
+  else { try { ctx.resume().then(play).catch(() => {}) } catch {} }
 }
 
 // ── Rest Timer ────────────────────────────────────────────────────
@@ -1019,6 +1041,13 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const [rms,       setRms]       = useState<Record<string,number>>({})
   const [round,     setRound]     = useState(5)
   const [bodyWt,    setBodyWt]    = useState(0)   // athlete body weight (weighted dips/pull-ups)
+
+  // Revive beep audio after iOS notification interruptions — every tap re-primes
+  useEffect(() => {
+    const prime = () => primeBeepAudio()
+    document.addEventListener('pointerdown', prime, { passive: true })
+    return () => document.removeEventListener('pointerdown', prime)
+  }, [])
   const [equipment, setEquipment] = useState<string[]>(['barbell','dumbbells','cables','machines'])
   const [sid,       setSid]       = useState<string|null>(null)
   const [sets,      setSets]      = useState<Record<string,any[]>>({})
