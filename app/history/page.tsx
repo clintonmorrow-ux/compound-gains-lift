@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Dumbbell } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { fetchRecentSessions } from '@/lib/db'
 import { WORKOUTS } from '@/lib/program/data'
+import { getProgram } from '@/lib/program/programLibrary'
 import type { WorkoutKey } from '@/types'
 
 const WC: Record<string,string> = { A:'var(--wkt-a)', B:'var(--wkt-b)', C:'var(--wkt-c)', D:'var(--wkt-d)' }
@@ -90,7 +91,12 @@ export default function HistoryPage() {
                     <p className="ios-section-label">{bucket.label}</p>
                     <div className="ios-group">
                       {bucket.items.map((s:any, j:number) => {
-                        const wkt  = WORKOUTS.find(w => w.key === s.workout_key)
+                        // Resolve the day name from the SESSION'S OWN program —
+                        // resolving against a fixed list titled PHAT upper days
+                        // with Galpin leg-day names. Legacy sessions (null
+                        // program_id) fall back to the legacy list.
+                        const prog = (s as any).program_id ? getProgram((s as any).program_id) : null
+                        const wkt  = (prog?.workouts ?? WORKOUTS).find(w => w.key === s.workout_key)
                         const c    = WC[s.workout_key as WorkoutKey] ?? 'var(--accent)'
                         const d    = dur(s.started_at, s.completed_at)
                         const sets = s.logged_sets?.length ?? 0

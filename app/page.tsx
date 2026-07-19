@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, CheckCircle2, ArrowRight, RotateCcw } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { createClient } from '@/lib/supabase/client'
-import { WEEK_CONFIG, PHASE_LABELS } from '@/lib/program/data'
+
 import { getProgram, getWeekConfig } from '@/lib/program/programLibrary'
 import { fetchSettings, updateSettings, fetchRecentSessions, fetchAllOneRms, fetchAllLoggedSets, fetchCoachPrefs, fetchCycleStats, upsertOneRm } from '@/lib/db'
 import { detectDeloadReadiness, type CoachSet } from '@/lib/program/coach'
@@ -242,7 +242,7 @@ export default function Dashboard() {
               <span style={{ fontSize:9, fontWeight:700, color:'rgba(142,142,147,0.5)' }}>/ 12</span>
             </div>
             <p style={{ fontSize:10, color:'#8E8E93', marginTop:1, letterSpacing:'0.02em' }}>
-              {PHASE_LABELS[week]}
+              {cfg.phase}
             </p>
           </div>
         </div>
@@ -337,7 +337,7 @@ export default function Dashboard() {
             </p>
             <div className="flex items-center gap-2 mt-1.5">
               <span className={`${PC[week]} t-caption2 sf-semibold px-2.5 py-0.5 rounded-full`} style={{ letterSpacing:'0.02em' }}>
-                {PHASE_LABELS[week]}
+                {cfg.phase}
               </span>
             </div>
           </div>

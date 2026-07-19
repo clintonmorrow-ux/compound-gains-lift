@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronLeft, Check, Trash2, Plus } from 'lucide-react'
 import { fetchSessionWithSets, updateLoggedSet, deleteLoggedSet, deleteSession } from '@/lib/db'
 import { WORKOUTS } from '@/lib/program/data'
+import { getProgram } from '@/lib/program/programLibrary'
 import type { WorkoutKey } from '@/types'
 
 const WC: Record<string,string> = { A:'#17BEBB', B:'#2DD4A0', C:'#A885F2', D:'#FFB23E' }
@@ -194,7 +195,8 @@ export default function SessionEditPage({ params }: { params: Promise<{sessionId
   Object.values(grouped).forEach(g => g.sort((a,b) => a.set_number - b.set_number))
 
   // Find workout exercises for bodyweight flag
-  const wkt = session ? WORKOUTS.find(w => w.key === session.workout_key) : null
+  const sessProg = session?.program_id ? getProgram(session.program_id) : null
+  const wkt = session ? (sessProg?.workouts ?? WORKOUTS).find(w => w.key === session.workout_key) : null
   const isBodyweight = (name: string) =>
     wkt?.exercises.find(e => e.name === name)?.isBodyweight ?? false
 
