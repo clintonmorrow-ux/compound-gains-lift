@@ -635,4 +635,196 @@ export const EXERCISE_ALTS: Record<string, AltsMap> = {
                       { name:'DB Bench Press',            cue:'Full ROM · deep stretch · stabilise the bells' }],
     bands:           [{ name:'Band-Assisted Dip',         cue:'Band across the bars under the knees · assists the bottom' }],
   },
+
+  // ── First Edition PHAT additions ─────────────────────────────────────
+  'Rack Chins': {
+    bodyweight:      [{ name:'Pull-Up',                   cue:'Dead hang start · chin over bar · full stretch at bottom' },
+                      { name:'Inverted Row',              cue:'Bar in rack · body straight · pull chest to bar' }],
+    cables:          [{ name:'Lat Pulldown',              cue:'Wide grip · pull to chest · full extension at top' },
+                      { name:'Close Grip Pulldown',       cue:'Neutral close grip · pull to upper chest' }],
+    machines:        [{ name:'Assisted Pull-Up Machine',  cue:'Knee on pad assists — reduce assistance over time' },
+                      { name:'Chest-Supported Machine Row', cue:'Pad removes lower-back demand · pure lat drive' }],
+    dumbbells:       [{ name:'Dumbbell Row',              cue:'Brace on bench · elbow to ceiling · full stretch' }],
+  },
+  'Flat Dumbbell Press': {
+    barbell:         [{ name:'Barbell Bench Press',       cue:'Retract scapula · arch · pause at chest' }],
+    dumbbells:       [{ name:'Incline Dumbbell Press',    cue:'30-45° bench · full stretch at bottom' },
+                      { name:'DB Floor Press',            cue:'Floor limits depth · joint-friendly pressing' }],
+    machines:        [{ name:'Chest Press Machine',       cue:'Back supported · constant tension · safe to push' }],
+    hammer_strength: [{ name:'Hammer Strength Chest Press', cue:'Plate-loaded · independent arms · big squeeze' }],
+    cables:          [{ name:'Cable Chest Press',         cue:'Constant tension through the whole press' }],
+  },
+  'Cambered Bar Curl': {
+    barbell:         [{ name:'Barbell Curl',              cue:'Elbows fixed · full extension at bottom · supinate at top' }],
+    dumbbells:       [{ name:'Incline DB Curl',           cue:'Long-head emphasis · full stretch at bottom' },
+                      { name:'Hammer Curl',               cue:'Neutral grip · brachialis and forearm emphasis' }],
+    cables:          [{ name:'Cable Curl',                cue:'Constant tension · no rest at the bottom' }],
+    machines:        [{ name:'Machine Preacher Curl',     cue:'Pad kills momentum · strict elbow path' }],
+    bands:           [{ name:'Band Curl',                 cue:'Stand on band · tension peaks at the top' }],
+  },
+  'Stiff-Legged Deadlift': {
+    barbell:         [{ name:'Romanian Deadlift (RDL)',   cue:'Push hips back · bar close · stretch the hamstrings' },
+                      { name:'Good Morning',              cue:'Bar on back · hinge with soft knees · light loads' }],
+    dumbbells:       [{ name:'DB Romanian Deadlift',      cue:'Bells track the legs · hips back · deep stretch' }],
+    machines:        [{ name:'Lying Leg Curl',            cue:'Slow eccentric · plantarflex at peak contraction' },
+                      { name:'Seated Leg Curl',           cue:'Hamstrings at length — superior growth stimulus' },
+                      { name:'45° Back Extension',        cue:'Round-to-neutral · glutes and hamstrings, no spinal load' }],
+    cables:          [{ name:'Cable Pull-Through',        cue:'Rope between legs · pure hip hinge · light on the spine' }],
+    bodyweight:      [{ name:'Glute Ham Raise',           cue:'Doc-sanctioned alternative · control the descent' },
+                      { name:'Nordic Curl',               cue:'Anchor the heels · lower as slowly as you can' }],
+  },
+  'Close Grip Pulldown': {
+    cables:          [{ name:'Lat Pulldown',              cue:'Wide grip · pull to chest · full extension at top' },
+                      { name:'Seated Cable Row',          cue:'Tall spine · drive elbows back · squeeze mid-back' },
+                      { name:'Straight-Arm Pulldown',     cue:'Arms locked · pure lat shortening · great pump finisher' }],
+    bodyweight:      [{ name:'Chin-Up',                   cue:'Supinated grip · biceps assist · full stretch at bottom' }],
+    machines:        [{ name:'Chest-Supported Machine Row', cue:'Pad removes lower-back demand · pure lat drive' }],
+    dumbbells:       [{ name:'Dumbbell Row',              cue:'Brace on bench · elbow to ceiling · full stretch' }],
+  },
+  'Upright Row': {
+    dumbbells:       [{ name:'DB Lateral Raise',          cue:'3-sec eccentric · slight lean forward · no momentum' },
+                      { name:'DB Upright Row',            cue:'Bells wide · pull to chest height, not the chin' }],
+    cables:          [{ name:'Cable Lateral Raise',       cue:'Constant tension · natural arc · one arm at a time' },
+                      { name:'Face Pull',                 cue:'Elbows high · externally rotate at the end' }],
+    machines:        [{ name:'Machine Lateral Raise',     cue:'Supported · smooth arc to shoulder height' }],
+    bands:           [{ name:'Band Lateral Raise',        cue:'Stand on band · bilateral or one arm' }],
+  },
+  'Donkey Calf Raise': {
+    machines:        [{ name:'Standing Calf Raise',       cue:'Full dorsiflexion stretch at the bottom · pause at top' },
+                      { name:'Seated Calf Raise',         cue:'Knee bent targets the soleus · full stretch' },
+                      { name:'Leg Press Calf Raise',      cue:'Toes on the platform · press through the balls of the feet' },
+                      { name:'Smith Machine Calf Raise',  cue:'Bar on shoulders, block under toes · fixed path' }],
+    bodyweight:      [{ name:'Single-Leg Calf Raise',     cue:'One leg at a time · bodyweight is plenty · full ROM' },
+                      { name:'Step Calf Raise',           cue:'Heels off a step · deep stretch · slow tempo' }],
+    dumbbells:       [{ name:'DB Standing Calf Raise',    cue:'Bell in one hand, other hand braced · toes on a block' }],
+    barbell:         [{ name:'Barbell Calf Raise',        cue:'Bar on back · toes on a plate or block · controlled' }],
+  },
+  'Hammer Strength Chest Press': {
+    machines:        [{ name:'Chest Press Machine',       cue:'Back supported · constant tension · safe to push' }],
+    hammer_strength: [{ name:'Hammer Strength Incline Press', cue:'Plate-loaded incline · upper-chest bias' }],
+    dumbbells:       [{ name:'Flat Dumbbell Press',       cue:'Deep stretch at the bottom · stabilise the bells' },
+                      { name:'Incline Dumbbell Press',    cue:'30-45° bench · upper-chest emphasis' }],
+    barbell:         [{ name:'Barbell Bench Press',       cue:'Retract scapula · arch · pause at chest' }],
+    cables:          [{ name:'Cable Chest Press',         cue:'Constant tension through the whole press' }],
+  },
+  'Incline Cable Fly': {
+    cables:          [{ name:'Cable Chest Fly',           cue:'Wide arc · pause at full stretch' },
+                      { name:'Low-to-High Cable Fly',     cue:'Pulleys low · sweep up · upper-chest bias' }],
+    machines:        [{ name:'Pec Deck',                  cue:'Elbows on pads · squeeze · easy to take near failure' }],
+    dumbbells:       [{ name:'Incline DB Fly',            cue:'Slight elbow bend · stretch at the bottom' }],
+    bands:           [{ name:'Band Chest Fly',            cue:'Anchor behind · tension peaks at the squeeze' }],
+  },
+  'Cambered Bar Preacher Curl': {
+    machines:        [{ name:'Machine Preacher Curl',     cue:'Pad kills momentum · strict elbow path' }],
+    barbell:         [{ name:'Barbell Curl',              cue:'Elbows fixed · full extension at bottom' }],
+    dumbbells:       [{ name:'Incline DB Curl',           cue:'Long-head emphasis · full stretch at bottom' },
+                      { name:'Concentration Curl',        cue:'Elbow braced on thigh · strict · squeeze at top' }],
+    cables:          [{ name:'Cable Curl',                cue:'Constant tension · no rest at the bottom' }],
+  },
+  'Concentration Curl': {
+    dumbbells:       [{ name:'Incline DB Curl',           cue:'Long-head emphasis · full stretch at bottom' },
+                      { name:'Hammer Curl',               cue:'Neutral grip · brachialis emphasis' }],
+    cables:          [{ name:'Single-Arm Cable Curl',     cue:'Constant tension · strict one-arm work' },
+                      { name:'Cable Curl',                cue:'No rest at the bottom · steady tension' }],
+    machines:        [{ name:'Machine Preacher Curl',     cue:'Pad kills momentum · strict elbow path' }],
+    bands:           [{ name:'Band Curl',                 cue:'Tension peaks at the top · easy on the elbows' }],
+  },
+  'Spider Curl': {
+    dumbbells:       [{ name:'Incline DB Curl',           cue:'Long-head stretch · arms hang behind the torso' },
+                      { name:'Concentration Curl',        cue:'Elbow braced on thigh · strict · squeeze at top' }],
+    barbell:         [{ name:'Barbell Curl',              cue:'Elbows fixed · full extension at bottom' }],
+    cables:          [{ name:'Cable Curl',                cue:'Constant tension · no rest at the bottom' }],
+    machines:        [{ name:'Machine Preacher Curl',     cue:'Pad kills momentum · pure biceps' }],
+  },
+  'Seated Tricep Extension': {
+    cables:          [{ name:'Cable Overhead Tricep Extension', cue:'Cable behind the head · long-head stretch under load' },
+                      { name:'Tricep Rope Pushdown',      cue:'Split the rope at the bottom · elbows pinned' }],
+    dumbbells:       [{ name:'Overhead DB Tricep Extension', cue:'One bell, both hands · deep overhead stretch' }],
+    barbell:         [{ name:'EZ-Bar Skull Crusher',      cue:'Lower to forehead · elbows slightly back · full lockout' }],
+    machines:        [{ name:'Machine Tricep Extension',  cue:'Fixed path · easy to push close to failure' }],
+    bodyweight:      [{ name:'Dips',                      cue:'Upright torso for triceps emphasis · full depth' }],
+  },
+  'Cable Kickback': {
+    cables:          [{ name:'Tricep Rope Pushdown',      cue:'Split the rope at the bottom · elbows pinned' },
+                      { name:'Single-Arm Cable Pushdown', cue:'One arm · full lockout · strict peak contraction' }],
+    dumbbells:       [{ name:'DB Tricep Kickback',        cue:'Torso parallel · lock out and squeeze at the top' },
+                      { name:'Overhead DB Tricep Extension', cue:'Deep overhead stretch · long-head bias' }],
+    machines:        [{ name:'Machine Tricep Extension',  cue:'Fixed path · easy to push close to failure' }],
+    bands:           [{ name:'Band Pushdown',             cue:'Anchor overhead · tension peaks at lockout' }],
+  },
+  'Hammer Strength Incline Press': {
+    hammer_strength: [{ name:'Hammer Strength Chest Press', cue:'Plate-loaded flat press · independent arms' }],
+    dumbbells:       [{ name:'Incline Dumbbell Press',    cue:'30-45° bench · full stretch at bottom' }],
+    barbell:         [{ name:'Incline Barbell Press',     cue:'30° bench · bar to upper chest · controlled' }],
+    machines:        [{ name:'Chest Press Machine',       cue:'Back supported · constant tension' }],
+    cables:          [{ name:'Low-to-High Cable Fly',     cue:'Pulleys low · sweep up · upper-chest bias' }],
+  },
+}
+
+// ── Universal swap fallback ──────────────────────────────────────────
+// Requirement: EVERY exercise must be swappable — including movements that
+// are "core" to a program, and any exercise added in future. Curated
+// alternatives above take precedence; this fills the gaps by offering every
+// other exercise in the program library that trains the same muscle, so the
+// swap sheet is never empty and never needs hand-maintenance to stay complete.
+
+/** Best-guess equipment bucket from an exercise name (for grouping only). */
+export function inferEquipment(name: string): EquipmentKey {
+  if (/hammer strength/i.test(name))                                   return 'hammer_strength'
+  if (/\bkb\b|kettlebell|goblet/i.test(name))                          return 'kettlebells'
+  if (/\bband(ed)?\b/i.test(name))                                     return 'bands'
+  if (/cable|rope|pulldown|pushdown|pull-through|pec deck|face pull/i.test(name)) return 'cables'
+  if (/\bdb\b|dumbbell/i.test(name))                                   return 'dumbbells'
+  if (/barbell|ez-bar|cambered|smith|deadlift|hip thrust|good morning|bench press/i.test(name)) return 'barbell'
+  if (/pull-?up|chin|\bdip/i.test(name))                                return 'bodyweight'
+  if (/plank|hold|hang|bird dog|dead bug|push-?up|inverted row|sit-to-stand|rollout|raise \(bodyweight\)|nordic|glute ham/i.test(name)) return 'bodyweight'
+  if (/machine|press|extension|curl|abduction|sled|hack squat/i.test(name)) return 'machines'
+  return 'machines'
+}
+
+/** name → muscle for every exercise the app knows how to prescribe. */
+let _muscleIndex: Record<string, string> | null = null
+function muscleIndex(): Record<string, string> {
+  if (_muscleIndex) return _muscleIndex
+  const m: Record<string, string> = {}
+  try {
+    // Lazy require avoids any module-init ordering surprises; programLibrary
+    // does not import this file, so there is no cycle.
+    const { PROGRAM_LIBRARY } = require('./programLibrary') as typeof import('./programLibrary')
+    PROGRAM_LIBRARY.forEach(p => p.workouts.forEach((w: any) =>
+      (w.exercises ?? []).forEach((e: any) => { if (e?.name && !m[e.name]) m[e.name] = e.muscle })))
+  } catch { /* fall back to curated-only */ }
+  _muscleIndex = m
+  return m
+}
+
+/**
+ * Every alternative available for an exercise: curated options first, then
+ * same-muscle movements drawn from the program library. Never returns empty
+ * for a known exercise.
+ */
+export function getAlternatives(exName: string, muscle?: string): AltsMap {
+  const curated = EXERCISE_ALTS[exName] ?? {}
+  const out: AltsMap = {}
+  const seen = new Set<string>([exName])
+  // curated first, preserving their order and cues
+  for (const [eq, list] of Object.entries(curated) as [EquipmentKey, Alt[]][]) {
+    for (const alt of list) {
+      if (seen.has(alt.name)) continue
+      seen.add(alt.name)
+      ;(out[eq] ??= []).push(alt)
+    }
+  }
+  // then same-muscle library movements not already offered
+  const idx = muscleIndex()
+  const target = muscle ?? idx[exName]
+  if (target) {
+    for (const [name, mus] of Object.entries(idx)) {
+      if (mus !== target || seen.has(name)) continue
+      seen.add(name)
+      const eq = inferEquipment(name)
+      ;(out[eq] ??= []).push({ name, cue: `Also trains ${target.toLowerCase()} — from your program library` })
+    }
+  }
+  return out
 }

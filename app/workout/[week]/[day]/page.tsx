@@ -9,7 +9,7 @@ import { fetchAllOneRms, fetchSettings, createSession, completeSession,
          logSet, getRecentSetsForExercise, fetchEquipment, fetchExercisePreferences,
          deleteSession, findIncompleteSession, fetchAllLoggedSets, upsertOneRm, updateLoggedSet } from '@/lib/db'
 import { getRestSeconds, fireRestCompleteNotification, requestNotificationPermission, getSupersetPairs } from '@/lib/program/restTimes'
-import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
+import { getAlternatives, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { calculateSmartSuggestion, isLoadableBodyweight, withBodyweight, excludeSpeedSets, type SmartSuggestion } from '@/lib/program/smartSuggestions'
 import { isTimedExercise, suggestTimedTarget } from '@/lib/program/timed'
 import { EXERCISE_MUSCLE } from '@/lib/program/analytics'
@@ -943,7 +943,7 @@ function RestPill({ seconds, exName, onDone, onRestPause }: {
 function AltsSheet({ exName, equipment, onSwap, onClose }: {
   exName:string; equipment:string[]; onSwap:(n:string,c:string)=>void; onClose:()=>void
 }) {
-  const alts  = EXERCISE_ALTS[exName] ?? {}
+  const alts  = getAlternatives(exName)   // curated + same-muscle library fallback
   const keys  = Object.keys(alts) as EquipmentKey[]
   const avail = keys.filter(k=>equipment.includes(k))
   const other = keys.filter(k=>!equipment.includes(k))
@@ -1765,7 +1765,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                     <p style={{ fontSize:12, color:'#8E8E93', fontStyle:'italic', lineHeight:1.6, flex:1 }}>
                       {effCue(origEx)}
                     </p>
-                    {EXERCISE_ALTS[origEx.name] && (
+                    {/* Every exercise is swappable — no gating on a curated list */}
+                    {(
                       <button onClick={()=>setAltsFor(origEx.name)} style={{ display:'flex',
                         alignItems:'center', gap:5, padding:'6px 12px', borderRadius:10,
                         background:'rgba(23,190,187,0.12)', border:'0.5px solid rgba(23,190,187,0.3)', flexShrink:0 }}>

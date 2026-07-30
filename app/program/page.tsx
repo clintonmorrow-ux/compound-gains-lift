@@ -7,7 +7,7 @@ import OnermSection from '@/components/OnermSection'
 import { createClient } from '@/lib/supabase/client'
 
 import { getProgram } from '@/lib/program/programLibrary'
-import { EXERCISE_ALTS, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
+import { getAlternatives, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { fetchExercisePreferences, saveExercisePreference, fetchEquipment, fetchSettings } from '@/lib/db'
 import type { Exercise } from '@/types'
 
@@ -29,7 +29,7 @@ function SwapSheet({ ex, equipment, preference, onSwap, onReset, onClose }: {
   onSwap:(name:string,cue:string)=>void
   onReset:()=>void; onClose:()=>void
 }) {
-  const alts  = EXERCISE_ALTS[ex.name] ?? {}
+  const alts  = getAlternatives(ex.name, (ex as any).muscle)   // curated + same-muscle library fallback
   const keys  = Object.keys(alts) as EquipmentKey[]
   const avail = keys.filter(k => equipment.includes(k))
   const other = keys.filter(k => !equipment.includes(k))
@@ -313,7 +313,7 @@ export default function ProgramPage() {
                   const isCustom = hasSwap(ex)
                   const dispName = displayName(ex)
                   const isSaved  = saved === ex.name
-                  const hasAlts  = !!(EXERCISE_ALTS[ex.name] && Object.keys(EXERCISE_ALTS[ex.name]).length > 0)
+                  const hasAlts  = true   // every exercise is swappable, including core lifts
                   return (
                     <button key={ex.name} onClick={() => hasAlts && setSwapEx(ex)}
                       style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px',
