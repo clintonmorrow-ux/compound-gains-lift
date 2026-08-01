@@ -1607,7 +1607,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           const isSpeedEx  = origEx.type === 'primary' && String(cfg.reps.primary).includes('explosive')
           // Timed isometric hold (plank / wall sit / carry) — duration, not reps
           const isTimedEx  = isTimedExercise(origEx.name)
-          const timedSugg  = isTimedEx ? suggestTimedTarget(lastDurs[origEx.name] ?? null, lastWt, cfg.isDeload) : null
+          const timedSugg  = isTimedEx ? suggestTimedTarget(lastDurs[origEx.name] ?? null, lastWt, cfg.isDeload, effName(origEx)) : null
           // Belt weight for weighted dips/pull-ups (target is SYSTEM weight)
           const beltTgt  = loadableBW && target > 0 ? Math.max(0, Math.round((target - bodyWt) / round) * round) : 0
           const shownTgt = loadableBW ? beltTgt : target

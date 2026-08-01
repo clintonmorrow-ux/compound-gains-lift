@@ -655,6 +655,7 @@ export const EXERCISE_ALTS: Record<string, AltsMap> = {
     cables:          [{ name:'Cable Chest Press',         cue:'Constant tension through the whole press' }],
   },
   'Cambered Bar Curl': {
+    bodyweight:      [{ name:'Biceps Isometric Hold',     cue:'Tendon-friendly option · hold a mid-range, non-painful elbow angle 30-45s · keep pain ≤3/10' }],
     barbell:         [{ name:'Barbell Curl',              cue:'Elbows fixed · full extension at bottom · supinate at top' }],
     dumbbells:       [{ name:'Incline DB Curl',           cue:'Long-head emphasis · full stretch at bottom' },
                       { name:'Hammer Curl',               cue:'Neutral grip · brachialis and forearm emphasis' }],
@@ -742,7 +743,8 @@ export const EXERCISE_ALTS: Record<string, AltsMap> = {
     dumbbells:       [{ name:'Overhead DB Tricep Extension', cue:'One bell, both hands · deep overhead stretch' }],
     barbell:         [{ name:'EZ-Bar Skull Crusher',      cue:'Lower to forehead · elbows slightly back · full lockout' }],
     machines:        [{ name:'Machine Tricep Extension',  cue:'Fixed path · easy to push close to failure' }],
-    bodyweight:      [{ name:'Dips',                      cue:'Upright torso for triceps emphasis · full depth' }],
+    bodyweight:      [{ name:'Triceps Isometric Hold',   cue:'Tendon-friendly option · hold a mid-range, non-painful elbow angle 30-45s · keep pain ≤3/10' },
+                      { name:'Dips',                      cue:'Upright torso for triceps emphasis · full depth' }],
   },
   'Cable Kickback': {
     cables:          [{ name:'Tricep Rope Pushdown',      cue:'Split the rope at the bottom · elbows pinned' },
@@ -815,6 +817,19 @@ export function getAlternatives(exName: string, muscle?: string): AltsMap {
       ;(out[eq] ??= []).push(alt)
     }
   }
+  // Tendon-loading isometrics: offered on every elbow-flexor / -extensor slot
+  // so an irritable elbow can be trained through without abandoning the day.
+  const idx0 = muscleIndex()
+  const mus0 = muscle ?? idx0[exName]
+  const REHAB: Record<string, Alt> = {
+    Biceps:  { name:'Biceps Isometric Hold',  cue:'Tendon-friendly · hold a mid-range, non-painful elbow angle 30-45s · pain ≤3/10, no worse next day' },
+    Triceps: { name:'Triceps Isometric Hold', cue:'Tendon-friendly · hold a mid-range, non-painful elbow angle 30-45s · pain ≤3/10, no worse next day' },
+  }
+  if (mus0 && REHAB[mus0] && !seen.has(REHAB[mus0].name)) {
+    seen.add(REHAB[mus0].name)
+    ;(out.bodyweight ??= []).push(REHAB[mus0])
+  }
+
   // then same-muscle library movements not already offered
   const idx = muscleIndex()
   const target = muscle ?? idx[exName]
