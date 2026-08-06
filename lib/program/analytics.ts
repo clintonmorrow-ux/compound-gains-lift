@@ -11,6 +11,16 @@ import { EXERCISE_ALTS } from './alternatives'
 // incl. Day E, PHAT, future programs), and all swap alternatives (which
 // inherit the muscle of the exercise they replace). This guarantees no
 // logged set is ever orphaned and dropped from volume tracking.
+/** Names whose primary mover is unambiguous, regardless of which exercise
+ *  happens to list them as an alternative first. */
+const PRIMARY_MUSCLE_OVERRIDES: Record<string, string> = {
+  'Chin-Up':                  'Back',    // vertical pull; biceps assist
+  'Chin-Up (neutral grip)':   'Back',
+  'Close-Grip Bench Press':   'Chest',   // bench variant; triceps bias
+  'Inverted Row':             'Back',
+  'Assisted Pull-Up Machine': 'Back',
+}
+
 export const EXERCISE_MUSCLE: Record<string,string> = (() => {
   const m: Record<string,string> = {}
   const add = (workouts: { exercises: { name:string; muscle:string }[] }[]) =>
@@ -29,6 +39,11 @@ export const EXERCISE_MUSCLE: Record<string,string> = (() => {
       (alts ?? []).forEach(a => { if (a.name && !m[a.name]) m[a.name] = muscle })
     )
   })
+  // 4. Explicit overrides where inheritance picks the wrong primary mover.
+  //    An alternative inherits from whichever parent lists it FIRST, so a
+  //    compound offered under an isolation lift (Chin-Up under a biceps
+  //    exercise) would otherwise log its volume to the wrong muscle.
+  Object.entries(PRIMARY_MUSCLE_OVERRIDES).forEach(([name, muscle]) => { m[name] = muscle })
   return m
 })()
 
