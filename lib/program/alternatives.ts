@@ -793,8 +793,10 @@ function muscleIndex(): Record<string, string> {
     // Lazy require avoids any module-init ordering surprises; programLibrary
     // does not import this file, so there is no cycle.
     const { PROGRAM_LIBRARY } = require('./programLibrary') as typeof import('./programLibrary')
-    PROGRAM_LIBRARY.forEach(p => p.workouts.forEach((w: any) =>
-      (w.exercises ?? []).forEach((e: any) => { if (e?.name && !m[e.name]) m[e.name] = e.muscle })))
+    const { PHAT_CUSTOM_BLOCK2_WORKOUTS } = require('./phatCustom') as typeof import('./phatCustom')
+    const allW = [...PROGRAM_LIBRARY.flatMap(p => p.workouts), ...PHAT_CUSTOM_BLOCK2_WORKOUTS]
+    allW.forEach((w: any) =>
+      (w.exercises ?? []).forEach((e: any) => { if (e?.name && !m[e.name]) m[e.name] = e.muscle }))
   } catch { /* fall back to curated-only */ }
   _muscleIndex = m
   return m

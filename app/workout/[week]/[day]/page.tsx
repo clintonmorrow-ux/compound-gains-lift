@@ -3,7 +3,7 @@ import { use, useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus, Flame, Award, Lightbulb, RotateCcw, Zap, Pencil } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { getProgram, getWeekConfig } from '@/lib/program/programLibrary'
+import { getProgram, getWeekConfig, getWeekWorkouts, getPrescription } from '@/lib/program/programLibrary'
 import { getTargetWeight, getSetsForWeek, getRepsForWeek, isDumbbellExercise, dumbbellRound, dumbbellStep } from '@/lib/program/calculator'
 import { fetchAllOneRms, fetchSettings, createSession, completeSession,
          logSet, getRecentSetsForExercise, fetchEquipment, fetchExercisePreferences,
@@ -1006,7 +1006,12 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   const activeProgramId = typeof window !== 'undefined'
     ? (localStorage.getItem('cg_program') ?? undefined) : undefined
   const activeProgram = getProgram(activeProgramId)
-  const workout = activeProgram.workouts.find(w => w.key === key) ?? activeProgram.workouts[0]
+  // Week-aware: programs with block substitutions swap exercises mid-cycle
+  const weekWorkouts = getWeekWorkouts(activeProgramId, wk)
+  const workout = weekWorkouts.find(w => w.key === key) ?? weekWorkouts[0]
+  /** Per-exercise prescription when the program defines one, else null. */
+  const rx = (exName: string) => getPrescription(activeProgramId, key, exName, wk)
+  const setsFor = (ex: Exercise) => rx(ex.name)?.sets ?? getSetsForWeek(ex.type, wk, cfg)
   // Time-saver: antagonist/non-competing pairs among isolation exercises
   const ssPairs = getSupersetPairs(workout.exercises)
 
@@ -1198,7 +1203,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     return () => window.removeEventListener('popstate', onPop)
   }, [hasProgress, router])
 
-  const total  = workout.exercises.reduce((a,ex)=>a+getSetsForWeek(ex.type,wk,cfg), 0)
+  const total  = workout.exercises.reduce((a,ex)=>a+setsFor(ex), 0)
   const logged = Object.values(sets).reduce((a,s)=>a+s.length, 0)
   const pct    = total>0 ? logged/total : 0
 
@@ -1218,6 +1223,18 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   }
   const effCue  = (ex:Exercise) => swapped[ex.name]?.cue  ?? progPrefs[ex.name]?.cue  ?? ex.cue
   const tgt     = (ex:Exercise) => {
+    // Programs with per-exercise prescriptions derive %1RM from the
+    // prescription itself (reps + RIR → reps-to-failure), not from a fixed
+    // weekly percentage. Same TM source, same rounding rules.
+    const exRx = rx(ex.name)
+    if (exRx && !ex.isBodyweight) {
+      const tmRx = rms[effName(ex)] ?? smartMap[ex.name]?.loggedOneRm ?? 0
+      if (tmRx <= 0) return 0
+      const raw = tmRx * exRx.pct
+      return isDumbbellExercise(ex.name)
+        ? dumbbellRound(raw, round)
+        : Math.round(raw / round) * round
+    }
     if (ex.isBodyweight) {
       // Weighted dips/pull-ups: prescribe TOTAL system weight when we know
       // the athlete's body weight (belt weight = system − body, floored at 0)
@@ -1356,10 +1373,10 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     const newLogged = [...(sets[origEx.name]??[]), tempSet]
     const newSets   = {...sets, [origEx.name]: newLogged}
     setSets(newSets)
-    setRest({ sec: getRestSeconds(wk, origEx.type, activeProgramId, workout.dayType),
+    setRest({ sec: getRestSeconds(wk, origEx.type, activeProgramId, workout.dayType, rx(origEx.name)?.rir),
              name: effName(origEx), startedAt: Date.now() })
-    if (newLogged.length >= getSetsForWeek(origEx.type, wk, cfg)) {
-      const next = workout.exercises.find(e => (newSets[e.name]?.length??0) < getSetsForWeek(e.type,wk,cfg))
+    if (newLogged.length >= setsFor(origEx)) {
+      const next = workout.exercises.find(e => (newSets[e.name]?.length??0) < setsFor(e))
       if (next) setTimeout(()=>setOpen(next.name), 500)
     }
   }
@@ -1587,11 +1604,14 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       {/* Exercise list */}
       <div style={{ padding:'12px 14px', display:'flex', flexDirection:'column', gap:10 }}>
         {workout.exercises.map((origEx, idx) => {
-          const baseSets = getSetsForWeek(origEx.type, wk, cfg)
+          // Per-exercise prescription (PHAT Custom) wins over the type-based config
+          const exRx     = rx(origEx.name)
+          const baseSets = exRx?.sets ?? getSetsForWeek(origEx.type, wk, cfg)
           // Reintroduction: reduce volume, cap load, hold RIR in reserve
           const exSets   = reintro.active ? Math.max(2, Math.round(baseSets * REINTRO_VOLUME_PCT)) : baseSets
-          const exReps   = getRepsForWeek(origEx.type, wk, cfg)
-          const exRir    = reintro.active ? Math.max(cfg.rir, REINTRO_RIR_CAP) : cfg.rir
+          const exReps   = exRx ? String(exRx.reps) : getRepsForWeek(origEx.type, wk, cfg)
+          const baseRir  = exRx?.rir ?? cfg.rir
+          const exRir    = reintro.active ? Math.max(baseRir, REINTRO_RIR_CAP) : baseRir
           const exLogged = sets[origEx.name] ?? []
           const isComp   = exLogged.length >= exSets
           const isOpen   = open === origEx.name

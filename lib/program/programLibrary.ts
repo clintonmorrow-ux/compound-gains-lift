@@ -1,10 +1,8 @@
-import type { Program, WeekConfig, DayType } from '@/types'
+import type { Program, WeekConfig, DayType, Workout } from '@/types'
 import { WORKOUTS_5DAY, WEEK_CONFIG, CURRENT_PROGRAM_ID } from './data'
 import { PHAT_PROGRAM, getPHATWeekConfig } from './phat'
-import { RP_PROGRAM } from './rpHypertrophy'
 import { SCULPT_PROGRAM } from './womensToning'
-import { VITALITY_PROGRAM } from './seniors'
-import { LONGEVITY_PROGRAM } from './longevity'
+import { PHAT_CUSTOM_PROGRAM, PHAT_CUSTOM_ID, phatCustomWorkouts, phatCustomPrescription, type Prescription } from './phatCustom'
 
 // ── Galpin 5-Day — wrap existing data into Program interface ──────────────────
 const GALPIN_PROGRAM: Program = {
@@ -25,10 +23,8 @@ const GALPIN_PROGRAM: Program = {
 export const PROGRAM_LIBRARY: Program[] = [
   GALPIN_PROGRAM,
   PHAT_PROGRAM,
-  RP_PROGRAM,
+  PHAT_CUSTOM_PROGRAM,
   SCULPT_PROGRAM,
-  VITALITY_PROGRAM,
-  LONGEVITY_PROGRAM,
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -38,4 +34,25 @@ export function getProgram(id?: string): Program {
 
 export function getWeekConfig(programId: string | undefined, week: number, dayType?: DayType): WeekConfig {
   return getProgram(programId).getWeekConfig(week, dayType)
+}
+
+
+// ── Per-exercise scheduling ───────────────────────────────────────────
+// Most programs prescribe by exercise TYPE (primary/secondary/isolation)
+// via getWeekConfig. Some — currently PHAT Custom — prescribe per
+// exercise, per day, per week, and swap exercises between blocks. These
+// two helpers give callers one path that works for both models.
+
+/** The day's exercise list for a given week (handles block substitutions). */
+export function getWeekWorkouts(programId: string | undefined, week: number): Workout[] {
+  if (programId === PHAT_CUSTOM_ID) return phatCustomWorkouts(week)
+  return getProgram(programId).workouts
+}
+
+/** Exact per-exercise prescription, or null if the program prescribes by type. */
+export function getPrescription(
+  programId: string | undefined, dayKey: string, exerciseName: string, week: number,
+): Prescription | null {
+  if (programId === PHAT_CUSTOM_ID) return phatCustomPrescription(dayKey, exerciseName, week)
+  return null
 }

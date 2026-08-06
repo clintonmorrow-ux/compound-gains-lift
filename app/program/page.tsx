@@ -6,7 +6,7 @@ import BottomNav from '@/components/BottomNav'
 import OnermSection from '@/components/OnermSection'
 import { createClient } from '@/lib/supabase/client'
 
-import { getProgram } from '@/lib/program/programLibrary'
+import { getProgram, getWeekWorkouts } from '@/lib/program/programLibrary'
 import { getAlternatives, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { fetchExercisePreferences, saveExercisePreference, fetchEquipment, fetchSettings } from '@/lib/db'
 import type { Exercise } from '@/types'
@@ -109,6 +109,7 @@ function SwapSheet({ ex, equipment, preference, onSwap, onReset, onClose }: {
 export default function ProgramPage() {
   const router = useRouter()
   const [prefs,     setPrefs]     = useState<Record<string,{name:string;cue:string}>>({})
+  const [week,      setWeek]      = useState(1)   // block-structured programs swap exercises mid-cycle
   const [equipment, setEquipment] = useState<string[]>(['barbell','dumbbells','cables','machines'])
   const [loading,   setLoading]   = useState(true)
   const [swapEx,    setSwapEx]    = useState<Exercise|null>(null)
@@ -122,8 +123,8 @@ export default function ProgramPage() {
       const sb = createClient()
       const {data:{session}} = await sb.auth.getSession()
       if (!session) await sb.auth.signInAnonymously()
-      const [p, eq] = await Promise.all([fetchExercisePreferences(), fetchEquipment()])
-      setPrefs(p); setEquipment(eq)
+      const [p, eq, s] = await Promise.all([fetchExercisePreferences(), fetchEquipment(), fetchSettings()])
+      setPrefs(p); setEquipment(eq); setWeek(s.current_week ?? 1)
     } catch(e) { console.error(e) }
     finally { setLoading(false) }
   }, [])
@@ -248,7 +249,7 @@ export default function ProgramPage() {
         </div>
 
         {/* Workout cards */}
-        {getProgram(typeof window !== 'undefined' ? localStorage.getItem('cg_program') ?? undefined : undefined).workouts.map(wkt => {
+        {getWeekWorkouts(typeof window !== 'undefined' ? localStorage.getItem('cg_program') ?? undefined : undefined, week).map(wkt => {
           if (wkt.isRest) return (
             <div key={wkt.key} style={{ padding:'14px 16px', borderRadius:18,
               background:'rgba(28,28,36,0.7)', border:'0.5px solid rgba(84,84,88,0.25)',

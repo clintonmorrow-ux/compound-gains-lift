@@ -32,7 +32,16 @@ export function getRestSeconds(
   exerciseType: ExerciseType,
   programId?: string,
   dayType?: DayType,
+  rir?: number,
 ): number {
+  // PHAT Custom: heavy main lifts (3-5 reps) need full recovery; the
+  // accessory work is hypertrophy-paced.
+  if (programId === 'phat-custom-12wk') {
+    // RIR 4+ marks the deliberately-light back-off prescription — roughly
+    // 75% 1RM, which recovers in about two minutes rather than three.
+    if (exerciseType === 'primary') return (rir ?? 0) >= 4 ? 120 : 180
+    return { primary: 180, secondary: 120, isolation: 75 }[exerciseType]
+  }
   // RP: pure hypertrophy at 1-3 RIR — compounds recover in ~2:15, isolation
   // in ~60s. Without this, RP fell to the heavier defaults and its MRV-week
   // volume (set ramps peaking near 6 sets/lift) blew sessions past 100 min.

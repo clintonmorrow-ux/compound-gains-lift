@@ -1,6 +1,7 @@
 import { WORKOUTS } from './data'
 import { isTimedExercise } from './timed'
 import { PROGRAM_LIBRARY } from './programLibrary'
+import { PHAT_CUSTOM_BLOCK2_WORKOUTS } from './phatCustom'
 import { EXERCISE_ALTS } from './alternatives'
 
 // Map every exercise → its primary muscle group.
@@ -18,6 +19,8 @@ export const EXERCISE_MUSCLE: Record<string,string> = (() => {
   add(WORKOUTS)
   // 2. Every exercise across every registered program
   PROGRAM_LIBRARY.forEach(p => add(p.workouts))
+  // 2b. Block-2 exercises of block-structured programs (not in p.workouts)
+  add(PHAT_CUSTOM_BLOCK2_WORKOUTS)
   // 3. Alternatives inherit their parent exercise's muscle
   Object.entries(EXERCISE_ALTS).forEach(([parent, altsMap]) => {
     const muscle = m[parent]
