@@ -34,6 +34,10 @@ export function getRestSeconds(
   dayType?: DayType,
   rir?: number,
 ): number {
+  // BB Upper: heavy main lifts, hypertrophy accessories, short BFR rests.
+  if (programId === 'bb-upper-5day') {
+    return { primary: 170, secondary: 90, isolation: 60 }[exerciseType]
+  }
   // Bikini Builder: beginner hypertrophy — main-lift top sets get 2.5 min.
   if (programId === 'bikini-builder-4day') {
     return { primary: 150, secondary: 90, isolation: 60 }[exerciseType]

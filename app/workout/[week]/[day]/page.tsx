@@ -1347,7 +1347,12 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
     // Dynamic-effort (speed) work — PHAT hypertrophy-day primary slot. Tagged
     // so these deliberately submaximal sets never feed 1RM estimation.
-    const isSpeedSet = origEx.type === 'primary' && String(cfg.reps.primary).includes('explosive')
+    // Deliberately submaximal work that must never feed 1RM estimation:
+    // dynamic-effort speed sets, and BFR sets at ~25% load. Both ride the
+    // same is_speed exclusion pipeline (tagged at insert, filtered at every
+    // 1RM consumer).
+    const isSpeedSet = (origEx.type === 'primary' && String(cfg.reps.primary).includes('explosive'))
+      || (rx(origEx.name)?.noOneRm === true)
 
     // Sync to Supabase in background with retry
     logWithRetry(sessionId!, effName(origEx), setNum, weight, reps, false, rir, tempo, isSpeedSet)  // 3 retries
@@ -1628,6 +1633,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           // Timed isometric hold (plank / wall sit / carry) — duration, not reps
           const isTimedEx  = isTimedExercise(origEx.name)
           const isTestEx   = exRx?.testMode !== undefined
+          const isBfrEx    = exRx?.protocol === 'bfr'
           const timedSugg  = isTimedEx ? suggestTimedTarget(lastDurs[origEx.name] ?? null, lastWt, cfg.isDeload, effName(origEx)) : null
           // Belt weight for weighted dips/pull-ups (target is SYSTEM weight)
           const beltTgt  = loadableBW && target > 0 ? Math.max(0, Math.round((target - bodyWt) / round) * round) : 0
@@ -1723,6 +1729,18 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                     </>}
                   </div>
 
+                  {/* BFR protocol banner */}
+                  {!isComp && isBfrEx && (
+                    <div style={{ borderRadius:12, border:'1px dashed rgba(191,90,242,0.5)',
+                      background:'rgba(191,90,242,0.08)', padding:'12px 14px', marginBottom:4 }}>
+                      <p style={{ fontSize:11, fontWeight:700, color:'#BF5AF2', textTransform:'uppercase',
+                        letterSpacing:'0.06em', marginBottom:6 }}>
+                        BFR · Blood-Flow Restriction <span style={{ color:'#8E8E93', fontWeight:600 }}>· not counted toward your 1RM</span>
+                      </p>
+                      <p style={{ fontSize:13, color:'rgba(239,250,248,0.85)', lineHeight:1.5 }}>{exRx?.testNote}</p>
+                    </div>
+                  )}
+
                   {/* Testing-day protocol banner — replaces the normal coach bubble */}
                   {!isComp && isTestEx && (
                     <div style={{ borderRadius:12, border:'1px solid rgba(255,178,62,0.4)',
@@ -1738,7 +1756,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                   )}
 
                   {/* Coaching — why this weight / jump / 1RM check (tap to expand) */}
-                  {!isComp && !isTimedEx && !isTestEx && (
+                  {!isComp && !isTimedEx && !isTestEx && !isBfrEx && (
                     <CoachBubble target={shownTgt} lastWeight={lastWt} isBodyweight={!!origEx.isBodyweight && !loadableBW}
                       accentColor={accent} reasonMain={reasonMain} loggedEst={smart?.loggedOneRm ?? null} drift={driftObj} />
                   )}
