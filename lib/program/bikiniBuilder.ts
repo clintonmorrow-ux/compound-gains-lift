@@ -328,17 +328,20 @@ const WEEK_WORKOUTS: Record<number, Workout[]> = {
       ],
     },
     {
-      key: 'C', name: 'Lower B', shortName: 'Lower B', day: 'Day 4', focus: 'Glutes · Quads · Hamstrings · Calves',
+      key: 'C', name: 'Lower B — Testing', shortName: 'Lower B · Test', day: 'Day 4', focus: 'Quads · Glutes',
       dayType: 'hypertrophy' as DayType, isRest: false,
-      duration: '~35-60 min', restTimes: '2-2.5 min main lifts · 90 sec accessories · 60 sec isolation',
+      duration: '~20-30 min', restTimes: '3-4 min between test attempts',
       exercises: [
+        { name: 'Machine Squat', muscle: 'Quads', type: 'primary', cue: 'REP TEST: one all-out set at 90% of your training max, taken to failure. Log every clean rep — this is real strength evidence and feeds your training max directly.' },
+        { name: 'Barbell Hip Thrust', muscle: 'Glutes', type: 'primary', cue: 'REP TEST: one all-out set at 90% of your training max, taken to failure. Log every clean rep — this is real strength evidence and feeds your training max directly.' },
       ],
     },
     {
-      key: 'D', name: 'Upper B', shortName: 'Upper B', day: 'Day 5', focus: 'Shoulders · Back · Chest · Arms',
+      key: 'D', name: 'Upper B — Testing', shortName: 'Upper B · Test', day: 'Day 5', focus: 'Shoulders',
       dayType: 'hypertrophy' as DayType, isRest: false,
-      duration: '~35-60 min', restTimes: '2-2.5 min main lifts · 90 sec accessories · 60 sec isolation',
+      duration: '~15-20 min', restTimes: '3-4 min between test attempts',
       exercises: [
+        { name: 'Seated Dumbbell Press', muscle: 'Shoulders', type: 'primary', cue: 'REP TEST: one all-out set at 90% of your training max, taken to failure. Log every clean rep — this is real strength evidence and feeds your training max directly.' },
       ],
     },
   ],
@@ -530,17 +533,20 @@ const WEEK_WORKOUTS: Record<number, Workout[]> = {
       ],
     },
     {
-      key: 'C', name: 'Lower B', shortName: 'Lower B', day: 'Day 4', focus: 'Glutes · Quads · Hamstrings · Calves',
+      key: 'C', name: 'Lower B — Testing', shortName: 'Lower B · Test', day: 'Day 4', focus: 'Quads · Glutes',
       dayType: 'hypertrophy' as DayType, isRest: false,
-      duration: '~35-60 min', restTimes: '2-2.5 min main lifts · 90 sec accessories · 60 sec isolation',
+      duration: '~20-30 min', restTimes: '3-4 min between test attempts',
       exercises: [
+        { name: 'Machine Squat', muscle: 'Quads', type: 'primary', cue: 'REP TEST: one all-out set at 90% of your training max, taken to failure. Log every clean rep — this is real strength evidence and feeds your training max directly.' },
+        { name: 'Barbell Hip Thrust', muscle: 'Glutes', type: 'primary', cue: 'REP TEST: one all-out set at 90% of your training max, taken to failure. Log every clean rep — this is real strength evidence and feeds your training max directly.' },
       ],
     },
     {
-      key: 'D', name: 'Upper B', shortName: 'Upper B', day: 'Day 5', focus: 'Shoulders · Back · Chest · Arms',
+      key: 'D', name: 'Upper B — Testing', shortName: 'Upper B · Test', day: 'Day 5', focus: 'Shoulders',
       dayType: 'hypertrophy' as DayType, isRest: false,
-      duration: '~35-60 min', restTimes: '2-2.5 min main lifts · 90 sec accessories · 60 sec isolation',
+      duration: '~15-20 min', restTimes: '3-4 min between test attempts',
       exercises: [
+        { name: 'Seated Dumbbell Press', muscle: 'Shoulders', type: 'primary', cue: 'REP TEST: one all-out set at 90% of your training max, taken to failure. Log every clean rep — this is real strength evidence and feeds your training max directly.' },
       ],
     },
   ],
@@ -733,17 +739,20 @@ const WEEK_WORKOUTS: Record<number, Workout[]> = {
       ],
     },
     {
-      key: 'C', name: 'Lower B', shortName: 'Lower B', day: 'Day 4', focus: 'Glutes · Quads · Hamstrings · Calves',
+      key: 'C', name: 'Lower B — Testing', shortName: 'Lower B · Test', day: 'Day 4', focus: 'Quads · Glutes',
       dayType: 'hypertrophy' as DayType, isRest: false,
-      duration: '~35-60 min', restTimes: '2-2.5 min main lifts · 90 sec accessories · 60 sec isolation',
+      duration: '~20-30 min', restTimes: '3-4 min between test attempts',
       exercises: [
+        { name: 'Machine Squat', muscle: 'Quads', type: 'primary', cue: 'TRUE 1RM TEST: start near your training max and work up in small jumps until you find one clean rep you cannot beat. Log that weight for 1 rep.' },
+        { name: 'Barbell Hip Thrust', muscle: 'Glutes', type: 'primary', cue: 'TRUE 1RM TEST: start near your training max and work up in small jumps until you find one clean rep you cannot beat. Log that weight for 1 rep.' },
       ],
     },
     {
-      key: 'D', name: 'Upper B', shortName: 'Upper B', day: 'Day 5', focus: 'Shoulders · Back · Chest · Arms',
+      key: 'D', name: 'Upper B — Testing', shortName: 'Upper B · Test', day: 'Day 5', focus: 'Shoulders',
       dayType: 'hypertrophy' as DayType, isRest: false,
-      duration: '~35-60 min', restTimes: '2-2.5 min main lifts · 90 sec accessories · 60 sec isolation',
+      duration: '~15-20 min', restTimes: '3-4 min between test attempts',
       exercises: [
+        { name: 'Seated Dumbbell Press', muscle: 'Shoulders', type: 'primary', cue: 'TRUE 1RM TEST: start near your training max and work up in small jumps until you find one clean rep you cannot beat. Log that weight for 1 rep.' },
       ],
     },
   ],
@@ -753,7 +762,31 @@ export function bikiniBuilderWorkouts(week: number): Workout[] {
   return WEEK_WORKOUTS[Math.max(1, Math.min(12, week))] ?? WEEK_WORKOUTS[1]
 }
 
+// Testing days (weeks 4, 8, 12 — Days 4 and 5): the source replaces the
+// normal exercise list with a rep test (wk 4, 8) or a true 1RM test (wk 12).
+// A rep test is a single all-out set at 90% of the training max — genuine
+// strength evidence, so it feeds 1RM derivation exactly like any other
+// logged set. A 1RM test uses the training max only as a starting-weight
+// anchor for a live single-rep attempt.
+const TEST_LIFTS: Record<string, string[]> = {
+  C: ['Machine Squat', 'Barbell Hip Thrust'],
+  D: ['Seated Dumbbell Press'],
+}
+const REP_TEST_NOTE  = 'Single all-out set at 90% of your training max — take it to failure and log every clean rep.'
+const ONERM_TEST_NOTE = 'Work up from around your training max in small jumps until you find one clean rep you cannot beat, then log that weight for 1 rep.'
+
+function testPrescription(dayKey: string, exerciseName: string, week: number): Prescription | null {
+  if (![4, 8, 12].includes(week)) return null
+  if (!TEST_LIFTS[dayKey]?.includes(exerciseName)) return null
+  if (week === 12) {
+    return { sets: 1, reps: 1, rir: 0, pct: 1.0, repsLabel: 'Work up to 1RM', testMode: 'onerm', testNote: ONERM_TEST_NOTE }
+  }
+  return { sets: 1, reps: 5, rir: 0, pct: 0.90, repsLabel: 'AMRAP', amrap: true, testMode: 'reps', testNote: REP_TEST_NOTE }
+}
+
 export function bikiniBuilderPrescription(dayKey: string, exerciseName: string, week: number): Prescription | null {
+  const test = testPrescription(dayKey, exerciseName, week)
+  if (test) return test
   const cell = SCHEDULE[dayKey]?.[exerciseName]?.[Math.max(1, Math.min(12, week))]
   if (!cell) return null
   const [sets, reps, rir, repsLabel, amrap] = cell
@@ -770,7 +803,9 @@ export function getBikiniBuilderWeekConfig(week: number, _dayType?: DayType): We
     phase: isDeload ? `Deload — Block ${block}` : `Block ${block} — Weeks ${(block - 1) * 4 + 1}-${block * 4 - 1}`,
     isDeload,
     note: isDeload
-      ? 'Deload week — about half the usual work. Keep the movements crisp and let the last three weeks catch up with you.'
+      ? (week === 12
+          ? 'Deload week. Days 1 and 2 stay light — half the usual work. Days 4 and 5 are a true 1RM test on your main lifts: the final measure of twelve weeks of training.'
+          : 'Deload week. Days 1 and 2 stay light — half the usual work. Days 4 and 5 are rep tests: one all-out set at 90% of your training max, logged for reps.')
       : 'Exercise selection changes every week by design — variety is the point. Where a set is marked AMRAP, take the final set for as many clean reps as you can.',
     percentages: { primary: rtfPercent(7, 1), secondary: rtfPercent(7, 2), isolation: rtfPercent(13, 2) },
   }

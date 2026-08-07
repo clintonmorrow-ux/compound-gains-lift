@@ -1627,6 +1627,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           const isSpeedEx  = origEx.type === 'primary' && String(cfg.reps.primary).includes('explosive')
           // Timed isometric hold (plank / wall sit / carry) — duration, not reps
           const isTimedEx  = isTimedExercise(origEx.name)
+          const isTestEx   = exRx?.testMode !== undefined
           const timedSugg  = isTimedEx ? suggestTimedTarget(lastDurs[origEx.name] ?? null, lastWt, cfg.isDeload, effName(origEx)) : null
           // Belt weight for weighted dips/pull-ups (target is SYSTEM weight)
           const beltTgt  = loadableBW && target > 0 ? Math.max(0, Math.round((target - bodyWt) / round) * round) : 0
@@ -1722,8 +1723,22 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                     </>}
                   </div>
 
+                  {/* Testing-day protocol banner — replaces the normal coach bubble */}
+                  {!isComp && isTestEx && (
+                    <div style={{ borderRadius:12, border:'1px solid rgba(255,178,62,0.4)',
+                      background:'rgba(255,178,62,0.08)', padding:'12px 14px', marginBottom:4 }}>
+                      <p style={{ fontSize:11, fontWeight:700, color:'#FFB23E', textTransform:'uppercase',
+                        letterSpacing:'0.06em', marginBottom:6 }}>
+                        {exRx?.testMode === 'onerm' ? '1RM Test' : 'Rep Test'}
+                      </p>
+                      <p style={{ fontSize:13, color:'rgba(239,250,248,0.85)', lineHeight:1.5 }}>
+                        {exRx?.testNote}
+                      </p>
+                    </div>
+                  )}
+
                   {/* Coaching — why this weight / jump / 1RM check (tap to expand) */}
-                  {!isComp && !isTimedEx && (
+                  {!isComp && !isTimedEx && !isTestEx && (
                     <CoachBubble target={shownTgt} lastWeight={lastWt} isBodyweight={!!origEx.isBodyweight && !loadableBW}
                       accentColor={accent} reasonMain={reasonMain} loggedEst={smart?.loggedOneRm ?? null} drift={driftObj} />
                   )}

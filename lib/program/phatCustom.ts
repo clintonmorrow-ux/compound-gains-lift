@@ -43,6 +43,8 @@ export interface Prescription {
   pct: number
   repsLabel?: string    // e.g. '6-8' when the source prescribes a range
   amrap?: boolean       // final set taken for as many reps as possible
+  testMode?: 'reps' | 'onerm'   // dedicated testing protocol (see bikiniBuilder.ts)
+  testNote?: string             // protocol explanation shown on the set card
 }
 
 export const PHAT_CUSTOM_ID = 'phat-custom-12wk'
