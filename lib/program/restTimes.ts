@@ -34,6 +34,10 @@ export function getRestSeconds(
   dayType?: DayType,
   rir?: number,
 ): number {
+  // Suns Out Guns Out: hypertrophy split with heavy-ish 6-rep compounds.
+  if (programId === 'suns-out-guns-out-5day') {
+    return { primary: 150, secondary: 90, isolation: 60 }[exerciseType]
+  }
   // Buns Out: hypertrophy-paced glute work — focus lifts get 2.5 min,
   // accessories 90s, isolation 60s.
   if (programId === 'buns-out-3day') {
