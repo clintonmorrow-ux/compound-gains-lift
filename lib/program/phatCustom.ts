@@ -36,7 +36,14 @@ export function rtfPercent(reps: number, rir: number): number {
   return RTF_PCT[rtf] ?? 0.65
 }
 
-export interface Prescription { sets: number; reps: number; rir: number; pct: number }
+export interface Prescription {
+  sets: number
+  reps: number          // single value, or the midpoint of a prescribed range
+  rir: number
+  pct: number
+  repsLabel?: string    // e.g. '6-8' when the source prescribes a range
+  amrap?: boolean       // final set taken for as many reps as possible
+}
 
 export const PHAT_CUSTOM_ID = 'phat-custom-12wk'
 

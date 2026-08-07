@@ -1609,7 +1609,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           const baseSets = exRx?.sets ?? getSetsForWeek(origEx.type, wk, cfg)
           // Reintroduction: reduce volume, cap load, hold RIR in reserve
           const exSets   = reintro.active ? Math.max(2, Math.round(baseSets * REINTRO_VOLUME_PCT)) : baseSets
-          const exReps   = exRx ? String(exRx.reps) : getRepsForWeek(origEx.type, wk, cfg)
+          const exReps   = exRx ? (exRx.repsLabel ?? String(exRx.reps)) + (exRx.amrap ? ' · last set AMRAP' : '') : getRepsForWeek(origEx.type, wk, cfg)
           const baseRir  = exRx?.rir ?? cfg.rir
           const exRir    = reintro.active ? Math.max(baseRir, REINTRO_RIR_CAP) : baseRir
           const exLogged = sets[origEx.name] ?? []

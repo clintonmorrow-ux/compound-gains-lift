@@ -5,6 +5,7 @@ import { SCULPT_PROGRAM } from './womensToning'
 import { PHAT_CUSTOM_PROGRAM, PHAT_CUSTOM_ID, phatCustomWorkouts, phatCustomPrescription, type Prescription } from './phatCustom'
 import { BUNS_OUT_PROGRAM, BUNS_OUT_ID, bunsOutWorkouts, bunsOutPrescription } from './bunsOut'
 import { SUNS_OUT_PROGRAM, SUNS_OUT_ID, sunsOutWorkouts, sunsOutPrescription } from './sunsOutGunsOut'
+import { BIKINI_BUILDER_PROGRAM, BIKINI_BUILDER_ID, bikiniBuilderWorkouts, bikiniBuilderPrescription } from './bikiniBuilder'
 
 // ── Galpin 5-Day — wrap existing data into Program interface ──────────────────
 const GALPIN_PROGRAM: Program = {
@@ -29,6 +30,7 @@ export const PROGRAM_LIBRARY: Program[] = [
   SCULPT_PROGRAM,
   BUNS_OUT_PROGRAM,
   SUNS_OUT_PROGRAM,
+  BIKINI_BUILDER_PROGRAM,
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -52,6 +54,7 @@ export function getWeekWorkouts(programId: string | undefined, week: number): Wo
   if (programId === PHAT_CUSTOM_ID) return phatCustomWorkouts(week)
   if (programId === BUNS_OUT_ID)    return bunsOutWorkouts(week)
   if (programId === SUNS_OUT_ID)    return sunsOutWorkouts(week)
+  if (programId === BIKINI_BUILDER_ID) return bikiniBuilderWorkouts(week)
   return getProgram(programId).workouts
 }
 
@@ -62,5 +65,6 @@ export function getPrescription(
   if (programId === PHAT_CUSTOM_ID) return phatCustomPrescription(dayKey, exerciseName, week)
   if (programId === BUNS_OUT_ID)    return bunsOutPrescription(dayKey, exerciseName, week)
   if (programId === SUNS_OUT_ID)    return sunsOutPrescription(dayKey, exerciseName, week)
+  if (programId === BIKINI_BUILDER_ID) return bikiniBuilderPrescription(dayKey, exerciseName, week)
   return null
 }

@@ -34,6 +34,10 @@ export function getRestSeconds(
   dayType?: DayType,
   rir?: number,
 ): number {
+  // Bikini Builder: beginner hypertrophy — main-lift top sets get 2.5 min.
+  if (programId === 'bikini-builder-4day') {
+    return { primary: 150, secondary: 90, isolation: 60 }[exerciseType]
+  }
   // Suns Out Guns Out: hypertrophy split with heavy-ish 6-rep compounds.
   if (programId === 'suns-out-guns-out-5day') {
     return { primary: 150, secondary: 90, isolation: 60 }[exerciseType]
