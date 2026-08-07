@@ -34,6 +34,11 @@ export function getRestSeconds(
   dayType?: DayType,
   rir?: number,
 ): number {
+  // Buns Out: hypertrophy-paced glute work — focus lifts get 2.5 min,
+  // accessories 90s, isolation 60s.
+  if (programId === 'buns-out-3day') {
+    return { primary: 150, secondary: 90, isolation: 60 }[exerciseType]
+  }
   // PHAT Custom: heavy main lifts (3-5 reps) need full recovery; the
   // accessory work is hypertrophy-paced.
   if (programId === 'phat-custom-12wk') {
