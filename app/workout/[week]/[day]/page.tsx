@@ -1,7 +1,7 @@
 'use client'
 import { use, useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus, Flame, Award, Lightbulb, RotateCcw, Zap, Pencil } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus, Flame, Award, Lightbulb, RotateCcw, Zap, Pencil, PlayCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getProgram, getWeekConfig, getWeekWorkouts, getPrescription } from '@/lib/program/programLibrary'
 import { getTargetWeight, getSetsForWeek, getRepsForWeek, isDumbbellExercise, dumbbellRound, dumbbellStep } from '@/lib/program/calculator'
@@ -12,6 +12,7 @@ import { getRestSeconds, fireRestCompleteNotification, requestNotificationPermis
 import { getAlternatives, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { calculateSmartSuggestion, isLoadableBodyweight, withBodyweight, excludeSpeedSets, type SmartSuggestion } from '@/lib/program/smartSuggestions'
 import { isTimedExercise, suggestTimedTarget } from '@/lib/program/timed'
+import { techniqueVideoUrl, videoSourceFor } from '@/lib/program/videos'
 import { EXERCISE_MUSCLE } from '@/lib/program/analytics'
 import { reintroActive, isReintroSet, REINTRO_VOLUME_PCT, REINTRO_RIR_CAP } from '@/lib/program/reintro'
 import type { Exercise, WorkoutKey } from '@/types'
@@ -1818,15 +1819,23 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                     <p style={{ fontSize:12, color:'#8E8E93', fontStyle:'italic', lineHeight:1.6, flex:1 }}>
                       {effCue(origEx)}
                     </p>
-                    {/* Every exercise is swappable — no gating on a curated list */}
-                    {(
+                    {/* Technique video + swap. Every exercise is swappable. */}
+                    {(<>
+                      <a href={techniqueVideoUrl(effName(origEx))} target="_blank" rel="noopener noreferrer"
+                        title={`Technique video — ${videoSourceFor(effName(origEx))}`}
+                        style={{ display:'flex', alignItems:'center', gap:5, padding:'6px 12px', borderRadius:10,
+                        background:'rgba(118,118,128,0.14)', border:'0.5px solid rgba(84,84,88,0.3)',
+                        flexShrink:0, textDecoration:'none' }}>
+                        <PlayCircle size={12} style={{ color:'#8E8E93' }} />
+                        <span style={{ fontSize:12, fontWeight:700, color:'#8E8E93' }}>Technique</span>
+                      </a>
                       <button onClick={()=>setAltsFor(origEx.name)} style={{ display:'flex',
                         alignItems:'center', gap:5, padding:'6px 12px', borderRadius:10,
                         background:'rgba(23,190,187,0.12)', border:'0.5px solid rgba(23,190,187,0.3)', flexShrink:0 }}>
                         <ArrowLeftRight size={12} style={{ color:'#17BEBB' }} />
                         <span style={{ fontSize:12, fontWeight:700, color:'#17BEBB' }}>Swap</span>
                       </button>
-                    )}
+                    </>)}
                   </div>
                 </div>
               )}
