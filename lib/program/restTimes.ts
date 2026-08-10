@@ -34,6 +34,11 @@ export function getRestSeconds(
   dayType?: DayType,
   rir?: number,
 ): number {
+  // Teen Foundations: short rests suit the loads; long enough to keep
+  // technique crisp on the compounds.
+  if (programId === 'teen-foundations-3day') {
+    return { primary: 120, secondary: 90, isolation: 60 }[exerciseType]
+  }
   // BB Upper: heavy main lifts, hypertrophy accessories, short BFR rests.
   if (programId === 'bb-upper-5day') {
     return { primary: 170, secondary: 90, isolation: 60 }[exerciseType]
