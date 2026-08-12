@@ -34,6 +34,10 @@ export function getRestSeconds(
   dayType?: DayType,
   rir?: number,
 ): number {
+  // Garage Gains: heavy focus lifts up front, hypertrophy accessories after.
+  if (programId === 'garage-gains-4day') {
+    return { primary: 170, secondary: 90, isolation: 60 }[exerciseType]
+  }
   // Teen Foundations: short rests suit the loads; long enough to keep
   // technique crisp on the compounds.
   if (programId === 'teen-foundations-3day') {

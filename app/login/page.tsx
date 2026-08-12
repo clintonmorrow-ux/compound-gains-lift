@@ -1,23 +1,43 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Mail } from 'lucide-react'
 
 export default function LoginPage() {
+  // Every page signs the visitor in anonymously so they can start training
+  // immediately. That means by the time someone reaches this screen they may
+  // already have logged sessions attached to an anonymous user. Signing in
+  // normally would create a SEPARATE user and orphan all of it, so when an
+  // anonymous session exists we UPGRADE it in place instead.
+  const [anon,       setAnon]       = useState(false)
   const [email,      setEmail]      = useState('')
   const [sent,       setSent]       = useState(false)
   const [loadMagic,  setLoadMagic]  = useState(false)
   const [loadGoogle, setLoadGoogle] = useState(false)
   const [error,      setError]      = useState('')
 
+  useEffect(() => {
+    const sb = createClient()
+    sb.auth.getSession().then(({ data }) => {
+      setAnon(!!data.session && (data.session.user as any).is_anonymous === true)
+    })
+  }, [])
+
   const sendMagicLink = async () => {
     if (!email.includes('@')) { setError('Enter a valid email address'); return }
     setLoadMagic(true); setError('')
     const sb = createClient()
-    const { error: err } = await sb.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` }
-    })
+    // Anonymous session → attach the email to THIS user so existing training
+    // history carries over. Otherwise fall back to a normal magic-link sign-in.
+    const { error: err } = anon
+      ? (await sb.auth.updateUser(
+          { email },
+          { emailRedirectTo: `${window.location.origin}/auth/confirm` },
+        ))
+      : (await sb.auth.signInWithOtp({
+          email,
+          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        }))
     if (err) { setError(err.message); setLoadMagic(false); return }
     setSent(true); setLoadMagic(false)
   }
@@ -25,10 +45,17 @@ export default function LoginPage() {
   const signInWithGoogle = async () => {
     setLoadGoogle(true); setError('')
     const sb = createClient()
-    const { error: err } = await sb.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` }
-    })
+    // Same rule for Google: link the identity to the existing anonymous user
+    // rather than signing in as a new one.
+    const { error: err } = anon
+      ? (await sb.auth.linkIdentity({
+          provider: 'google',
+          options: { redirectTo: `${window.location.origin}/auth/callback` },
+        }))
+      : (await sb.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: `${window.location.origin}/auth/callback` },
+        }))
     if (err) { setError(err.message); setLoadGoogle(false) }
     // On success the page navigates away automatically
   }
