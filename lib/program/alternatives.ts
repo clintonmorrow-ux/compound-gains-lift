@@ -1035,6 +1035,18 @@ export const EXERCISE_ALTS: Record<string, AltsMap> = {
                       { name:'Cable Curl', cue:'No rest at the bottom' }],
     barbell:         [{ name:'Cambered Bar Curl', cue:'Bilateral · elbows fixed' }],
   },
+  // ── 3 Day Full Body additions ────────────────────────────────────────
+  'Machine Hip Abduction': {
+    machines:        [{ name:'Reverse Abductor Machine', cue:'Same movement, reversed seat position' },
+                      { name:'Machine Glute Kickback',   cue:'Hip extension instead of abduction' }],
+    cables:          [{ name:'Cable Hip Abduction',      cue:'Ankle strap · sweep the leg out and slightly back' }],
+    bands:           [{ name:'Standing Banded Leg Abduction', cue:'Band at the ankle · no machine needed' },
+                      { name:'Banded Lateral Walk',      cue:'Band above the knees · stay low, small steps' },
+                      { name:'Seated Band Abduction',    cue:'Band around the knees · push out and pause' }],
+    bodyweight:      [{ name:'Side-Lying Hip Abduction', cue:'Slow and controlled · high reps' },
+                      { name:'Clamshell',                cue:'Heels together · open the knees · glute medius' }],
+  },
+
   // ── Garage Gains additions (home-gym weighted) ───────────────────────
   'High Bar Back Squat': {
     barbell:         [{ name:'Back Squat', cue:'Standard bar placement' },

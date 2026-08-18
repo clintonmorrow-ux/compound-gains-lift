@@ -34,6 +34,10 @@ export function getRestSeconds(
   dayType?: DayType,
   rir?: number,
 ): number {
+  // 3 Day Full Body: main lifts get a full recovery, accessories are brisk.
+  if (programId === 'full-body-3day') {
+    return { primary: 150, secondary: 90, isolation: 60 }[exerciseType]
+  }
   // Garage Gains: heavy focus lifts up front, hypertrophy accessories after.
   if (programId === 'garage-gains-4day') {
     return { primary: 170, secondary: 90, isolation: 60 }[exerciseType]
