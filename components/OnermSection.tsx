@@ -89,7 +89,13 @@ export default function OnermSection({ programId }: { programId?: string }) {
   const list    = getProgram(programId).workouts
   const effOf   = (n: string) => prefs[n]?.name ?? n   // swap-aware name
   const allNonBW = list.flatMap(w => w.exercises).filter(e => !e.isBodyweight)
-  const totalEntered = allNonBW.filter(e => rms[effOf(e.name)] && parseFloat(rms[effOf(e.name)]) > 0).length
+  // Counts must resolve the same way the rows do — exact-name lookups here
+  // undercounted every lift whose max is stored under a synonym.
+  const hasTm = (n: string) => {
+    const v = lookupByAlias(rms, effOf(n))
+    return !!v && parseFloat(v) > 0
+  }
+  const totalEntered = allNonBW.filter(e => hasTm(e.name)).length
 
   return (
     <div>
@@ -129,7 +135,7 @@ export default function OnermSection({ programId }: { programId?: string }) {
           const c = WC[wkt.key] ?? '#8E8E93'
           const isOpen  = group === wkt.key
           const nonBW   = wkt.exercises.filter(e => !e.isBodyweight)
-          const entered = nonBW.filter(e => rms[effOf(e.name)] && parseFloat(rms[effOf(e.name)]) > 0).length
+          const entered = nonBW.filter(e => hasTm(e.name)).length
           const wktDone = entered === nonBW.length
 
           return (
