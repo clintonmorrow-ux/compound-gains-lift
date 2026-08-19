@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp, Check, RotateCcw, TrendingUp } from 'lucide-rea
 import { getProgram } from '@/lib/program/programLibrary'
 import { fetchAllOneRms, upsertOneRm, fetchAllLoggedSets, fetchSettings, fetchExercisePreferences } from '@/lib/db'
 import { loggedDerivedOneRm, isLoadableBodyweight, withBodyweight, excludeSpeedSets, resolveNewTm } from '@/lib/program/smartSuggestions'
+import { aliasesOf, lookupByAlias } from '@/lib/program/exerciseAliases'
 import type { UserOneRm } from '@/types'
 
 const WC: Record<string,string> = {
@@ -36,6 +37,14 @@ export default function OnermSection({ programId }: { programId?: string }) {
       const byEx: Record<string, any[]> = {}
       ;excludeSpeedSets(sets as any[]).filter(s => s.weight_lbs > 0 && s.reps > 0)
         .forEach(s => { (byEx[s.exercise_name] ??= []).push(s) })
+      // Merge synonym names so a lift keeps its history across programs.
+      // Snapshot first: merging in place would let two synonym keys each
+      // absorb the other's (already merged) sets and double-count them.
+      const rawByEx: Record<string, any[]> = { ...byEx }
+      for (const key of Object.keys(rawByEx)) {
+        const merged = aliasesOf(key).flatMap(n => rawByEx[n] ?? [])
+        byEx[key] = merged
+      }
       const d: Record<string,number> = {}
       for (const [name, arr] of Object.entries(byEx)) {
         if (arr.length < 3) continue
@@ -157,8 +166,8 @@ export default function OnermSection({ programId }: { programId?: string }) {
                 )
 
                 const isSaved    = saved === eff
-                const tmVal      = parseFloat(rms[eff] ?? '0') || 0
-                const loggedEst  = derived[eff] ?? 0
+                const tmVal      = parseFloat(lookupByAlias(rms, eff) ?? '0') || 0
+                const loggedEst  = lookupByAlias(derived, eff) ?? 0
                 const diff       = tmVal > 0 && loggedEst > 0 ? loggedEst - tmVal : 0
                 const diffPct    = tmVal > 0 ? diff / tmVal : 0
                 const hasGain    = diff > 0.5
@@ -193,7 +202,7 @@ export default function OnermSection({ programId }: { programId?: string }) {
                         <div style={{ display:'flex', alignItems:'baseline', gap:4 }}>
                           <input
                             type="number" inputMode="decimal" placeholder="—"
-                            value={rms[eff] ?? ''}
+                            value={rms[eff] ?? lookupByAlias(rms, eff) ?? ''}
                             onChange={e => setRms(p => ({ ...p, [eff]: e.target.value }))}
                             onBlur={e => save(eff, e.target.value)}
                             style={{ width:'100%', fontSize:20, fontWeight:800, color:'var(--label)',

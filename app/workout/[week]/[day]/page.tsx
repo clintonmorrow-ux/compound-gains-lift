@@ -13,6 +13,7 @@ import { getAlternatives, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/progr
 import { calculateSmartSuggestion, isLoadableBodyweight, withBodyweight, excludeSpeedSets, type SmartSuggestion } from '@/lib/program/smartSuggestions'
 import { isTimedExercise, suggestTimedTarget } from '@/lib/program/timed'
 import { techniqueVideoUrl, videoSourceFor } from '@/lib/program/videos'
+import { lookupByAlias } from '@/lib/program/exerciseAliases'
 import { EXERCISE_MUSCLE } from '@/lib/program/analytics'
 import { reintroActive, isReintroSet, REINTRO_VOLUME_PCT, REINTRO_RIR_CAP } from '@/lib/program/reintro'
 import type { Exercise, WorkoutKey } from '@/types'
@@ -1229,7 +1230,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     // weekly percentage. Same TM source, same rounding rules.
     const exRx = rx(ex.name)
     if (exRx && !ex.isBodyweight) {
-      const tmRx = rms[effName(ex)] ?? smartMap[ex.name]?.loggedOneRm ?? 0
+      const tmRx = lookupByAlias(rms, effName(ex)) ?? smartMap[ex.name]?.loggedOneRm ?? 0
       if (tmRx <= 0) return 0
       const raw = tmRx * exRx.pct
       return isDumbbellExercise(ex.name)
@@ -1240,7 +1241,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       // Weighted dips/pull-ups: prescribe TOTAL system weight when we know
       // the athlete's body weight (belt weight = system − body, floored at 0)
       if (!(isLoadableBodyweight(ex.name) && bodyWt > 0)) return 0
-      const tmBW = rms[effName(ex)] ?? 0
+      const tmBW = lookupByAlias(rms, effName(ex)) ?? 0
       if (tmBW > 0) return getTargetWeight(tmBW, ex.type, wk, round, cfg)
       const estBW = smartMap[ex.name]?.loggedOneRm ?? 0
       return estBW > 0 ? getTargetWeight(estBW, ex.type, wk, round, cfg) : 0
@@ -1248,14 +1249,14 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     // Dumbbell lifts: racks run 2.5 lb steps up to 30 lbs, then 5s —
     // compute at 2.5 granularity and re-round above 30 to the user's setting.
     if (isDumbbellExercise(ex.name)) {
-      const tmDB = rms[effName(ex)] ?? 0
+      const tmDB = lookupByAlias(rms, effName(ex)) ?? 0
       if (tmDB > 0) return dumbbellRound(getTargetWeight(tmDB, ex.type, wk, 2.5, cfg), round)
       const estDB = smartMap[ex.name]?.loggedOneRm ?? 0
       return estDB > 0 ? dumbbellRound(getTargetWeight(estDB, ex.type, wk, 2.5, cfg), round) : 0
     }
     // Locked training max for this cycle (× the week's %) is the source of truth.
     const eName = effName(ex)
-    const tm = rms[eName] ?? 0
+    const tm = lookupByAlias(rms, eName) ?? 0
     if (tm > 0) return getTargetWeight(tm, ex.type, wk, round, cfg)
     // No training max stored yet → fall back to a logged-derived estimate
     const est = smartMap[ex.name]?.loggedOneRm ?? 0
@@ -1644,7 +1645,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
           // Locked-training-max explanation + guarded 1RM-drift check
           const eName     = effName(origEx)
-          const storedTM  = (!origEx.isBodyweight || loadableBW) ? (rms[eName] ?? 0) : 0
+          const storedTM  = (!origEx.isBodyweight || loadableBW) ? (lookupByAlias(rms, eName) ?? 0) : 0
           const usingTM   = storedTM > 0 ? storedTM : (smart?.loggedOneRm ?? 0)
           const pctType   = cfg.percentages[origEx.type] ?? 0
           const reasonMain = (origEx.isBodyweight && loadableBW && usingTM > 0)

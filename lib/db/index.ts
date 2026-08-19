@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
+import { aliasesOf } from '@/lib/program/exerciseAliases'
 import type { UserOneRm, UserSettings } from '@/types'
 
 // ── 1RM ──────────────────────────────────────────────────────────────────
@@ -185,10 +186,13 @@ export async function getLastWeightForExercise(exerciseName: string): Promise<nu
 
 export async function getRecentSetsForExercise(exerciseName: string, limit = 15) {
   const supabase = createClient()
+  // Pull history for every name this movement is known by, so switching to a
+  // program that spells it differently does not look like a brand-new lift.
+  const names = aliasesOf(exerciseName)
   const { data, error } = await supabase
     .from('logged_sets')
     .select('weight_lbs, reps, completed_at, rir, is_speed')
-    .eq('exercise_name', exerciseName)
+    .in('exercise_name', names)
     .not('weight_lbs', 'is', null)
     .not('reps', 'is', null)
     .order('completed_at', { ascending: false })
