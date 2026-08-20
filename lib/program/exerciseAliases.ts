@@ -41,16 +41,20 @@ const ALIAS_GROUPS: string[][] = [
 
   // ── legs, isolation ──
   ['Machine Leg Extension', 'Leg Extension'],
+  ['Machine Hip Abduction', 'Hip Abduction', 'Hip Abduction Machine'],
   ['Prone Leg Curl', 'Lying Leg Curl'],
 
   // ── delts ──
-  ['Lateral Raise', 'DB Lateral Raise'],
+  ['Lateral Raise', 'DB Lateral Raise', 'Seated Dumbbell Lateral Raise'],
   ['Cable Lateral Raise', 'Leaning Cable Lateral Raise', 'Behind-the-Back Cable Lateral Raise'],
 
   // ── arms ──
   ['Rope Press-Down', 'Tricep Rope Pushdown', 'Rope Tricep Pushdown'],
   ['Seated Overhead Dumbbell Tricep Extension', 'Overhead DB Tricep Extension'],
-  ['Dumbbell Curl', 'DB Curl'],
+  ['Dumbbell Curl', 'DB Curl', 'Seated Dumbbell Curl', 'Standing Alternating Dumbbell Curl'],
+  ['Incline DB Curl', 'Incline Dumbbell Curl'],
+  ['Dumbbell Fly', 'Flat Dumbbell Fly'],
+  ['Spider Curl', 'Dumbbell Spider Curl'],
 
   // ── core ──
   ['Rope Abdominal Crunch', 'Cable Crunch'],
