@@ -10,6 +10,7 @@ import { BB_UPPER_PROGRAM, BB_UPPER_ID, bbUpperWorkouts, bbUpperPrescription } f
 import { TEEN_FOUNDATIONS_PROGRAM, TEEN_FOUNDATIONS_ID, teenFoundationsWorkouts, teenFoundationsPrescription } from './teenFoundations'
 import { GARAGE_GAINS_PROGRAM, GARAGE_GAINS_ID, garageGainsWorkouts, garageGainsPrescription } from './garageGains'
 import { FULL_BODY_3DAY_PROGRAM, FULL_BODY_3DAY_ID, fullBody3DayWorkouts, fullBody3DayPrescription } from './fullBody3Day'
+import { FULL_BODY_4DAY_PROGRAM, FULL_BODY_4DAY_ID, fullBody4DayWorkouts, fullBody4DayPrescription } from './fullBody4Day'
 
 // ── Galpin 5-Day — wrap existing data into Program interface ──────────────────
 const GALPIN_PROGRAM: Program = {
@@ -39,6 +40,7 @@ export const PROGRAM_LIBRARY: Program[] = [
   TEEN_FOUNDATIONS_PROGRAM,
   GARAGE_GAINS_PROGRAM,
   FULL_BODY_3DAY_PROGRAM,
+  FULL_BODY_4DAY_PROGRAM,
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -67,6 +69,7 @@ export function getWeekWorkouts(programId: string | undefined, week: number): Wo
   if (programId === TEEN_FOUNDATIONS_ID) return teenFoundationsWorkouts(week)
   if (programId === GARAGE_GAINS_ID) return garageGainsWorkouts(week)
   if (programId === FULL_BODY_3DAY_ID) return fullBody3DayWorkouts(week)
+  if (programId === FULL_BODY_4DAY_ID) return fullBody4DayWorkouts(week)
   return getProgram(programId).workouts
 }
 
@@ -82,5 +85,6 @@ export function getPrescription(
   if (programId === TEEN_FOUNDATIONS_ID) return teenFoundationsPrescription(dayKey, exerciseName, week)
   if (programId === GARAGE_GAINS_ID) return garageGainsPrescription(dayKey, exerciseName, week)
   if (programId === FULL_BODY_3DAY_ID) return fullBody3DayPrescription(dayKey, exerciseName, week)
+  if (programId === FULL_BODY_4DAY_ID) return fullBody4DayPrescription(dayKey, exerciseName, week)
   return null
 }

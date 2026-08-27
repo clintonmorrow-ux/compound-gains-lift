@@ -34,6 +34,10 @@ export function getRestSeconds(
   dayType?: DayType,
   rir?: number,
 ): number {
+  // 4 Day Full Body: heavy fives on the mains need a fuller recovery.
+  if (programId === 'full-body-4day') {
+    return { primary: 165, secondary: 90, isolation: 60 }[exerciseType]
+  }
   // 3 Day Full Body: main lifts get a full recovery, accessories are brisk.
   if (programId === 'full-body-3day') {
     return { primary: 150, secondary: 90, isolation: 60 }[exerciseType]

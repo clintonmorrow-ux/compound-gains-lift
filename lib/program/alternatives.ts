@@ -1035,6 +1035,17 @@ export const EXERCISE_ALTS: Record<string, AltsMap> = {
                       { name:'Cable Curl', cue:'No rest at the bottom' }],
     barbell:         [{ name:'Cambered Bar Curl', cue:'Bilateral · elbows fixed' }],
   },
+  // ── 4 Day Full Body additions ────────────────────────────────────────
+  'Straight Bar Cable Crunch': {
+    cables:          [{ name:'Rope Abdominal Crunch',    cue:'Rope attachment · same kneeling crunch' },
+                      { name:'Cable Crunch',             cue:'Same movement, whichever handle is free' },
+                      { name:'Single Arm Oblique Cable Crunch', cue:'Oblique bias · one side at a time' }],
+    machines:        [{ name:'Machine Abdominal Crunch', cue:'Seated and loadable · fixed path' }],
+    bodyweight:      [{ name:'Crunch',                   cue:'Floor version · no load' },
+                      { name:'Hanging Leg Raise',        cue:'Bottom-up flexion · harder' },
+                      { name:'Plank',                    cue:'Timed anti-extension hold' }],
+  },
+
   // ── 3 Day Full Body additions ────────────────────────────────────────
   'Machine Hip Abduction': {
     machines:        [{ name:'Reverse Abductor Machine', cue:'Same movement, reversed seat position' },
