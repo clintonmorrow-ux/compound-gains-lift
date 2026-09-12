@@ -148,7 +148,7 @@ export default function SettingsPage() {
           <div className="ios-group" style={{ overflow:'hidden' }}>
             {PROGRAM_LIBRARY.map((prog, i) => {
               const active = activeProgramId === prog.id
-              const accentColor = prog.focus.includes('Strength') ? '#17BEBB' : '#2DD4A0'
+              const accentColor = prog.focus.includes('Strength') ? 'var(--blue)' : 'var(--green)'
               return (
                 <button key={prog.id} onClick={() => { if (prog.id !== activeProgramId) setPreviewProgram(prog) }}
                   className="w-full" style={{
@@ -188,7 +188,7 @@ export default function SettingsPage() {
                             color: tag === prog.focus ? accentColor : '#636366',
                             background: tag === prog.focus
                               ? `color-mix(in srgb, ${accentColor} 12%, transparent)`
-                              : 'rgba(11,42,51,0.7)',
+                              : 'rgba(28,28,30,0.7)',
                             border: tag === prog.focus
                               ? `0.5px solid ${accentColor}40`
                               : '0.5px solid rgba(84,84,88,0.3)',
@@ -322,7 +322,7 @@ export default function SettingsPage() {
           <div className="ios-group">
             <div className="ios-row ios-row-first">
               <div style={{ width:34, height:34, borderRadius:'50%', flexShrink:0,
-                background:'rgba(255,178,62,0.15)', display:'flex', alignItems:'center',
+                background:'rgba(255,159,10,0.15)', display:'flex', alignItems:'center',
                 justifyContent:'center', fontSize:13, fontWeight:800, color:'var(--accent)' }}>
                 {userEmail ? userEmail[0].toUpperCase() : '?'}
               </div>
@@ -336,9 +336,9 @@ export default function SettingsPage() {
               style={{ opacity: signingOut ? 0.6 : 1 }}>
               {signingOut
                 ? <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin flex-shrink-0"
-                       style={{ borderColor:'#F25C54' }} />
-                : <LogOut size={18} strokeWidth={1.8} style={{ color:'#F25C54', flexShrink:0 }} />}
-              <span className="t-subhead flex-1 text-left" style={{ color:'#F25C54' }}>
+                       style={{ borderColor:'var(--red)' }} />
+                : <LogOut size={18} strokeWidth={1.8} style={{ color:'var(--red)', flexShrink:0 }} />}
+              <span className="t-subhead flex-1 text-left" style={{ color:'var(--red)' }}>
                 {signingOut ? 'Signing out…' : 'Sign out'}
               </span>
             </button>
@@ -388,12 +388,12 @@ export default function SettingsPage() {
                   {[previewProgram.focus, `${previewProgram.daysPerWeek} days/week`,
                     `${previewProgram.totalWeeks} weeks`, previewProgram.split].map(tag => {
                     const isFirst = tag === previewProgram.focus
-                    const accent = previewProgram.focus.includes('Strength') ? '#17BEBB' : '#2DD4A0'
+                    const accent = previewProgram.focus.includes('Strength') ? 'var(--blue)' : 'var(--green)'
                     return (
                       <span key={tag} style={{
                         fontSize:10, fontWeight:600,
                         color: isFirst ? accent : '#636366',
-                        background: isFirst ? `color-mix(in srgb, ${accent} 12%, transparent)` : 'rgba(11,42,51,0.85)',
+                        background: isFirst ? `color-mix(in srgb, ${accent} 12%, transparent)` : 'rgba(28,28,30,0.85)',
                         border: isFirst ? `0.5px solid ${accent}40` : '0.5px solid rgba(84,84,88,0.4)',
                         padding:'3px 9px', borderRadius:99,
                       }}>{tag}</span>
@@ -410,7 +410,7 @@ export default function SettingsPage() {
               <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:20 }}>
                 {previewProgram.workouts.map(wkt => {
                   const colors: Record<string,string> = {
-                    A:'#17BEBB', B:'#2DD4A0', C:'#A885F2', D:'#FFB23E', E:'#F25C54'
+                    A:'var(--blue)', B:'var(--green)', C:'var(--purple)', D:'var(--orange)', E:'var(--red)'
                   }
                   const c = colors[wkt.key] ?? '#8E8E93'
                   const isPower = wkt.dayType === 'power'
@@ -431,9 +431,9 @@ export default function SettingsPage() {
                             <p style={{ fontSize:13, fontWeight:700, color:'#fff' }}>{wkt.shortName}</p>
                             {(isPower || isHyper) && (
                               <span style={{ fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:99,
-                                color: isPower ? '#17BEBB' : '#2DD4A0',
-                                background: isPower ? 'rgba(23,190,187,0.12)' : 'rgba(45,212,160,0.12)',
-                                border: `0.5px solid ${isPower ? 'rgba(23,190,187,0.3)' : 'rgba(45,212,160,0.3)'}` }}>
+                                color: isPower ? 'var(--blue)' : 'var(--green)',
+                                background: isPower ? 'rgba(10,132,255,0.12)' : 'rgba(48,209,88,0.12)',
+                                border: `0.5px solid ${isPower ? 'rgba(10,132,255,0.3)' : 'rgba(48,209,88,0.3)'}` }}>
                                 {isPower ? '⚡ Power' : '🔥 Hypertrophy'}
                               </span>
                             )}
@@ -468,14 +468,14 @@ export default function SettingsPage() {
 
             {/* Sticky CTA */}
             <div style={{ padding:'14px 18px', paddingBottom:'calc(14px + env(safe-area-inset-bottom))',
-              borderTop:'0.5px solid rgba(84,84,88,0.3)', background:'rgba(10,10,16,0.98)',
+              borderTop:'0.5px solid rgba(84,84,88,0.3)', background:'rgba(28,28,30,0.98)',
               flexShrink:0 }}>
               <button onClick={async () => {
                   await switchProgram(previewProgram.id)
                   setPreviewProgram(null)
                 }}
                 style={{ width:'100%', height:54, borderRadius:16, fontSize:17, fontWeight:800,
-                  background: previewProgram.focus.includes('Strength') ? '#17BEBB' : '#2DD4A0',
+                  background: previewProgram.focus.includes('Strength') ? 'var(--blue)' : 'var(--green)',
                   color:'#000', border:'none', cursor:'pointer', letterSpacing:'-0.2px' }}>
                 Switch to {previewProgram.shortName}
               </button>

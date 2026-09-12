@@ -18,7 +18,7 @@ import { EXERCISE_MUSCLE } from '@/lib/program/analytics'
 import { reintroActive, isReintroSet, REINTRO_VOLUME_PCT, REINTRO_RIR_CAP } from '@/lib/program/reintro'
 import type { Exercise, WorkoutKey } from '@/types'
 
-const WC: Record<string,string> = { A:'#17BEBB', B:'#2DD4A0', C:'#A885F2', D:'#FFB23E', E:'#F25C54' }
+const WC: Record<string,string> = { A:'var(--blue)', B:'var(--green)', C:'var(--purple)', D:'var(--orange)', E:'var(--red)' }
 
 // ── Active Set Card (current set being logged) ────────────────────
 // ── Plate calculator ─────────────────────────────────────────────────
@@ -67,7 +67,7 @@ function PlateCalc({ exerciseName, weight, accentColor }: { exerciseName:string;
       </button>
 
       {open && (
-        <div style={{ marginTop:10, padding:'14px', borderRadius:14, background:'rgba(11,42,51,0.6)',
+        <div style={{ marginTop:10, padding:'14px', borderRadius:14, background:'rgba(28,28,30,0.6)',
           border:'0.5px solid rgba(84,84,88,0.4)' }}>
           {/* base weight */}
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
@@ -101,14 +101,14 @@ function PlateCalc({ exerciseName, weight, accentColor }: { exerciseName:string;
                 {plates.flatMap(({p,n}) => Array.from({length:n}, (_,i)=>(
                   <span key={`${p}-${i}`} style={{ display:'inline-flex', alignItems:'center', justifyContent:'center',
                     minWidth:38, height: 30 + (p>=45?10:p>=25?5:0), padding:'0 10px', borderRadius:8,
-                    fontSize:14, fontWeight:800, color:'#04161E',
+                    fontSize:14, fontWeight:800, color:'var(--bg)',
                     background:`color-mix(in srgb, ${accentColor} ${p>=45?92:p>=25?78:64}%, #fff)` }}>{p}</span>
                 )))}
               </div>
               <p style={{ fontSize:13, color:'rgba(239,250,248,0.85)', marginTop:10 }}>
                 <b style={{ color:'#fff' }}>{plates.map(({p,n})=>`${n}×${p}`).join('  ·  ')}</b> on each side
               </p>
-              <p style={{ fontSize:12, color: exact ? '#2DD4A0' : '#FFB23E', marginTop:3 }}>
+              <p style={{ fontSize:12, color: exact ? 'var(--green)' : 'var(--orange)', marginTop:3 }}>
                 {exact
                   ? `= ${achievable} lbs total`
                   : `Closest with standard plates: ${achievable} lbs (${short.toFixed(1)} lb short of ${weight})`}
@@ -161,8 +161,8 @@ function CoachBubble({ target, lastWeight, isBodyweight, accentColor, reasonMain
   if (!hasJump && !reasonMain && !drift) return null
 
   // At-a-glance color/arrow always means "change vs last time".
-  const dirColor = (jump ?? 0) > 0 ? '#2DD4A0'
-                 : (jump ?? 0) < 0 ? '#FFB23E' : accentColor
+  const dirColor = (jump ?? 0) > 0 ? 'var(--green)'
+                 : (jump ?? 0) < 0 ? 'var(--orange)' : accentColor
   const label = hasJump
     ? (jump! > 0 ? `Up ${Math.round(jump!)} lbs from last time` : `Down ${Math.round(-jump!)} lbs from last time`)
     : 'Why this weight?'
@@ -171,9 +171,9 @@ function CoachBubble({ target, lastWeight, isBodyweight, accentColor, reasonMain
     <div style={{ marginBottom:4 }}>
       <button onClick={()=>setOpen(o=>!o)} style={{ display:'inline-flex', alignItems:'center', gap:7, padding:'6px 11px',
         borderRadius:999, background:'rgba(118,118,128,0.12)', border:'0.5px solid rgba(84,84,88,0.35)' }}>
-        <Lightbulb size={13} style={{ color: drift ? '#FFB23E' : accentColor, flexShrink:0 }} strokeWidth={2.2} />
+        <Lightbulb size={13} style={{ color: drift ? 'var(--orange)' : accentColor, flexShrink:0 }} strokeWidth={2.2} />
         <span style={{ fontSize:12, fontWeight:600, color: hasJump ? dirColor : '#fff' }}>{label}</span>
-        {drift && <span style={{ width:6, height:6, borderRadius:'50%', background:'#FFB23E', flexShrink:0 }} />}
+        {drift && <span style={{ width:6, height:6, borderRadius:'50%', background:'var(--orange)', flexShrink:0 }} />}
         <span style={{ fontSize:11, color:'#8E8E93' }}>{open ? '⌃' : '⌄'}</span>
       </button>
       {open && (
@@ -190,14 +190,14 @@ function CoachBubble({ target, lastWeight, isBodyweight, accentColor, reasonMain
             <p style={{ fontSize:11, color:'#8E8E93' }}>Your logged sets estimate a 1RM of ~{loggedEst} lbs.</p>
           )}
           {drift && (
-            <div style={{ borderRadius:10, padding:'11px 12px', background:'rgba(255,178,62,0.1)',
-              border:'0.5px solid rgba(255,178,62,0.35)', display:'flex', flexDirection:'column', gap:9 }}>
-              <p style={{ fontSize:12, fontWeight:800, color:'#FFB23E', textTransform:'uppercase', letterSpacing:'0.06em' }}>1RM check</p>
+            <div style={{ borderRadius:10, padding:'11px 12px', background:'rgba(255,159,10,0.1)',
+              border:'0.5px solid rgba(255,159,10,0.35)', display:'flex', flexDirection:'column', gap:9 }}>
+              <p style={{ fontSize:12, fontWeight:800, color:'var(--orange)', textTransform:'uppercase', letterSpacing:'0.06em' }}>1RM check</p>
               <p style={{ fontSize:12.5, color:'rgba(239,250,248,0.85)', lineHeight:1.5 }}>
                 Your recent sets estimate ~{drift.loggedEst} lbs — {drift.pct>0?'above':'below'} this cycle&rsquo;s training max by {Math.abs(Math.round(drift.pct*100))}%. If your starting number was off, re-baseline now; otherwise keep it and it&rsquo;ll update at the end of the cycle.
               </p>
               <div style={{ display:'flex', gap:8 }}>
-                <button onClick={drift.onRebaseline} style={{ flex:1, height:38, borderRadius:10, background:'#FFB23E', color:'#04161E', fontSize:13, fontWeight:700 }}>
+                <button onClick={drift.onRebaseline} style={{ flex:1, height:38, borderRadius:10, background:'var(--orange)', color:'var(--bg)', fontSize:13, fontWeight:700 }}>
                   Re-baseline to {drift.loggedEst} lbs
                 </button>
                 <button onClick={drift.onDismiss} style={{ padding:'0 16px', height:38, borderRadius:10, background:'rgba(118,118,128,0.18)', color:'#8E8E93', fontSize:13, fontWeight:600 }}>
@@ -243,11 +243,11 @@ function WarmupSets({ working, round, accentColor, exerciseName }: {
             const isDone = doneIdx.has(i)
             return (
               <button key={i} onClick={()=>toggleDone(i)} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 10px', borderRadius:10,
-                background: isDone ? 'rgba(45,212,160,0.1)' : 'rgba(118,118,128,0.1)',
-                border:`0.5px solid ${isDone ? 'rgba(45,212,160,0.4)' : 'rgba(84,84,88,0.3)'}`, textAlign:'left' }}>
+                background: isDone ? 'rgba(48,209,88,0.1)' : 'rgba(118,118,128,0.1)',
+                border:`0.5px solid ${isDone ? 'rgba(48,209,88,0.4)' : 'rgba(84,84,88,0.3)'}`, textAlign:'left' }}>
                 <div style={{ width:22, height:22, borderRadius:'50%', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center',
-                  border:`1.5px solid ${isDone ? '#2DD4A0' : 'rgba(142,142,147,0.5)'}`, background: isDone ? '#2DD4A0' : 'transparent' }}>
-                  {isDone && <Check size={13} strokeWidth={3} style={{ color:'#04161E' }} />}
+                  border:`1.5px solid ${isDone ? 'var(--green)' : 'rgba(142,142,147,0.5)'}`, background: isDone ? 'var(--green)' : 'transparent' }}>
+                  {isDone && <Check size={13} strokeWidth={3} style={{ color:'var(--bg)' }} />}
                 </div>
                 <span style={{ fontSize:11, fontWeight:700, color:'#8E8E93', width:42 }}>{Math.round(s.pct*100)}%</span>
                 <span style={{ fontSize:15, fontWeight:700, color: isDone ? '#8E8E93' : '#fff' }}>
@@ -321,7 +321,7 @@ function TimedSetCard({ setNum, setCount, suggestSec, suggestWt, note, accentCol
 
   return (
     <div style={{ borderRadius:16, border:`1px solid ${accentColor}55`,
-      background:`linear-gradient(160deg, color-mix(in srgb, ${accentColor} 9%, transparent) 0%, rgba(13,13,20,0) 100%)`,
+      background:`linear-gradient(160deg, color-mix(in srgb, ${accentColor} 9%, transparent) 0%, rgba(0,0,0,0) 100%)`,
       padding:'16px' }}>
       <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase',
         letterSpacing:'0.1em', marginBottom:10, display:'flex', alignItems:'center', gap:8 }}>
@@ -366,7 +366,7 @@ function TimedSetCard({ setNum, setCount, suggestSec, suggestWt, note, accentCol
         </div>
 
         <button onClick={start} style={{ width:'100%', padding:'15px', borderRadius:14,
-          background:accentColor, color:'#04161E', fontSize:16, fontWeight:800,
+          background:accentColor, color:'var(--bg)', fontSize:16, fontWeight:800,
           display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
           Start Hold
         </button>
@@ -383,7 +383,7 @@ function TimedSetCard({ setNum, setCount, suggestSec, suggestWt, note, accentCol
           <div style={{ height:'100%', width:`${pct*100}%`, background:accentColor, transition:'width 0.25s linear' }} />
         </div>
         <button onClick={stopAndLog} style={{ width:'100%', padding:'15px', borderRadius:14,
-          background:'rgba(255,178,62,0.16)', border:'1px solid rgba(255,178,62,0.45)', color:'#FFB23E',
+          background:'rgba(255,159,10,0.16)', border:'1px solid rgba(255,159,10,0.45)', color:'var(--orange)',
           fontSize:15, fontWeight:800 }}>
           Stop & Log ({Math.max(1, targetSec - rem)}s held)
         </button>
@@ -454,8 +454,8 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
     <div style={{ borderRadius:16,
       border: speedMode ? '1px dashed rgba(255,214,10,0.5)' : `1px solid ${accentColor}55`,
       background: speedMode
-        ? 'linear-gradient(160deg, rgba(255,214,10,0.07) 0%, rgba(13,13,20,0) 100%)'
-        : `linear-gradient(160deg, color-mix(in srgb, ${accentColor} 9%, transparent) 0%, rgba(13,13,20,0) 100%)`,
+        ? 'linear-gradient(160deg, rgba(255,214,10,0.07) 0%, rgba(0,0,0,0) 100%)'
+        : `linear-gradient(160deg, color-mix(in srgb, ${accentColor} 9%, transparent) 0%, rgba(0,0,0,0) 100%)`,
       padding:'16px' }}>
 
       <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase',
@@ -477,8 +477,8 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
             {isBodyweight ? 'Added Weight' : 'Weight'}
           </p>
           {isBodyweight && (
-            <span style={{ fontSize:11, color:'rgba(255,178,62,0.7)',
-              background:'rgba(255,178,62,0.1)', padding:'2px 7px', borderRadius:6 }}>
+            <span style={{ fontSize:11, color:'rgba(255,159,10,0.7)',
+              background:'rgba(255,159,10,0.1)', padding:'2px 7px', borderRadius:6 }}>
               belt · vest · optional
             </span>
           )}
@@ -547,7 +547,7 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
           {[0,1,2,3,4].map(v => (
             <button key={v} onClick={()=>setRir(v)} style={{ flex:1, height:42, borderRadius:12,
               background: rir===v ? accentColor : 'rgba(118,118,128,0.15)',
-              fontSize:15, fontWeight:800, color: rir===v ? '#04161E' : '#8E8E93',
+              fontSize:15, fontWeight:800, color: rir===v ? 'var(--bg)' : '#8E8E93',
               transition:'background 0.15s' }}>
               {v===4?'4+':v}
             </button>
@@ -564,7 +564,7 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
           <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.08em' }}>
             Eccentric Tempo
           </p>
-          <span style={{ fontSize:11, color:'rgba(23,190,187,0.7)', background:'rgba(23,190,187,0.1)',
+          <span style={{ fontSize:11, color:'rgba(10,132,255,0.7)', background:'rgba(10,132,255,0.1)',
             padding:'2px 7px', borderRadius:6 }}>optional</span>
           <span style={{ marginLeft:'auto', fontSize:14, fontWeight:800, color:accentColor, letterSpacing:'-0.2px' }}>{tempo}</span>
         </div>
@@ -578,16 +578,16 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
                   background: sel ? accentColor : 'rgba(118,118,128,0.15)',
                   border: sel ? 'none' : '0.5px solid rgba(84,84,88,0.3)',
                   display:'flex', flexDirection:'column', alignItems:'center', gap:2, transition:'all 0.15s' }}>
-                <span style={{ fontSize:14, fontWeight:800, color: sel ? '#04161E' : '#fff' }}>{t.code}</span>
+                <span style={{ fontSize:14, fontWeight:800, color: sel ? 'var(--bg)' : '#fff' }}>{t.code}</span>
                 <span style={{ fontSize:9, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em', whiteSpace:'nowrap',
-                  color: sel ? 'rgba(4,22,30,0.7)' : 'rgba(142,142,147,0.85)' }}>{t.purpose || 'Default'}</span>
+                  color: sel ? 'rgba(0,0,0,0.7)' : 'rgba(142,142,147,0.85)' }}>{t.purpose || 'Default'}</span>
               </button>
             )
           })}
         </div>
         {tempo !== 'Standard' && (
-          <p style={{ fontSize:12, color:'rgba(23,190,187,0.85)', marginTop:8,
-            background:'rgba(23,190,187,0.08)', padding:'8px 12px', borderRadius:10, lineHeight:1.5 }}>
+          <p style={{ fontSize:12, color:'rgba(10,132,255,0.85)', marginTop:8,
+            background:'rgba(10,132,255,0.08)', padding:'8px 12px', borderRadius:10, lineHeight:1.5 }}>
             💡 {TEMPOS.find(t=>t.code===tempo)?.hint}
           </p>
         )}
@@ -598,7 +598,7 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
         style={{ width:'100%', height:54, borderRadius:14, fontSize:17, fontWeight:800,
           display:'flex', alignItems:'center', justifyContent:'center', gap:8,
           background: busy ? 'rgba(118,118,128,0.3)' : accentColor,
-          color: busy ? '#8E8E93' : '#04161E', letterSpacing:'-0.3px',
+          color: busy ? '#8E8E93' : 'var(--bg)', letterSpacing:'-0.3px',
           boxShadow: busy ? 'none' : `0 4px 20px ${accentColor}55`,
           transition:'background 0.15s, box-shadow 0.15s' }}>
         {busy
@@ -634,8 +634,8 @@ function LoggedRow({ setNum, weight, reps, rir, speed = false, timed = false, ed
 
   if (editing) return (
     <div style={{ padding:'12px 14px', borderRadius:12,
-      background:'rgba(45,212,160,0.08)', border:'1px solid rgba(45,212,160,0.45)' }}>
-      <p style={{ fontSize:11, fontWeight:700, color:'#2DD4A0', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:10 }}>
+      background:'rgba(48,209,88,0.08)', border:'1px solid rgba(48,209,88,0.45)' }}>
+      <p style={{ fontSize:11, fontWeight:700, color:'var(--green)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:10 }}>
         Editing Set {setNum}
       </p>
       <div style={{ display:'flex', gap:10, marginBottom:10 }}>
@@ -662,9 +662,9 @@ function LoggedRow({ setNum, weight, reps, rir, speed = false, timed = false, ed
           <div style={{ display:'flex', gap:6 }}>
             {[0,1,2,3,4].map(v => (
               <button key={v} onClick={()=>setERir(v)} style={{ flex:1, height:34, borderRadius:8,
-                background: eRir===v ? 'rgba(45,212,160,0.25)' : 'rgba(118,118,128,0.15)',
-                border: eRir===v ? '1px solid rgba(45,212,160,0.6)' : '0.5px solid transparent',
-                color: eRir===v ? '#2DD4A0' : '#8E8E93', fontSize:13, fontWeight:700 }}>{v}</button>
+                background: eRir===v ? 'rgba(48,209,88,0.25)' : 'rgba(118,118,128,0.15)',
+                border: eRir===v ? '1px solid rgba(48,209,88,0.6)' : '0.5px solid transparent',
+                color: eRir===v ? 'var(--green)' : '#8E8E93', fontSize:13, fontWeight:700 }}>{v}</button>
             ))}
           </div>
         </div>
@@ -673,7 +673,7 @@ function LoggedRow({ setNum, weight, reps, rir, speed = false, timed = false, ed
         <button onClick={()=>setEditing(false)} style={{ flex:1, height:42, borderRadius:10,
           background:'rgba(118,118,128,0.16)', color:'#8E8E93', fontSize:14, fontWeight:700 }}>Cancel</button>
         <button onClick={save} disabled={busy} style={{ flex:2, height:42, borderRadius:10,
-          background:'#2DD4A0', color:'#04161E', fontSize:14, fontWeight:800, opacity: busy ? 0.6 : 1 }}>
+          background:'var(--green)', color:'var(--bg)', fontSize:14, fontWeight:800, opacity: busy ? 0.6 : 1 }}>
           {busy ? 'Saving…' : 'Save Changes'}
         </button>
       </div>
@@ -683,9 +683,9 @@ function LoggedRow({ setNum, weight, reps, rir, speed = false, timed = false, ed
   return (
     <div onClick={editable ? openEdit : undefined}
       style={{ display:'flex', alignItems:'center', gap:12, height:44, paddingInline:14,
-      borderRadius:12, background:'rgba(45,212,160,0.1)', border:'0.5px solid rgba(45,212,160,0.35)',
+      borderRadius:12, background:'rgba(48,209,88,0.1)', border:'0.5px solid rgba(48,209,88,0.35)',
       cursor: editable ? 'pointer' : 'default' }}>
-      <div style={{ width:24, height:24, borderRadius:'50%', background: speed ? '#FFD60A' : '#2DD4A0',
+      <div style={{ width:24, height:24, borderRadius:'50%', background: speed ? '#FFD60A' : 'var(--green)',
         display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
         {speed ? <Zap size={12} strokeWidth={2.6} style={{ color:'#000' }} /> : <Check size={13} strokeWidth={3} style={{ color:'#000' }} />}
       </div>
@@ -698,7 +698,7 @@ function LoggedRow({ setNum, weight, reps, rir, speed = false, timed = false, ed
           : <>{weight != null ? `${weight} lbs` : 'Bodyweight'} × {reps} reps</>}
         {speed
           ? <span style={{ color:'rgba(255,214,10,0.75)' }}> · speed</span>
-          : !timed && rir !== undefined && <span style={{ color:'rgba(45,212,160,0.8)' }}> · RIR {rir}</span>}
+          : !timed && rir !== undefined && <span style={{ color:'rgba(48,209,88,0.8)' }}> · RIR {rir}</span>}
       </span>
       {editable && <Pencil size={13} style={{ color:'rgba(142,142,147,0.7)', flexShrink:0 }} />}
     </div>
@@ -746,10 +746,10 @@ function DropSetRow({ lastWeight, repsRange, accentColor, onLog, dbMode = false 
 
   if (done) return (
     <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px',
-      borderRadius:12, background:'rgba(45,212,160,0.1)', border:'0.5px solid rgba(45,212,160,0.35)',
+      borderRadius:12, background:'rgba(48,209,88,0.1)', border:'0.5px solid rgba(48,209,88,0.35)',
       marginBottom:8 }}>
-      <Check size={14} strokeWidth={3} style={{ color:'#2DD4A0' }} />
-      <span style={{ fontSize:13, color:'#2DD4A0', fontWeight:600 }}>Drop set logged · {wt} lbs × {reps}</span>
+      <Check size={14} strokeWidth={3} style={{ color:'var(--green)' }} />
+      <span style={{ fontSize:13, color:'var(--green)', fontWeight:600 }}>Drop set logged · {wt} lbs × {reps}</span>
     </div>
   )
 
@@ -757,19 +757,19 @@ function DropSetRow({ lastWeight, repsRange, accentColor, onLog, dbMode = false 
     <div style={{ marginBottom:8 }}>
       {!open ? (
         <button onClick={()=>setOpen(true)} style={{ width:'100%', padding:'10px 14px',
-          borderRadius:12, background:'rgba(255,178,62,0.08)',
-          border:`0.5px solid rgba(255,178,62,0.3)`,
+          borderRadius:12, background:'rgba(255,159,10,0.08)',
+          border:`0.5px solid rgba(255,159,10,0.3)`,
           display:'flex', alignItems:'center', gap:8 }}>
           <span style={{ fontSize:14 }}>🔽</span>
           <div style={{ flex:1, textAlign:'left' }}>
-            <p style={{ fontSize:13, fontWeight:700, color:'#FFB23E' }}>Add Drop Set</p>
+            <p style={{ fontSize:13, fontWeight:700, color:'var(--orange)' }}>Add Drop Set</p>
             <p style={{ fontSize:11, color:'#8E8E93' }}>Suggested: {suggestedWt} lbs (−20%) · to failure</p>
           </div>
         </button>
       ) : (
         <div style={{ padding:'12px 14px', borderRadius:12,
-          background:'rgba(255,178,62,0.08)', border:'0.5px solid rgba(255,178,62,0.35)' }}>
-          <p style={{ fontSize:11, fontWeight:700, color:'#FFB23E', textTransform:'uppercase',
+          background:'rgba(255,159,10,0.08)', border:'0.5px solid rgba(255,159,10,0.35)' }}>
+          <p style={{ fontSize:11, fontWeight:700, color:'var(--orange)', textTransform:'uppercase',
             letterSpacing:'0.08em', marginBottom:10 }}>Drop Set — reduce weight · push to failure</p>
           <div style={{ display:'flex', gap:10, alignItems:'center', marginBottom:10 }}>
             <div style={{ flex:1 }}>
@@ -800,7 +800,7 @@ function DropSetRow({ lastWeight, repsRange, accentColor, onLog, dbMode = false 
             </div>
           </div>
           <button onClick={commit} disabled={busy} style={{ width:'100%', height:44, borderRadius:12,
-            background:'#FFB23E', color:'#04161E', fontSize:14, fontWeight:800,
+            background:'var(--orange)', color:'var(--bg)', fontSize:14, fontWeight:800,
             display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
             {busy ? <div style={{ width:16, height:16, borderRadius:'50%', border:'2px solid transparent',
               borderTopColor:'#fff', animation:'spin 0.7s linear infinite' }} />
@@ -901,26 +901,15 @@ function RestPill({ seconds, exName, onDone, onRestPause }: {
   const m=Math.floor(rem/60), s=rem%60, pct=(rem/seconds)*100
   return (
     <div className="rest-pill" style={{ gap:9 }}>
-      <svg width="34" height="34" viewBox="0 0 36 36" style={{ flexShrink:0 }}>
-        <defs>
-          <clipPath id="rp-clip"><circle cx="18" cy="18" r="15.5" /></clipPath>
-          <linearGradient id="rp-water" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3FE8DA" />
-            <stop offset="100%" stopColor="#17BEBB" />
-          </linearGradient>
-        </defs>
-        <circle cx="18" cy="18" r="15.5" fill="rgba(23,190,187,0.10)"
-          stroke="rgba(63,232,218,0.45)" strokeWidth="1.5" />
-        <g clipPath="url(#rp-clip)">
-          <g style={{ transform:`translateY(${(2 + (1 - pct/100)*30) - 4}px)`, transition:'transform 1s linear' }}>
-            <g className="rp-wave">
-              <path d="M0 4 q4.5 -4 9 0 t9 0 t9 0 t9 0 t9 0 t9 0 t9 0 t9 0 V44 H0 Z" fill="url(#rp-water)" opacity="0.92" />
-            </g>
-            <g className="rp-wave2">
-              <path d="M0 5 q4.5 4 9 0 t9 0 t9 0 t9 0 t9 0 t9 0 t9 0 t9 0 t9 0 V44 H0 Z" fill="url(#rp-water)" opacity="0.5" />
-            </g>
-          </g>
-        </g>
+      {/* Activity-style ring: track in tertiary fill, remaining time as a
+          depleting arc in the tint. Round line caps, no gradients. */}
+      <svg width="34" height="34" viewBox="0 0 36 36" style={{ flexShrink:0, transform:'rotate(-90deg)' }}>
+        <circle cx="18" cy="18" r="14.5" fill="none" stroke="var(--fill-3)" strokeWidth="3.5" />
+        <circle cx="18" cy="18" r="14.5" fill="none" stroke="var(--accent)" strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeDasharray={`${2 * Math.PI * 14.5}`}
+          strokeDashoffset={`${2 * Math.PI * 14.5 * (1 - pct / 100)}`}
+          style={{ transition:'stroke-dashoffset 1s linear' }} />
       </svg>
       <span style={{ fontSize:17, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums', letterSpacing:'-0.3px', flexShrink:0 }}>
         {m}:{String(s).padStart(2,'0')}
@@ -928,8 +917,8 @@ function RestPill({ seconds, exName, onDone, onRestPause }: {
       <div style={{ width:0.5, height:18, background:'rgba(84,84,88,0.6)', flexShrink:0 }} />
       <button onClick={onRestPause} title="Rest-Pause: 15s then log more reps"
         style={{ padding:'4px 9px', borderRadius:999, flexShrink:0,
-        background:'rgba(23,190,187,0.25)', fontSize:11, fontWeight:700, color:'#17BEBB',
-        border:'0.5px solid rgba(23,190,187,0.4)' }}>
+        background:'rgba(10,132,255,0.25)', fontSize:11, fontWeight:700, color:'var(--blue)',
+        border:'0.5px solid rgba(10,132,255,0.4)' }}>
         RP
       </button>
       <button onClick={onDone}
@@ -1423,10 +1412,10 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
     const Stat = ({ label, value, unit }: { label:string; value:string; unit?:string }) => (
       <div style={{ flex:1, textAlign:'center', padding:'14px 6px', borderRadius:14,
-        background:'rgba(239,250,248,0.95)', border:'0.5px solid rgba(4,22,30,0.08)' }}>
-        <p style={{ fontSize:26, fontWeight:800, color:'#04161E', letterSpacing:'-0.6px', lineHeight:1 }}>{value}</p>
-        {unit && <p style={{ fontSize:10, color:'rgba(4,22,30,0.5)', marginTop:2 }}>{unit}</p>}
-        <p style={{ fontSize:11, fontWeight:700, color:'rgba(4,22,30,0.55)', textTransform:'uppercase', letterSpacing:'0.06em', marginTop:6 }}>{label}</p>
+        background:'rgba(239,250,248,0.95)', border:'0.5px solid rgba(0,0,0,0.08)' }}>
+        <p style={{ fontSize:26, fontWeight:800, color:'var(--bg)', letterSpacing:'-0.6px', lineHeight:1 }}>{value}</p>
+        {unit && <p style={{ fontSize:10, color:'rgba(0,0,0,0.5)', marginTop:2 }}>{unit}</p>}
+        <p style={{ fontSize:11, fontWeight:700, color:'rgba(0,0,0,0.55)', textTransform:'uppercase', letterSpacing:'0.06em', marginTop:6 }}>{label}</p>
       </div>
     )
 
@@ -1434,7 +1423,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       <div className="min-h-screen pb-tabs" style={{ background:'transparent' }}>
         {/* hero header in the workout's color */}
         <div className="pt-safe" style={{ position:'relative', overflow:'hidden', padding:'34px 20px 26px',
-          background:`linear-gradient(160deg, color-mix(in srgb, ${accent} 40%, #04161E) 0%, color-mix(in srgb, ${accent} 12%, #0B2A33) 55%, #04161E 100%)` }}>
+          background:`linear-gradient(160deg, color-mix(in srgb, ${accent} 40%, var(--bg)) 0%, color-mix(in srgb, ${accent} 12%, var(--bg-2)) 55%, var(--bg) 100%)` }}>
           <div aria-hidden style={{ position:'absolute', top:-50, right:-16, fontSize:200, fontWeight:800, lineHeight:1,
             color:`color-mix(in srgb, ${accent} 20%, transparent)`, letterSpacing:'-0.06em' }}>{key}</div>
           <div style={{ position:'relative', display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', gap:10 }}>
@@ -1472,9 +1461,9 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
               <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                 {prs.map(pr => (
                   <div key={pr.name} style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
-                    <span style={{ fontSize:14, fontWeight:700, color:'#04161E' }}>{pr.name}</span>
-                    <span style={{ fontSize:13, color:'rgba(4,22,30,0.6)' }}>
-                      {pr.weight} × {pr.reps} · <b style={{ color:'#04161E' }}>{pr.e1rm}</b> e1RM
+                    <span style={{ fontSize:14, fontWeight:700, color:'var(--bg)' }}>{pr.name}</span>
+                    <span style={{ fontSize:13, color:'rgba(0,0,0,0.6)' }}>
+                      {pr.weight} × {pr.reps} · <b style={{ color:'var(--bg)' }}>{pr.e1rm}</b> e1RM
                     </span>
                   </div>
                 ))}
@@ -1499,7 +1488,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
           {/* coach read */}
           <div style={{ display:'flex', gap:11, padding:'14px 16px', borderRadius:14,
-            background:'rgba(11,42,51,0.5)', border:'0.5px solid rgba(84,84,88,0.35)' }}>
+            background:'rgba(28,28,30,0.5)', border:'0.5px solid rgba(84,84,88,0.35)' }}>
             <Flame size={18} style={{ color:accent, flexShrink:0, marginTop:1 }} strokeWidth={2} />
             <p style={{ fontSize:14, color:'rgba(239,250,248,0.88)', lineHeight:1.45 }}>{coachLine}</p>
           </div>
@@ -1507,7 +1496,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           {/* actions */}
           <div style={{ display:'flex', flexDirection:'column', gap:10, marginTop:2 }}>
             <button onClick={()=>router.push('/')} style={{ width:'100%', height:54,
-              borderRadius:16, fontSize:17, fontWeight:700, background:accent, color:'#04161E' }}>
+              borderRadius:16, fontSize:17, fontWeight:700, background:accent, color:'var(--bg)' }}>
               Back to Home
             </button>
             <button onClick={()=>router.push('/insights')} style={{ width:'100%', height:48,
@@ -1526,7 +1515,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
       {/* Nav */}
       <div className="pt-safe sticky top-0 z-30" style={{
-        background:`linear-gradient(135deg, color-mix(in srgb, ${accent} 20%, rgba(6,24,32,0.92)) 0%, rgba(6,24,32,0.88) 60%)`,
+        background:`linear-gradient(135deg, color-mix(in srgb, ${accent} 20%, rgba(28,28,30,0.92)) 0%, rgba(28,28,30,0.88) 60%)`,
         backdropFilter:'saturate(180%) blur(28px)',
         WebkitBackdropFilter:'saturate(180%) blur(28px)', borderBottom:'0.5px solid rgba(84,84,88,0.6)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px 10px' }}>
@@ -1535,7 +1524,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
             <ChevronLeft size={17} strokeWidth={2.5} style={{ color:accent }} />
           </button>
           <div style={{ width:30, height:30, borderRadius:9, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center',
-            background:`color-mix(in srgb, ${accent} 85%, #fff)`, color:'#04161E', fontSize:15, fontWeight:800 }}>
+            background:`color-mix(in srgb, ${accent} 85%, #fff)`, color:'var(--bg)', fontSize:15, fontWeight:800 }}>
             {key}
           </div>
           <div style={{ flex:1 }}>
@@ -1557,7 +1546,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       {/* ── PHAT Day-Type Context Card ── */}
       {workout.dayType && workout.dayType !== 'standard' && (() => {
         const isPower = workout.dayType === 'power'
-        const accent  = isPower ? '#17BEBB' : '#2DD4A0'
+        const accent  = isPower ? 'var(--blue)' : 'var(--green)'
         const tips = isPower ? [
           { icon:'⚡', text:'Explosive concentric intent on every rep — even heavy loads should be driven fast. Speed of intent is what recruits high-threshold motor units.' },
           { icon:'⏱', text:'Full rest between sets is non-negotiable. Phosphocreatine takes 3–4 min to fully replenish — cut the rest and you cut the force output.' },
@@ -1670,7 +1659,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
               borderRadius:18, overflow:'hidden',
               background: isOpen ? '#0D0D18' : '#0A0A12',
               border:`0.5px solid ${isOpen ? `${accent}55` : 'rgba(84,84,88,0.35)'}`,
-              borderLeft:`3px solid ${isComp ? '#2DD4A0' : isOpen ? accent : 'rgba(84,84,88,0.3)'}`,
+              borderLeft:`3px solid ${isComp ? 'var(--green)' : isOpen ? accent : 'rgba(84,84,88,0.3)'}`,
               opacity: isComp && !isOpen ? 0.5 : 1, transition:'all 0.2s' }}>
 
               {/* Header */}
@@ -1679,7 +1668,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                 <div style={{ display:'flex', flexDirection:'column', gap:3, width:22, flexShrink:0 }}>
                   {Array.from({length:exSets}).map((_,i) => (
                     <div key={i} style={{ height:4, borderRadius:99, transition:'background 0.3s',
-                      background: i<exLogged.length ? '#2DD4A0' : 'rgba(84,84,88,0.35)' }} />
+                      background: i<exLogged.length ? 'var(--green)' : 'rgba(84,84,88,0.35)' }} />
                   ))}
                 </div>
                 <div style={{ flex:1, minWidth:0, textAlign:'left' }}>
@@ -1688,12 +1677,12 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                   <p style={{ fontSize:12, color:'#8E8E93', marginTop:2 }}>
                     {origEx.muscle}
                     {!origEx.isBodyweight && target>0 && (
-                      <span style={{ color: wDir==='up'?'#2DD4A0':wDir==='down'?'#FFB23E':accent }}>
+                      <span style={{ color: wDir==='up'?'var(--green)':wDir==='down'?'var(--orange)':accent }}>
                         {` · ${target} lbs`}{wDir==='up'?' ↑':wDir==='down'?' ↓':''}
                       </span>
                     )}
                     {loadableBW && target>0 && (
-                      <span style={{ color: wDir==='up'?'#2DD4A0':wDir==='down'?'#FFB23E':accent }}>
+                      <span style={{ color: wDir==='up'?'var(--green)':wDir==='down'?'var(--orange)':accent }}>
                         {beltTgt > 0 ? ` · BW +${beltTgt} lbs belt` : ' · bodyweight only'}{wDir==='up'?' ↑':wDir==='down'?' ↓':''}
                       </span>
                     )}
@@ -1704,7 +1693,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                     </p>
                   )}
                 </div>
-                <span style={{ fontSize:14, fontWeight:800, color:isComp?'#2DD4A0':'#fff' }}>
+                <span style={{ fontSize:14, fontWeight:800, color:isComp?'var(--green)':'#fff' }}>
                   {exLogged.length}<span style={{ color:'#8E8E93', fontWeight:500 }}>/{exSets}</span>
                 </span>
               </button>
@@ -1735,7 +1724,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                   {!isComp && isBfrEx && (
                     <div style={{ borderRadius:12, border:'1px dashed rgba(191,90,242,0.5)',
                       background:'rgba(191,90,242,0.08)', padding:'12px 14px', marginBottom:4 }}>
-                      <p style={{ fontSize:11, fontWeight:700, color:'#BF5AF2', textTransform:'uppercase',
+                      <p style={{ fontSize:11, fontWeight:700, color:'var(--purple)', textTransform:'uppercase',
                         letterSpacing:'0.06em', marginBottom:6 }}>
                         BFR · Blood-Flow Restriction <span style={{ color:'#8E8E93', fontWeight:600 }}>· not counted toward your 1RM</span>
                       </p>
@@ -1745,9 +1734,9 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
                   {/* Testing-day protocol banner — replaces the normal coach bubble */}
                   {!isComp && isTestEx && (
-                    <div style={{ borderRadius:12, border:'1px solid rgba(255,178,62,0.4)',
-                      background:'rgba(255,178,62,0.08)', padding:'12px 14px', marginBottom:4 }}>
-                      <p style={{ fontSize:11, fontWeight:700, color:'#FFB23E', textTransform:'uppercase',
+                    <div style={{ borderRadius:12, border:'1px solid rgba(255,159,10,0.4)',
+                      background:'rgba(255,159,10,0.08)', padding:'12px 14px', marginBottom:4 }}>
+                      <p style={{ fontSize:11, fontWeight:700, color:'var(--orange)', textTransform:'uppercase',
                         letterSpacing:'0.06em', marginBottom:6 }}>
                         {exRx?.testMode === 'onerm' ? '1RM Test' : 'Rep Test'}
                       </p>
@@ -1832,9 +1821,9 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                       </a>
                       <button onClick={()=>setAltsFor(origEx.name)} style={{ display:'flex',
                         alignItems:'center', gap:5, padding:'6px 12px', borderRadius:10,
-                        background:'rgba(23,190,187,0.12)', border:'0.5px solid rgba(23,190,187,0.3)', flexShrink:0 }}>
-                        <ArrowLeftRight size={12} style={{ color:'#17BEBB' }} />
-                        <span style={{ fontSize:12, fontWeight:700, color:'#17BEBB' }}>Swap</span>
+                        background:'rgba(10,132,255,0.12)', border:'0.5px solid rgba(10,132,255,0.3)', flexShrink:0 }}>
+                        <ArrowLeftRight size={12} style={{ color:'var(--blue)' }} />
+                        <span style={{ fontSize:12, fontWeight:700, color:'var(--blue)' }}>Swap</span>
                       </button>
                     </>)}
                   </div>
@@ -1849,8 +1838,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           <button onClick={async()=>{ if(sid) await completeSession(sid); setDone(true) }}
             style={{ width:'100%', height:56, borderRadius:18, fontSize:17, fontWeight:700,
               display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-              background:'linear-gradient(135deg, #2DD4A0, #34C759)',
-              color:'#04161E', marginTop:4, boxShadow:'0 4px 24px rgba(45,212,160,0.35)' }}>
+              background:'linear-gradient(135deg, var(--green), #34C759)',
+              color:'var(--bg)', marginTop:4, boxShadow:'0 4px 24px rgba(48,209,88,0.35)' }}>
             <CheckCircle2 size={20} strokeWidth={2.5} /> Complete Workout
           </button>
         )}
@@ -1860,11 +1849,11 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           <button onClick={() => setShowFinishEarly(true)}
             style={{ width:'100%', height:48, borderRadius:16, fontSize:15, fontWeight:700,
               display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-              background:'rgba(255,178,62,0.1)', color:'#FFB23E',
-              border:'0.5px solid rgba(255,178,62,0.35)', marginTop:4 }}>
+              background:'rgba(255,159,10,0.1)', color:'var(--orange)',
+              border:'0.5px solid rgba(255,159,10,0.35)', marginTop:4 }}>
             <CheckCircle2 size={17} strokeWidth={2} /> Finish Early
-            <span style={{ fontSize:12, fontWeight:500, color:'rgba(255,178,62,0.7)',
-              background:'rgba(255,178,62,0.15)', padding:'2px 8px', borderRadius:99 }}>
+            <span style={{ fontSize:12, fontWeight:500, color:'rgba(255,159,10,0.7)',
+              background:'rgba(255,159,10,0.15)', padding:'2px 8px', borderRadius:99 }}>
               {logged}/{total} sets
             </span>
           </button>
@@ -1922,7 +1911,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       {syncErrors.length > 0 && (
         <div style={{ position:'fixed', bottom:'calc(var(--safe-bottom) + 72px)',
           left:16, right:16, zIndex:99, padding:'12px 16px', borderRadius:14,
-          background:'rgba(255,178,62,0.97)', display:'flex', gap:10, alignItems:'center',
+          background:'rgba(255,159,10,0.97)', display:'flex', gap:10, alignItems:'center',
           boxShadow:'0 4px 24px rgba(0,0,0,0.4)' }}>
           <span style={{ fontSize:16, flexShrink:0 }}>⚠️</span>
           <p style={{ fontSize:13, color:'#fff', fontWeight:600, flex:1, lineHeight:1.4 }}>
@@ -1949,8 +1938,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
               The {total - logged} remaining sets will simply be skipped.
             </p>
             <div style={{ padding:'12px 14px', borderRadius:14, marginBottom:20,
-              background:'rgba(45,212,160,0.08)', border:'0.5px solid rgba(45,212,160,0.25)' }}>
-              <p style={{ fontSize:12, fontWeight:700, color:'#2DD4A0', marginBottom:8 }}>
+              background:'rgba(48,209,88,0.08)', border:'0.5px solid rgba(48,209,88,0.25)' }}>
+              <p style={{ fontSize:12, fontWeight:700, color:'var(--green)', marginBottom:8 }}>
                 Weight suggestions stay accurate
               </p>
               {[
@@ -1959,7 +1948,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                 'Smart suggestions will calibrate from your real performance today',
               ].map((t, i) => (
                 <div key={i} style={{ display:'flex', gap:8, marginBottom: i < 2 ? 6 : 0 }}>
-                  <span style={{ color:'#2DD4A0', fontSize:12, flexShrink:0, marginTop:1 }}>✓</span>
+                  <span style={{ color:'var(--green)', fontSize:12, flexShrink:0, marginTop:1 }}>✓</span>
                   <p style={{ fontSize:13, color:'rgba(255,255,255,0.65)', lineHeight:1.4 }}>{t}</p>
                 </div>
               ))}
@@ -1971,8 +1960,8 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                   setDone(true)
                 }}
                 style={{ width:'100%', height:54, borderRadius:16, fontSize:17, fontWeight:700,
-                  background:'rgba(255,178,62,0.15)', color:'#FFB23E',
-                  border:'0.5px solid rgba(255,178,62,0.4)' }}>
+                  background:'rgba(255,159,10,0.15)', color:'var(--orange)',
+                  border:'0.5px solid rgba(255,159,10,0.4)' }}>
                 Finish & Save {logged} Sets
               </button>
               <button onClick={()=>setShowFinishEarly(false)}
@@ -2016,11 +2005,11 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
               </button>
               <button onClick={handleDiscard}
                 style={{ width:'100%', height:54, borderRadius:16, fontSize:17, fontWeight:700,
-                  background:'rgba(242,92,84,0.1)',
-                  border:'0.5px solid rgba(242,92,84,0.3)', color:'#F25C54' }}>
+                  background:'rgba(255,69,58,0.1)',
+                  border:'0.5px solid rgba(255,69,58,0.3)', color:'var(--red)' }}>
                 Discard Session
                 <span style={{ display:'block', fontSize:12, fontWeight:500,
-                  color:'rgba(242,92,84,0.6)', marginTop:1 }}>Removes all logged sets</span>
+                  color:'rgba(255,69,58,0.6)', marginTop:1 }}>Removes all logged sets</span>
               </button>
             </div>
           </div>

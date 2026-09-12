@@ -154,7 +154,7 @@ export default function InsightsPage() {
 
   const muscleSorted = Object.entries(mv).sort((a,b)=>b[1]-a[1])
   const maxMv = Math.max(1, ...Object.values(mv))
-  const WC = ['#17BEBB','#2DD4A0','#A885F2','#FFB23E']
+  const WC = ['var(--blue)','var(--green)','var(--purple)','var(--orange)']
 
   return (
     <div className="min-h-screen pb-tabs" style={{ background:'transparent' }}>
@@ -166,8 +166,8 @@ export default function InsightsPage() {
 
         {/* ── Training Index ── */}
         <div style={{ borderRadius:18, padding:'20px', textAlign:'center',
-          background:'linear-gradient(135deg, rgba(23,190,187,0.18), rgba(168,133,242,0.12))',
-          border:'0.5px solid rgba(23,190,187,0.3)' }}>
+          background:'linear-gradient(135deg, rgba(10,132,255,0.18), rgba(191,90,242,0.12))',
+          border:'0.5px solid rgba(10,132,255,0.3)' }}>
           <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.1em' }}>
             Training Index
           </p>
@@ -189,7 +189,7 @@ export default function InsightsPage() {
             </p>
             <div style={{ borderRadius:18, padding:'18px', background:'var(--bg-2)', border:'0.5px solid rgba(84,84,88,0.4)' }}>
               <div style={{ display:'flex', alignItems:'baseline', gap:10, marginBottom:14 }}>
-                <span style={{ fontSize:40, fontWeight:800, color: cycleCmp.avgPctChange>=0?'#2DD4A0':'#FFB23E', letterSpacing:'-1.5px', lineHeight:1 }}>
+                <span style={{ fontSize:40, fontWeight:800, color: cycleCmp.avgPctChange>=0?'var(--green)':'var(--orange)', letterSpacing:'-1.5px', lineHeight:1 }}>
                   {cycleCmp.avgPctChange>=0?'+':''}{cycleCmp.avgPctChange.toFixed(1)}%
                 </span>
                 <span style={{ fontSize:13, color:'#8E8E93' }}>
@@ -204,7 +204,7 @@ export default function InsightsPage() {
                     <span style={{ fontSize:12, color:'rgba(239,250,248,0.35)' }}>→</span>
                     <span style={{ fontSize:14, fontWeight:700, color:'#fff', fontVariantNumeric:'tabular-nums' }}>{l.curr}</span>
                     <span style={{ width:62, textAlign:'right', fontSize:13, fontWeight:700, fontVariantNumeric:'tabular-nums',
-                      color: l.delta>0?'#2DD4A0':l.delta<0?'#FFB23E':'#8E8E93' }}>
+                      color: l.delta>0?'var(--green)':l.delta<0?'var(--orange)':'#8E8E93' }}>
                       {l.delta>0?'▲':l.delta<0?'▼':'—'} {Math.abs(l.delta)}
                     </span>
                   </div>
@@ -228,11 +228,11 @@ export default function InsightsPage() {
                 display:'flex', flexWrap:'wrap', gap:6 }}>
                 {muscleSorted.slice(0,4).map(([m]) => (
                   <span key={m} style={{ fontSize:11, fontWeight:600, padding:'3px 9px', borderRadius:7,
-                    background:'rgba(45,212,160,0.15)', color:'#2DD4A0' }}>most: {m}</span>
+                    background:'rgba(48,209,88,0.15)', color:'var(--green)' }}>most: {m}</span>
                 ))}
                 {muscleSorted.slice(-2).map(([m]) => (
                   <span key={m} style={{ fontSize:11, fontWeight:600, padding:'3px 9px', borderRadius:7,
-                    background:'rgba(255,178,62,0.15)', color:'#FFB23E' }}>least: {m}</span>
+                    background:'rgba(255,159,10,0.15)', color:'var(--orange)' }}>least: {m}</span>
                 ))}
               </div>
             )}
@@ -247,8 +247,8 @@ export default function InsightsPage() {
               {plateaus.slice(0,4).map((p,i) => (
                 <div key={p.exercise} className={`ios-row ${i===0?'ios-row-first':''}`}>
                   <div style={{ width:32, height:32, borderRadius:9, flexShrink:0, display:'flex',
-                    alignItems:'center', justifyContent:'center', background:'rgba(255,178,62,0.15)' }}>
-                    <AlertTriangle size={15} style={{ color:'#FFB23E' }} />
+                    alignItems:'center', justifyContent:'center', background:'rgba(255,159,10,0.15)' }}>
+                    <AlertTriangle size={15} style={{ color:'var(--orange)' }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="t-subhead sf-semibold" style={{ color:'var(--label)' }}>{p.exercise}</p>
@@ -287,7 +287,7 @@ export default function InsightsPage() {
                     </div>
                     <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:2, marginBottom:4 }}>
                       <span style={{ fontSize:12, fontWeight:600,
-                        color: delta>0 ? '#2DD4A0' : delta<0 ? '#FFB23E' : '#8E8E93' }}>
+                        color: delta>0 ? 'var(--green)' : delta<0 ? 'var(--orange)' : '#8E8E93' }}>
                         {delta>0?'▲':delta<0?'▼':'—'} {Math.abs(delta)} lbs
                       </span>
                       <span style={{ fontSize:12, color:'#8E8E93' }}>over {series.length} sessions</span>
@@ -317,7 +317,7 @@ export default function InsightsPage() {
                     alignItems:'center', justifyContent:'flex-end', height:'100%', gap:4 }}>
                     <div style={{ width:'100%', borderRadius:'4px 4px 0 0',
                       height:`${Math.max(4,(v.volume/max)*80)}%`,
-                      background: i===volume.length-1 ? 'var(--accent)' : 'rgba(23,190,187,0.4)' }} />
+                      background: i===volume.length-1 ? 'var(--accent)' : 'rgba(10,132,255,0.4)' }} />
                     <span style={{ fontSize:9, color:'#8E8E93' }}>{(v.volume/1000).toFixed(0)}k</span>
                   </div>
                 ))
@@ -335,8 +335,8 @@ export default function InsightsPage() {
                 <div key={pr.exercise} className={`ios-row ${i===0?'ios-row-first':''}`}>
                   <div style={{ width:32, height:32, borderRadius:9, flexShrink:0, display:'flex',
                     alignItems:'center', justifyContent:'center',
-                    background: i===0 ? 'rgba(255,178,62,0.2)' : 'rgba(118,118,128,0.15)' }}>
-                    <Award size={16} style={{ color: i===0 ? '#FFB23E' : '#8E8E93' }} />
+                    background: i===0 ? 'rgba(255,159,10,0.2)' : 'rgba(118,118,128,0.15)' }}>
+                    <Award size={16} style={{ color: i===0 ? 'var(--orange)' : '#8E8E93' }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="t-subhead sf-semibold" style={{ color:'var(--label)' }}>{pr.exercise}</p>

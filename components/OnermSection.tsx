@@ -9,7 +9,7 @@ import type { UserOneRm } from '@/types'
 
 const WC: Record<string,string> = {
   A:'var(--wkt-a)', B:'var(--wkt-b)', C:'var(--wkt-c)',
-  D:'var(--wkt-d)', E:'#F25C54',
+  D:'var(--wkt-d)', E:'var(--red)',
 }
 
 export default function OnermSection({ programId }: { programId?: string }) {
@@ -191,7 +191,7 @@ export default function OnermSection({ programId }: { programId?: string }) {
                         <p className="t-subhead sf-semibold" style={{ color:'var(--label)' }}>{eff}</p>
                         <p className="t-caption1 mt-0.5" style={{ color:'#8E8E93' }}>
                           {ex.muscle}
-                          {isSwapped && <span style={{ color:'#FFB23E' }}>{' · custom · was '}{ex.name}</span>}
+                          {isSwapped && <span style={{ color:'var(--orange)' }}>{' · custom · was '}{ex.name}</span>}
                         </p>
                       </div>
                       {isSaved && <Check size={14} strokeWidth={3} style={{ color:'var(--green)', flexShrink:0 }} />}

@@ -2,89 +2,70 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════════════════════
+   Design tokens — iOS dark-mode semantic palette.
+   These are UIKit's actual dark values, not approximations. Everything
+   downstream reads from these, so the whole app follows the system.
+   ═══════════════════════════════════════════════════════════════════ */
 :root {
-  /* ── Deep Ocean Backgrounds ── */
-  --bg:     #04161E;
-  --bg-2:   #0B2A33;
-  --bg-3:   #123A45;
-  --bg-4:   #1A4956;
+  /* systemGroupedBackground and its layers */
+  --bg:     #000000;
+  --bg-2:   #1C1C1E;   /* secondarySystemGroupedBackground — cards, rows */
+  --bg-3:   #2C2C2E;   /* tertiary — pressed rows, nested surfaces */
+  --bg-4:   #3A3A3C;   /* systemGray4 — selected segment */
 
-  /* ── Sea-Foam Label Colors ── */
-  --label:   #EFFAF8;
-  --label-2: rgba(214,238,235,0.62);
-  --label-3: rgba(196,228,225,0.34);
-  --label-4: rgba(190,224,221,0.18);
+  /* label hierarchy */
+  --label:   #FFFFFF;
+  --label-2: rgba(235,235,245,0.60);
+  --label-3: rgba(235,235,245,0.30);
+  --label-4: rgba(235,235,245,0.18);
 
-  /* ── Aqua Fill Colors ── */
-  --fill:   rgba(52,180,172,0.26);
-  --fill-2: rgba(52,180,172,0.22);
-  --fill-3: rgba(52,180,172,0.16);
-  --fill-4: rgba(52,180,172,0.12);
+  /* systemFill hierarchy */
+  --fill:   rgba(120,120,128,0.36);
+  --fill-2: rgba(120,120,128,0.32);
+  --fill-3: rgba(118,118,128,0.24);
+  --fill-4: rgba(118,118,128,0.18);
 
-  /* ── Separator ── */
-  --sep: rgba(90,170,165,0.30);
+  --sep: rgba(84,84,88,0.60);
 
-  /* ── Reef System Colors ── */
-  --blue:   #17BEBB;
-  --green:  #2DD4A0;
-  --orange: #FFB23E;
-  --purple: #A885F2;
-  --red:    #F25C54;
-  --teal:   #34DBCB;
+  /* system colours, dark variants */
+  --blue:   #0A84FF;
+  --green:  #30D158;
+  --orange: #FF9F0A;
+  --purple: #BF5AF2;
+  --red:    #FF453A;
+  --teal:   #64D2FF;
+  --gray:   #8E8E93;
 
-  /* ── Living Coral Accent ── */
-  --accent: #FF7E6B;
+  /* app tint — the default iOS tint, unmistakably system */
+  --accent: #0A84FF;
 
-  /* ── Per-Workout (reef zones) ── */
-  --wkt-a: #17BEBB;
-  --wkt-b: #2DD4A0;
-  --wkt-c: #A885F2;
-  --wkt-d: #FFB23E;
-  --wkt-e: #F25C54;
+  /* per-workout identity, drawn from the system set */
+  --wkt-a: #0A84FF;
+  --wkt-b: #30D158;
+  --wkt-c: #BF5AF2;
+  --wkt-d: #FF9F0A;
+  --wkt-e: #FF453A;
 
-  /* ── Layout ── */
   --safe-top:    env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 
-  /* ── Liquid motion easing ── */
-  --ease-liquid: cubic-bezier(0.37, 0, 0.18, 1);    /* deep smooth settle */
-  --ease-swell:  cubic-bezier(0.34, 1.4, 0.42, 1);  /* gentle wave-crest overshoot */
-  --ease-drift:  cubic-bezier(0.45, 0, 0.25, 1);
+  /* Motion. Standard system curves — no overshoot, nothing decorative.
+     Names kept so existing components keep working. */
+  --ease-liquid: cubic-bezier(0.32, 0.72, 0, 1);      /* Apple's sheet curve */
+  --ease-swell:  cubic-bezier(0.25, 0.1, 0.25, 1);    /* standard ease */
+  --ease-drift:  cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
 a, a:hover, a:visited, a:focus { text-decoration: none !important; color: inherit; }
-
 button { -webkit-appearance: none; background: transparent; border: none; cursor: pointer; }
 
-/* Ambient ocean light — drifting caustics behind all content */
-body::before {
-  content: '';
-  position: fixed;
-  inset: -25%;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 48% 38% at 28% 18%, rgba(23,190,187,0.16) 0%, transparent 60%),
-    radial-gradient(ellipse 44% 34% at 78% 12%, rgba(255,126,107,0.09) 0%, transparent 55%),
-    radial-gradient(ellipse 60% 46% at 62% 88%, rgba(45,212,160,0.08) 0%, transparent 62%),
-    radial-gradient(ellipse 40% 50% at 12% 70%, rgba(52,219,203,0.06) 0%, transparent 60%);
-  animation: ocean-drift 26s ease-in-out infinite;
-  will-change: transform;
-}
-
-@keyframes ocean-drift {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  30%      { transform: translate3d(2.2%, -1.8%, 0) scale(1.06); }
-  60%      { transform: translate3d(-1.8%, 1.4%, 0) scale(1.03); }
-}
-
 html { background: var(--bg); }
-
 body {
-  background: transparent;
+  background: var(--bg);
   color: var(--label);
-  font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
   -webkit-tap-highlight-color: transparent;
@@ -94,11 +75,11 @@ input[type='number'] { -moz-appearance: textfield; }
 input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; }
 
-/* ── Layout helpers ── */
+/* ── Layout ── */
 .pt-safe { padding-top: var(--safe-top); }
-.pb-tabs { padding-bottom: calc(49px + var(--safe-bottom) + 12px); }
+.pb-tabs { padding-bottom: calc(49px + var(--safe-bottom) + 16px); }
 
-/* ── iOS type scale ── */
+/* ── iOS type scale (unchanged — it was already correct) ── */
 .t-large-title { font-size: 34px; font-weight: 700; letter-spacing: 0.37px; line-height: 1.2; }
 .t-title1      { font-size: 28px; font-weight: 700; letter-spacing: 0.36px; line-height: 1.25; }
 .t-title2      { font-size: 22px; font-weight: 700; letter-spacing: 0.35px; }
@@ -115,11 +96,11 @@ input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; }
 .sf-bold       { font-weight: 700; }
 .sf-heavy      { font-weight: 800; }
 
-/* ── Inset grouped list ── */
-.ios-group { background: var(--bg-2); border-radius: 12px; overflow: hidden; }
+/* ── Inset grouped list — 10pt corners, as UITableView.insetGrouped ── */
+.ios-group { background: var(--bg-2); border-radius: 10px; overflow: hidden; }
 
 .ios-row {
-  min-height: 50px;
+  min-height: 44px;
   padding: 11px 16px;
   background: var(--bg-2);
   display: flex;
@@ -128,7 +109,7 @@ input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; }
   position: relative;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background 0.12s;
+  transition: background 0.1s;
 }
 .ios-row:active { background: var(--bg-3); }
 .ios-row + .ios-row::before {
@@ -140,164 +121,136 @@ input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; }
 }
 .ios-row-first::before { display: none !important; }
 
-/* ── Section labels ── */
+/* ── Grouped section header — footnote, uppercase, secondary ── */
 .ios-section-label {
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 400;
   color: var(--label-2);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 0 4px 7px;
+  letter-spacing: 0.02em;
+  padding: 0 16px 7px;
 }
 
-/* ── Pressable — liquid spring ── */
-.tap { transition: transform 0.45s var(--ease-swell), opacity 0.12s ease; will-change: transform; }
-.tap:active { opacity: 0.7; transform: scale(0.972); transition: transform 0.08s var(--ease-drift), opacity 0.08s ease; }
+/* ── Pressable ── */
+.tap { transition: transform 0.15s ease, opacity 0.15s ease; }
+.tap:active { opacity: 0.6; transform: scale(0.97); transition-duration: 0.06s; }
 
-/* ── iOS Primary Button ── */
+/* ── Filled button — borderedProminent, 50pt ── */
 .ios-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   width: 100%; height: 50px;
   border-radius: 14px;
   font-size: 17px; font-weight: 600; letter-spacing: -0.41px;
-  background: var(--accent); color: #04161E;
-  transition: opacity 0.1s;
+  background: var(--accent); color: #FFFFFF;
+  transition: opacity 0.1s, transform 0.1s;
 }
-.ios-btn:active { opacity: 0.9; transform: scale(0.985); }
+.ios-btn:active { opacity: 0.8; transform: scale(0.985); }
 
-/* ── Sheets ── */
+/* ── Sheets — dim, do not blur the parent; grabber on top ── */
 .sheet-scrim {
   position: fixed; inset: 0; z-index: 60;
-  background: rgba(2,12,18,0.5);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  animation: scrim-in 0.4s ease both;
+  background: rgba(0,0,0,0.4);
+  animation: scrim-in 0.25s ease both;
 }
 @keyframes scrim-in { from { opacity: 0; } to { opacity: 1; } }
 .sheet-panel {
   position: absolute; bottom: 0; left: 0; right: 0;
   background: var(--bg-2);
-  border-radius: 24px 24px 0 0;
+  border-radius: 16px 16px 0 0;
   max-height: 82vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  padding-top: 20px;
   padding-bottom: max(var(--safe-bottom), 20px);
-  animation: sheet-up 0.5s var(--ease-liquid);
-  box-shadow: 0 -8px 40px rgba(0,0,0,0.4);
+  animation: sheet-up 0.4s var(--ease-liquid);
 }
-@keyframes sheet-up {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
+.sheet-panel::before {
+  content: '';
+  position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+  width: 36px; height: 5px; border-radius: 2.5px;
+  background: var(--label-3);
 }
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-/* ── Animations ── */
+/* ── Entrance ── */
 @keyframes fade-rise {
-  from { opacity: 0; transform: translateY(14px); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.fade-rise { animation: fade-rise 0.55s var(--ease-liquid) both; }
+.fade-rise { animation: fade-rise 0.3s ease both; }
 
-/* ── Liquid shimmer sweep (progress bars) ── */
-@keyframes shimmer-sweep {
-  0%   { background-position: -160% 0; }
-  100% { background-position: 260% 0; }
-}
-.liquid-fill {
-  position: relative;
-  overflow: hidden;
-}
-.liquid-fill::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(100deg,
-    transparent 20%,
-    rgba(255,255,255,0.35) 48%,
-    rgba(255,255,255,0.35) 52%,
-    transparent 80%);
-  background-size: 220% 100%;
-  animation: shimmer-sweep 3.4s var(--ease-drift) infinite;
-}
+/* Progress bars are flat. Class kept for compatibility; no shimmer. */
+.liquid-fill { position: relative; overflow: hidden; }
 
-/* Respect reduced-motion preference */
 @media (prefers-reduced-motion: reduce) {
-  body::before { animation: none; }
-  .liquid-fill::after { animation: none; opacity: 0; }
-  .fade-rise { animation-duration: 0.01s; }
+  .fade-rise, .tap, .sheet-panel, .sheet-scrim { animation: none; transition: none; }
 }
 
-/* ── Phase pills ── */
-.ph-1 { background: rgba(23,190,187,0.16);  color: #5FE0DD; }
-.ph-2 { background: rgba(45,212,160,0.16);   color: #6FECC8; }
-.ph-3 { background: rgba(168,133,242,0.16);  color: #C7ADF8; }
-.ph-d { background: rgba(90,170,165,0.18);  color: rgba(214,238,235,0.55); }
+/* ── Phase pills — tinted system colours ── */
+.ph-1 { background: rgba(10,132,255,0.18);  color: #409CFF; }
+.ph-2 { background: rgba(48,209,88,0.18);   color: #30D158; }
+.ph-3 { background: rgba(191,90,242,0.18);  color: #DA8FFF; }
+.ph-d { background: var(--fill-3);          color: var(--label-2); }
 
-/* ── Rest timer pill ── */
+/* ── Rest timer — material capsule ── */
 .rest-pill {
   position: fixed; top: calc(var(--safe-top) + 56px); left: 50%; transform: translateX(-50%);
   z-index: 40;
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px 8px 10px;
   border-radius: 999px;
-  background: rgba(11,42,51,0.96);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(28,28,30,0.82);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
   border: 0.5px solid var(--sep);
   white-space: nowrap;
   max-width: calc(100vw - 32px);
-  animation: fade-rise 0.2s ease-out both;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  animation: fade-rise 0.2s ease both;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
 }
 
-/* Spinner for saving state */
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Liquid wave rest-timer ── */
-@keyframes rp-wave-x { from { transform: translateX(0); } to { transform: translateX(-18px); } }
-.rp-wave  { animation: rp-wave-x 2.3s linear infinite; }
-.rp-wave2 { animation: rp-wave-x 3.2s linear infinite reverse; }
-@media (prefers-reduced-motion: reduce) {
-  .rp-wave, .rp-wave2 { animation: none; }
-}
+/* rp-wave classes kept for compatibility; the timer is now a ring. */
+.rp-wave, .rp-wave2 { animation: none; }
 
-/* Hidden scrollbar for horizontal selectors (tempo dial, etc.) */
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
-/* ── Segmented control (sub-navigation within a page) ── */
+/* ── Segmented control — UISegmentedControl dark ── */
 .seg {
   display: flex;
-  gap: 3px;
-  padding: 3px;
-  border-radius: 11px;
-  background: rgba(118,118,128,0.16);
-  border: 0.5px solid rgba(84,84,88,0.32);
+  gap: 2px;
+  padding: 2px;
+  border-radius: 9px;
+  background: var(--fill-3);
 }
 .seg-btn {
   flex: 1;
   text-align: center;
   padding: 7px 6px;
-  border-radius: 8px;
+  border-radius: 7px;
   font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -0.1px;
-  color: var(--label-2);
+  font-weight: 500;
+  letter-spacing: -0.08px;
+  color: var(--label);
   background: transparent;
   border: none;
-  transition: background 0.18s ease, color 0.18s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 .seg-btn[data-active="true"] {
-  background: var(--bg-4);
+  background: #636366;
   color: var(--label);
-  font-weight: 700;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.28);
+  font-weight: 600;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.12), 0 3px 1px rgba(0,0,0,0.04);
 }
 
-/* ── Page section eyebrow + consistent block rhythm ── */
+/* ── Page eyebrow ── */
 .page-eyebrow {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: var(--label-3);
-  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+  color: var(--label-2);
+  margin-bottom: 8px;
 }

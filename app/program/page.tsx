@@ -11,14 +11,14 @@ import { getAlternatives, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/progr
 import { fetchExercisePreferences, saveExercisePreference, fetchEquipment, fetchSettings } from '@/lib/db'
 import type { Exercise } from '@/types'
 
-const WC: Record<string,string> = { A:'#17BEBB', B:'#2DD4A0', C:'#A885F2', D:'#FFB23E' }
+const WC: Record<string,string> = { A:'var(--blue)', B:'var(--green)', C:'var(--purple)', D:'var(--orange)' }
 
 const PHASES = [
-  { label:'Phase 1',    subtitle:'Accumulation',      weeks:'Wk 1–3',  color:'#17BEBB', note:'10–12 reps · RIR 3 · Build foundation' },
+  { label:'Phase 1',    subtitle:'Accumulation',      weeks:'Wk 1–3',  color:'var(--blue)', note:'10–12 reps · RIR 3 · Build foundation' },
   { label:'Deload',     subtitle:'Active Recovery',   weeks:'Wk 4',    color:'#8E8E93', note:'50% volume · RIR 4+ · Full recovery' },
-  { label:'Phase 2',    subtitle:'Volume Build',      weeks:'Wk 5–7',  color:'#2DD4A0', note:'8–10 reps · RIR 2 · Peak volume' },
+  { label:'Phase 2',    subtitle:'Volume Build',      weeks:'Wk 5–7',  color:'var(--green)', note:'8–10 reps · RIR 2 · Peak volume' },
   { label:'Deload',     subtitle:'Active Recovery',   weeks:'Wk 8',    color:'#8E8E93', note:'50% volume · RIR 4+ · Full recovery' },
-  { label:'Phase 3',    subtitle:'Intensification',   weeks:'Wk 9–11', color:'#A885F2', note:'6–8 reps · RIR 1–2 · Strength peak' },
+  { label:'Phase 3',    subtitle:'Intensification',   weeks:'Wk 9–11', color:'var(--purple)', note:'6–8 reps · RIR 1–2 · Strength peak' },
   { label:'Deload',     subtitle:'Final Recovery',    weeks:'Wk 12',   color:'#8E8E93', note:'50% volume · RIR 4+ · full recovery' },
 ]
 
@@ -43,14 +43,14 @@ function SwapSheet({ ex, equipment, preference, onSwap, onReset, onClose }: {
           return (
             <button key={`${k}-${ai}`} onClick={() => onSwap(alt.name, alt.cue)}
               className={`ios-row tap w-full ${gi===0&&ai===0?'ios-row-first':''}`}
-              style={{ background: active ? 'rgba(255,178,62,0.12)' : 'var(--bg-2)' }}>
+              style={{ background: active ? 'rgba(255,159,10,0.12)' : 'var(--bg-2)' }}>
               <span style={{ fontSize:18, width:28, flexShrink:0 }}>{EQUIPMENT_ICONS[k]}</span>
               <div className="flex-1 text-left">
                 <p style={{ fontSize:15, fontWeight:600, color:'#fff' }}>{alt.name}</p>
                 <p style={{ fontSize:12, color:'#8E8E93', fontStyle:'italic', marginTop:2, lineHeight:1.4 }}>{alt.cue}</p>
               </div>
               {active
-                ? <Check size={16} strokeWidth={2.5} style={{ color:'#FFB23E', flexShrink:0 }} />
+                ? <Check size={16} strokeWidth={2.5} style={{ color:'var(--orange)', flexShrink:0 }} />
                 : <ChevronRight size={14} style={{ color:'#8E8E93', flexShrink:0 }} />}
             </button>
           )
@@ -69,9 +69,9 @@ function SwapSheet({ ex, equipment, preference, onSwap, onReset, onClose }: {
             <p style={{ fontSize:18, fontWeight:700, color:'#fff', marginTop:2 }}>{ex.name}</p>
             {preference && (
               <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:6,
-                padding:'5px 10px', borderRadius:8, background:'rgba(255,178,62,0.12)',
-                border:'0.5px solid rgba(255,178,62,0.3)', width:'fit-content' }}>
-                <span style={{ fontSize:12, color:'#FFB23E' }}>Currently: {preference.name}</span>
+                padding:'5px 10px', borderRadius:8, background:'rgba(255,159,10,0.12)',
+                border:'0.5px solid rgba(255,159,10,0.3)', width:'fit-content' }}>
+                <span style={{ fontSize:12, color:'var(--orange)' }}>Currently: {preference.name}</span>
               </div>
             )}
           </div>
@@ -89,8 +89,8 @@ function SwapSheet({ ex, equipment, preference, onSwap, onReset, onClose }: {
         <div style={{ padding:'8px 16px 4px', display:'flex', flexDirection:'column', gap:8 }}>
           {preference && (
             <button onClick={onReset} style={{ width:'100%', padding:12, borderRadius:12,
-              background:'rgba(242,92,84,0.1)', border:'0.5px solid rgba(242,92,84,0.3)',
-              fontSize:14, fontWeight:600, color:'#F25C54', display:'flex',
+              background:'rgba(255,69,58,0.1)', border:'0.5px solid rgba(255,69,58,0.3)',
+              fontSize:14, fontWeight:600, color:'var(--red)', display:'flex',
               alignItems:'center', justifyContent:'center', gap:6 }}>
               <RotateCcw size={14} /> Reset to {ex.name}
             </button>
@@ -171,7 +171,7 @@ export default function ProgramPage() {
     <div style={{ minHeight:'100svh', background:'transparent', display:'flex',
       alignItems:'center', justifyContent:'center' }}>
       <div style={{ width:32, height:32, borderRadius:'50%', border:'3px solid transparent',
-        borderTopColor:'#FFB23E', animation:'spin 0.7s linear infinite' }} />
+        borderTopColor:'var(--orange)', animation:'spin 0.7s linear infinite' }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
@@ -193,9 +193,9 @@ export default function ProgramPage() {
             <p style={{ fontSize:22, fontWeight:800, color:'#fff', letterSpacing:'-0.7px', lineHeight:1.1, marginTop:1 }}>Program</p>
           </div>
           {customCount > 0 && (
-            <div style={{ padding:'5px 12px', borderRadius:8, background:'rgba(255,178,62,0.13)',
-              border:'0.5px solid rgba(255,178,62,0.28)' }}>
-              <span style={{ fontSize:11, fontWeight:700, color:'#FFB23E' }}>
+            <div style={{ padding:'5px 12px', borderRadius:8, background:'rgba(255,159,10,0.13)',
+              border:'0.5px solid rgba(255,159,10,0.28)' }}>
+              <span style={{ fontSize:11, fontWeight:700, color:'var(--orange)' }}>
                 {customCount} custom
               </span>
             </div>
@@ -239,11 +239,11 @@ export default function ProgramPage() {
 
         {tab === 'workouts' && (<>
         {/* Customize note */}
-        <div style={{ padding:'12px 16px', borderRadius:14, background:'rgba(255,178,62,0.08)',
-          border:'0.5px solid rgba(255,178,62,0.25)', display:'flex', gap:10 }}>
+        <div style={{ padding:'12px 16px', borderRadius:14, background:'rgba(255,159,10,0.08)',
+          border:'0.5px solid rgba(255,159,10,0.25)', display:'flex', gap:10 }}>
           <span style={{ fontSize:18, flexShrink:0 }}>💡</span>
           <p style={{ fontSize:13, color:'rgba(255,255,255,0.7)', lineHeight:1.6 }}>
-            Tap any exercise below to swap it for the <strong style={{ color:'#FFB23E', fontWeight:700 }}>entire 12-week program</strong>.
+            Tap any exercise below to swap it for the <strong style={{ color:'var(--orange)', fontWeight:700 }}>entire 12-week program</strong>.
             Your equipment preferences are filtered automatically.
           </p>
         </div>
@@ -264,7 +264,7 @@ export default function ProgramPage() {
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                     <p style={{ fontSize:14, fontWeight:700, color:'rgba(255,255,255,0.6)' }}>Rest Day</p>
                     <span style={{ fontSize:10, color:'#636366',
-                      background:'rgba(11,42,51,0.7)', border:'0.5px solid rgba(84,84,88,0.3)',
+                      background:'rgba(28,28,30,0.7)', border:'0.5px solid rgba(84,84,88,0.3)',
                       padding:'1px 7px', borderRadius:99 }}>{wkt.day}</span>
                   </div>
                   <p style={{ fontSize:12, color:'#636366', marginTop:1 }}>{wkt.focus}</p>
@@ -318,10 +318,10 @@ export default function ProgramPage() {
                   return (
                     <button key={ex.name} onClick={() => hasAlts && setSwapEx(ex)}
                       style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px',
-                        borderRadius:12, background: isSaved ? 'rgba(45,212,160,0.1)' :
-                          isCustom ? 'rgba(255,178,62,0.08)' : 'rgba(118,118,128,0.08)',
-                        border:`0.5px solid ${isSaved ? 'rgba(45,212,160,0.4)' :
-                          isCustom ? 'rgba(255,178,62,0.35)' : 'rgba(84,84,88,0.3)'}`,
+                        borderRadius:12, background: isSaved ? 'rgba(48,209,88,0.1)' :
+                          isCustom ? 'rgba(255,159,10,0.08)' : 'rgba(118,118,128,0.08)',
+                        border:`0.5px solid ${isSaved ? 'rgba(48,209,88,0.4)' :
+                          isCustom ? 'rgba(255,159,10,0.35)' : 'rgba(84,84,88,0.3)'}`,
                         cursor: hasAlts ? 'pointer' : 'default',
                         transition:'all 0.2s', width:'100%', textAlign:'left' }}>
                       {/* Type indicator */}
@@ -337,23 +337,23 @@ export default function ProgramPage() {
                           </p>
                           {isCustom && !isSaved && (
                             <span style={{ fontSize:10, fontWeight:700, padding:'2px 6px',
-                              borderRadius:6, background:'rgba(255,178,62,0.2)',
-                              color:'#FFB23E', flexShrink:0 }}>custom</span>
+                              borderRadius:6, background:'rgba(255,159,10,0.2)',
+                              color:'var(--orange)', flexShrink:0 }}>custom</span>
                           )}
                           {isSaved && (
-                            <Check size={13} strokeWidth={3} style={{ color:'#2DD4A0', flexShrink:0 }} />
+                            <Check size={13} strokeWidth={3} style={{ color:'var(--green)', flexShrink:0 }} />
                           )}
                         </div>
                         <p style={{ fontSize:11, color:'#8E8E93', marginTop:1 }}>
                           {ex.muscle} · {ex.type}
-                          {isCustom && <span style={{ color:'rgba(255,178,62,0.6)' }}> · was {ex.name}</span>}
+                          {isCustom && <span style={{ color:'rgba(255,159,10,0.6)' }}> · was {ex.name}</span>}
                         </p>
                       </div>
                       {hasAlts && (
                         <div style={{ width:26, height:26, borderRadius:8, flexShrink:0,
                           display:'flex', alignItems:'center', justifyContent:'center',
-                          background: isCustom ? 'rgba(255,178,62,0.15)' : 'rgba(84,84,88,0.2)' }}>
-                          <ChevronRight size={13} style={{ color: isCustom ? '#FFB23E' : '#8E8E93' }} />
+                          background: isCustom ? 'rgba(255,159,10,0.15)' : 'rgba(84,84,88,0.2)' }}>
+                          <ChevronRight size={13} style={{ color: isCustom ? 'var(--orange)' : '#8E8E93' }} />
                         </div>
                       )}
                     </button>
@@ -375,8 +375,8 @@ export default function ProgramPage() {
       {/* Save error toast */}
       {saveErr && (
         <div style={{ position:'fixed', bottom:'calc(var(--safe-bottom) + 72px)', left:16, right:16, zIndex:100,
-          padding:'12px 16px', borderRadius:14, background:'rgba(242,92,84,0.95)',
-          border:'0.5px solid rgba(242,92,84,0.5)', display:'flex', alignItems:'center', gap:10 }}>
+          padding:'12px 16px', borderRadius:14, background:'rgba(255,69,58,0.95)',
+          border:'0.5px solid rgba(255,69,58,0.5)', display:'flex', alignItems:'center', gap:10 }}>
           <span style={{ fontSize:18 }}>⚠️</span>
           <p style={{ fontSize:13, color:'#fff', lineHeight:1.5, flex:1 }}>
             {saveErr.includes('does not exist') || saveErr.includes('relation')

@@ -11,42 +11,38 @@ const TABS = [
   { href:'/settings', label:'Settings', Icon:Settings2   },
 ]
 
+/**
+ * UITabBar. The selected item is indicated by tint alone — no pill, no
+ * border, no background behind it. Background is the system chrome
+ * material: translucent, blurred, hairline on top.
+ */
 export default function BottomNav() {
   const path = usePathname()
   return (
     <>
-      <div style={{ height:'calc(74px + var(--safe-bottom))' }} />
+      <div style={{ height:'calc(49px + var(--safe-bottom))' }} />
 
       <nav style={{
         position:'fixed', bottom:0, left:0, right:0, zIndex:50,
         paddingBottom:'var(--safe-bottom)',
-        background:'rgba(10,10,16,0.97)',
-        backdropFilter:'saturate(200%) blur(28px)',
-        WebkitBackdropFilter:'saturate(200%) blur(28px)',
-        borderTop:'0.5px solid rgba(84,84,88,0.45)',
+        background:'rgba(28,28,30,0.78)',
+        backdropFilter:'saturate(180%) blur(20px)',
+        WebkitBackdropFilter:'saturate(180%) blur(20px)',
+        borderTop:'0.5px solid var(--sep)',
       }}>
-        <div style={{ display:'flex', alignItems:'stretch', height:58, paddingInline:6 }}>
+        <div style={{ display:'flex', alignItems:'stretch', height:49 }}>
           {TABS.map(({ href, label, Icon }) => {
             const on = path === href || (href !== '/' && path.startsWith(href))
+            const color = on ? 'var(--accent)' : 'var(--gray)'
             return (
-              <Link key={href} href={href} style={{
+              <Link key={href} href={href} aria-current={on ? 'page' : undefined} style={{
                 flex:1,
                 display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-                gap:3, borderRadius:13, margin:'5px 2px',
-                background: on ? 'rgba(255,126,107,0.13)' : 'transparent',
-                border: on ? '0.5px solid rgba(255,126,107,0.22)' : '0.5px solid transparent',
-                textDecoration:'none', transition:'all 0.18s ease',
+                gap:2, paddingTop:2,
+                textDecoration:'none', transition:'color 0.15s ease',
               }}>
-                <Icon
-                  size={21}
-                  strokeWidth={on ? 2.3 : 1.6}
-                  style={{ color: on ? '#FF7E6B' : '#636366', transition:'all 0.18s ease' }}
-                />
-                <span style={{
-                  fontSize:9, fontWeight: on ? 700 : 500,
-                  color: on ? '#FF7E6B' : '#636366',
-                  letterSpacing:'0.01em', transition:'all 0.18s ease',
-                }}>
+                <Icon size={24} strokeWidth={on ? 2.2 : 1.7} style={{ color, transition:'color 0.15s ease' }} />
+                <span style={{ fontSize:10, fontWeight:500, color, letterSpacing:'-0.1px', transition:'color 0.15s ease' }}>
                   {label}
                 </span>
               </Link>

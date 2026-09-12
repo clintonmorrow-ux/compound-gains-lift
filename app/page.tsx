@@ -14,7 +14,7 @@ import { loggedDerivedOneRm, isLoadableBodyweight, withBodyweight, excludeSpeedS
 import CycleComplete from '@/components/CycleComplete'
 import { Battery, Zap } from 'lucide-react'
 
-const WC: Record<string,string> = { A:'#17BEBB', B:'#2DD4A0', C:'#A885F2', D:'#FFB23E', E:'#F25C54' }
+const WC: Record<string,string> = { A:'var(--blue)', B:'var(--green)', C:'var(--purple)', D:'var(--orange)', E:'var(--red)' }
 const PC: Record<number,string>  = {
   1:'ph-1',2:'ph-1',3:'ph-1',4:'ph-d',
   5:'ph-2',6:'ph-2',7:'ph-2',8:'ph-d',
@@ -220,7 +220,7 @@ export default function Dashboard() {
       <div className="pt-safe sticky top-0 z-20"
         style={{ background:'rgba(6,24,32,0.82)', backdropFilter:'saturate(200%) blur(28px)', WebkitBackdropFilter:'saturate(200%) blur(28px)', borderBottom:'0.5px solid rgba(84,84,88,0.45)' }}>
         {/* Phase progress strip — thin bar at very top showing week/12 */}
-        <div style={{ height:2, background:'rgba(11,42,51,0.7)' }}>
+        <div style={{ height:2, background:'rgba(28,28,30,0.7)' }}>
           <div className="liquid-fill" style={{ height:'100%', width:`${(week/12)*100}%`, background:'var(--accent)', borderRadius:0, transition:'width 0.6s var(--ease-liquid)' }} />
         </div>
         <div className="flex items-center justify-between px-5 pb-3 pt-2">
@@ -231,8 +231,8 @@ export default function Dashboard() {
           <div style={{ textAlign:'right' }}>
             <div style={{ display:'flex', alignItems:'center', gap:6, justifyContent:'flex-end' }}>
               {cycleNumber > 1 && (
-                <span style={{ fontSize:9, fontWeight:700, color:'rgba(255,178,62,0.5)',
-                  background:'rgba(255,178,62,0.1)', padding:'1px 6px', borderRadius:5 }}>
+                <span style={{ fontSize:9, fontWeight:700, color:'rgba(255,159,10,0.5)',
+                  background:'rgba(255,159,10,0.1)', padding:'1px 6px', borderRadius:5 }}>
                   C{cycleNumber}
                 </span>
               )}
@@ -261,7 +261,7 @@ export default function Dashboard() {
         {/* ── Returning from a break: prompt ── */}
         {reintroPlan && !reintroOn && (
           <div className="fade-rise" style={{ borderRadius:20, overflow:'hidden',
-            background:'linear-gradient(150deg, color-mix(in srgb, var(--blue) 32%, #04161E), color-mix(in srgb, var(--green) 14%, #0B2A33) 70%, #0B2A33)',
+            background:'linear-gradient(150deg, color-mix(in srgb, var(--blue) 32%, var(--bg)), color-mix(in srgb, var(--green) 14%, var(--bg-2)) 70%, var(--bg-2))',
             border:'0.5px solid color-mix(in srgb, var(--blue) 35%, transparent)' }}>
             <div style={{ padding:'18px 18px 16px' }}>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
@@ -277,7 +277,7 @@ export default function Dashboard() {
               </p>
               <div style={{ display:'flex', gap:8, marginTop:14 }}>
                 <button onClick={()=>startReintro(reintroPlan)} style={{ flex:1, height:46, borderRadius:13,
-                  background:'#fff', color:'#04161E', fontWeight:700, fontSize:15 }}>
+                  background:'#fff', color:'var(--bg)', fontWeight:700, fontSize:15 }}>
                   Start ramp-back
                 </button>
                 <button onClick={dismissReintro} style={{ padding:'0 18px', height:46, borderRadius:13,
@@ -293,7 +293,7 @@ export default function Dashboard() {
         {/* ── Returning from a break: active banner ── */}
         {reintroOn && (
           <div className="fade-rise" style={{ borderRadius:16, padding:'13px 16px', display:'flex', alignItems:'center', gap:12,
-            background:'color-mix(in srgb, var(--blue) 12%, #0B2A33)', border:'0.5px solid color-mix(in srgb, var(--blue) 32%, transparent)' }}>
+            background:'color-mix(in srgb, var(--blue) 12%, var(--bg-2))', border:'0.5px solid color-mix(in srgb, var(--blue) 32%, transparent)' }}>
             <RotateCcw size={18} style={{ color:'var(--teal)', flexShrink:0 }} strokeWidth={2.2} />
             <div style={{ flex:1, minWidth:0 }}>
               <p style={{ fontSize:13.5, fontWeight:700, color:'#fff' }}>Reintroduction active{reintroLeft>0?` · ${reintroLeft} day${reintroLeft>1?'s':''} left`:''}</p>
@@ -362,7 +362,7 @@ export default function Dashboard() {
               <div className="tap" style={{
                 position:'relative', overflow:'hidden', borderRadius:24, minHeight:300,
                 display:'flex', flexDirection:'column', justifyContent:'flex-end', padding:22,
-                background:`linear-gradient(157deg, color-mix(in srgb, ${WC[next.key]} 44%, #04161E) 0%, color-mix(in srgb, ${WC[next.key]} 15%, #0B2A33) 46%, #0B2A33 100%)`,
+                background:`linear-gradient(157deg, color-mix(in srgb, ${WC[next.key]} 44%, var(--bg)) 0%, color-mix(in srgb, ${WC[next.key]} 15%, var(--bg-2)) 46%, var(--bg-2) 100%)`,
                 border:`0.5px solid color-mix(in srgb, ${WC[next.key]} 30%, transparent)`,
                 boxShadow:`0 16px 44px -16px color-mix(in srgb, ${WC[next.key]} 55%, transparent)`,
               }}>
@@ -378,7 +378,7 @@ export default function Dashboard() {
                 {/* content */}
                 <div style={{ position:'relative' }}>
                   <div className="flex items-center gap-2 mb-2">
-                    <span style={{ fontSize:11, fontWeight:800, letterSpacing:'0.12em', textTransform:'uppercase', color:'#04161E',
+                    <span style={{ fontSize:11, fontWeight:800, letterSpacing:'0.12em', textTransform:'uppercase', color:'var(--bg)',
                       background:`color-mix(in srgb, ${WC[next.key]} 80%, #fff)`, padding:'3px 9px', borderRadius:999 }}>
                       Up Next
                     </span>
@@ -400,7 +400,7 @@ export default function Dashboard() {
 
                   {/* CTA */}
                   <div style={{ marginTop:18, display:'flex', alignItems:'center', justifyContent:'center', gap:7,
-                    background:'#fff', color:'#04161E', borderRadius:14, padding:13, fontWeight:700, fontSize:16 }}>
+                    background:'#fff', color:'var(--bg)', borderRadius:14, padding:13, fontWeight:700, fontSize:16 }}>
                     Start Workout <ArrowRight size={18} strokeWidth={2.5} />
                   </div>
                 </div>
@@ -418,15 +418,15 @@ export default function Dashboard() {
         {/* ── Deload alert (only when triggered) ── */}
         {deloadReasons.length > 0 && !deloadDismissed && (
           <div className="fade-rise" style={{ animationDelay:'0.04s', display:'flex', gap:12,
-            padding:'14px 16px', borderRadius:16, background:'rgba(255,178,62,0.1)',
-            border:'0.5px solid rgba(255,178,62,0.35)' }}>
+            padding:'14px 16px', borderRadius:16, background:'rgba(255,159,10,0.1)',
+            border:'0.5px solid rgba(255,159,10,0.35)' }}>
             <div style={{ width:36, height:36, borderRadius:11, flexShrink:0,
               display:'flex', alignItems:'center', justifyContent:'center',
-              background:'rgba(255,178,62,0.18)' }}>
-              <Battery size={18} strokeWidth={2} style={{ color:'#FFB23E' }} />
+              background:'rgba(255,159,10,0.18)' }}>
+              <Battery size={18} strokeWidth={2} style={{ color:'var(--orange)' }} />
             </div>
             <div style={{ flex:1, minWidth:0 }}>
-              <p style={{ fontSize:10, fontWeight:800, color:'#FFB23E', textTransform:'uppercase',
+              <p style={{ fontSize:10, fontWeight:800, color:'var(--orange)', textTransform:'uppercase',
                 letterSpacing:'0.08em', marginBottom:3 }}>Recovery Signal</p>
               <p style={{ fontSize:14, fontWeight:700, color:'#fff', marginBottom:2 }}>
                 Your body may need a deload
@@ -435,7 +435,7 @@ export default function Dashboard() {
                 {deloadReasons.join(' · ')}.
               </p>
               <button onClick={()=>router.push('/insights')}
-                style={{ marginTop:8, fontSize:13, fontWeight:700, color:'#FFB23E',
+                style={{ marginTop:8, fontSize:13, fontWeight:700, color:'var(--orange)',
                   background:'none', border:'none', padding:0, cursor:'pointer' }}>
                 View details →
               </button>
