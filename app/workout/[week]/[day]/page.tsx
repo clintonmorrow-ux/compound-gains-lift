@@ -406,6 +406,7 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
   const [rir,   setRir]  = useState(3)
   const [tempo, setTempo]= useState<string>('Standard')
   const [busy,  setBusy] = useState(false)
+  const [more,  setMore] = useState(false)   // quick jumps · plates · tempo
 
   // Smart suggestions load async after mount.
   // Two failure cases:
@@ -450,162 +451,143 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
     }
   }
 
-  return (
-    <div style={{ borderRadius:16,
-      border: speedMode ? '1px dashed rgba(255,214,10,0.5)' : `1px solid ${accentColor}55`,
-      background: speedMode
-        ? 'linear-gradient(160deg, rgba(255,214,10,0.07) 0%, rgba(0,0,0,0) 100%)'
-        : `linear-gradient(160deg, color-mix(in srgb, ${accentColor} 9%, transparent) 0%, rgba(0,0,0,0) 100%)`,
-      padding:'16px' }}>
+  // Compact stepper: 40pt buttons, a 26pt value, the unit tucked beneath.
+  const Stepper = ({ value, unit, onMinus, onPlus, input }: {
+    value: React.ReactNode; unit: string; onMinus: () => void; onPlus: () => void; input?: React.ReactNode
+  }) => (
+    <div style={{ flex:1, display:'flex', alignItems:'stretch', height:56, borderRadius:12,
+      background:'var(--fill-4)', overflow:'hidden' }}>
+      <button onClick={onMinus} aria-label="decrease" style={{ width:42, display:'grid', placeItems:'center' }}>
+        <Minus size={16} strokeWidth={2.5} style={{ color:'var(--label)' }} />
+      </button>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minWidth:0 }}>
+        {input ?? <span style={{ fontSize:26, fontWeight:700, letterSpacing:'-0.5px', lineHeight:1 }}>{value}</span>}
+        <span style={{ fontSize:10, color:'var(--label-2)', marginTop:3, letterSpacing:'0.02em', whiteSpace:'nowrap' }}>{unit}</span>
+      </div>
+      <button onClick={onPlus} aria-label="increase" style={{ width:42, display:'grid', placeItems:'center' }}>
+        <Plus size={16} strokeWidth={2.5} style={{ color:accentColor }} />
+      </button>
+    </div>
+  )
 
-      <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase',
-        letterSpacing:'0.1em', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
-        Set {setNum} of {setCount}
+  return (
+    <div style={{ borderRadius:14, padding:12,
+      border: speedMode ? '1px dashed rgba(255,214,10,0.5)' : `1px solid color-mix(in srgb, ${accentColor} 35%, transparent)`,
+      background: speedMode ? 'rgba(255,214,10,0.06)' : `color-mix(in srgb, ${accentColor} 7%, var(--bg-2))`,
+      display:'flex', flexDirection:'column', gap:10 }}>
+
+      {/* Header — what set, what the goal is, what you did last time */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, minHeight:16 }}>
+        <span style={{ fontSize:12, fontWeight:600, color:'var(--label-2)', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+          Set {setNum} of {setCount}
+        </span>
         {speedMode && (
-          <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:6,
-            background:'rgba(255,214,10,0.14)', color:'#FFD60A', letterSpacing:'0.06em' }}>
-            <Zap size={10} strokeWidth={2.6} /> SPEED
+          <span style={{ display:'inline-flex', alignItems:'center', gap:3, padding:'1px 6px', borderRadius:5,
+            background:'rgba(255,214,10,0.14)', color:'#FFD60A', fontSize:10, fontWeight:700, letterSpacing:'0.05em' }}>
+            <Zap size={9} strokeWidth={2.6} /> SPEED
           </span>
         )}
-      </p>
+        <span style={{ marginLeft:'auto', fontSize:12, color:'var(--label-2)', whiteSpace:'nowrap' }}>
+          goal {repsRange}{lastWeight ? ` · last ${lastWeight}` : ''}
+        </span>
+      </div>
 
-      {/* Weight stepper — always shown; for BW exercises it means added load */}
-      <div style={{ marginBottom:16 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
-          <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase',
-            letterSpacing:'0.08em' }}>
-            {isBodyweight ? 'Added Weight' : 'Weight'}
-          </p>
-          {isBodyweight && (
-            <span style={{ fontSize:11, color:'rgba(255,159,10,0.7)',
-              background:'rgba(255,159,10,0.1)', padding:'2px 7px', borderRadius:6 }}>
-              belt · vest · optional
-            </span>
-          )}
-        </div>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <button onClick={()=>adjust('wt', dbMode ? -dumbbellStep(wt,-1) : -5)} style={{ width:44, height:44, borderRadius:12,
-            background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <Minus size={18} strokeWidth={2.5} style={{ color:'#fff' }} />
-          </button>
-          <div style={{ flex:1, textAlign:'center' }}>
+      {/* Weight and reps, side by side */}
+      <div style={{ display:'flex', gap:8 }}>
+        <Stepper
+          unit={isBodyweight ? (wt > 0 ? 'lbs added' : 'bodyweight') : 'lbs'}
+          value={wt}
+          onMinus={()=>adjust('wt', dbMode ? -dumbbellStep(wt,-1) : -5)}
+          onPlus={()=>adjust('wt', dbMode ? dumbbellStep(wt,1) : +5)}
+          input={
             <input type="number" inputMode="decimal"
               value={wt || ''} onChange={e => { userEdited.current = true; setWt(parseFloat(e.target.value)||0) }}
-              onFocus={e => e.target.select()}
-              placeholder={isBodyweight ? '0' : ''}
+              onFocus={e => e.target.select()} placeholder={isBodyweight ? '0' : ''}
               style={{ width:'100%', background:'transparent', border:'none', outline:'none',
-                fontSize:42, fontWeight:800, color:'#fff', textAlign:'center',
-                letterSpacing:'-1px' }} />
-            <p style={{ fontSize:13, color:'#8E8E93', marginTop:-4 }}>
-              {isBodyweight ? (wt > 0 ? 'lbs added' : 'bodyweight') : 'lbs'}
-            </p>
-          </div>
-          <button onClick={()=>adjust('wt', dbMode ? dumbbellStep(wt,1) : +5)} style={{ width:44, height:44, borderRadius:12,
-            background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <Plus size={18} strokeWidth={2.5} style={{ color:accentColor }} />
-          </button>
-        </div>
-        <div style={{ display:'flex', gap:8, marginTop:10 }}>
-          {(dbMode ? [-5,-2.5,+2.5,+5] : [-10,-5,+5,+10]).map(d => (
-            <button key={d} onClick={()=>adjust('wt',d)} style={{ flex:1, height:36, borderRadius:10,
-              background:'rgba(118,118,128,0.15)', fontSize:13, fontWeight:700,
-              color: d<0 ? '#8E8E93' : accentColor }}>
-              {d>0?`+${d}`:d}
-            </button>
-          ))}
-        </div>
+                fontSize:26, fontWeight:700, color:'var(--label)', textAlign:'center', letterSpacing:'-0.5px', lineHeight:1 }} />
+          } />
+        <Stepper unit="reps" value={reps}
+          onMinus={()=>adjust('reps',-1)} onPlus={()=>adjust('reps',+1)} />
       </div>
 
-      {/* Plate calculator — only for loaded (non-bodyweight) lifts */}
-      {!isBodyweight && <PlateCalc exerciseName={exerciseName} weight={wt} accentColor={accentColor} />}
-
-      {/* Reps stepper */}
-      <div style={{ marginBottom:16 }}>
-        <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase',
-          letterSpacing:'0.08em', marginBottom:8 }}>Reps</p>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <button onClick={()=>adjust('reps',-1)} style={{ width:44, height:44, borderRadius:12,
-            background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <Minus size={18} strokeWidth={2.5} style={{ color:'#fff' }} />
-          </button>
-          <div style={{ flex:1, textAlign:'center' }}>
-            <p style={{ fontSize:42, fontWeight:800, color:'#fff', letterSpacing:'-1px' }}>{reps}</p>
-            <p style={{ fontSize:13, color:'#8E8E93', marginTop:-4 }}>reps · goal {repsRange}</p>
-          </div>
-          <button onClick={()=>adjust('reps',+1)} style={{ width:44, height:44, borderRadius:12,
-            background:'rgba(118,118,128,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <Plus size={18} strokeWidth={2.5} style={{ color:accentColor }} />
-          </button>
-        </div>
-      </div>
-
-      {/* RIR picker */}
-      <div style={{ marginBottom:18 }}>
-        <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase',
-          letterSpacing:'0.08em', marginBottom:8 }}>Reps in Reserve (RIR)</p>
-        <div style={{ display:'flex', gap:8 }}>
+      {/* RIR — one row, no essay */}
+      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+        <span style={{ fontSize:11, fontWeight:600, color:'var(--label-2)', letterSpacing:'0.04em', width:26 }}>RIR</span>
+        <div style={{ flex:1, display:'flex', gap:2, padding:2, borderRadius:9, background:'var(--fill-3)' }}>
           {[0,1,2,3,4].map(v => (
-            <button key={v} onClick={()=>setRir(v)} style={{ flex:1, height:42, borderRadius:12,
-              background: rir===v ? accentColor : 'rgba(118,118,128,0.15)',
-              fontSize:15, fontWeight:800, color: rir===v ? 'var(--bg)' : '#8E8E93',
-              transition:'background 0.15s' }}>
+            <button key={v} onClick={()=>setRir(v)} style={{ flex:1, height:32, borderRadius:7,
+              background: rir===v ? accentColor : 'transparent',
+              fontSize:14, fontWeight:700, color: rir===v ? '#fff' : 'var(--label-2)',
+              transition:'background 0.12s' }}>
               {v===4?'4+':v}
             </button>
           ))}
         </div>
-        <p style={{ fontSize:11, color:'#8E8E93', marginTop:6, textAlign:'center' }}>
-          {rir===0?'Nothing left — max effort':rir===1?'1 more rep in the tank':rir===2?'2 reps left — on prescription':rir===3?'3 reps left — feeling fresh':'4+ reps left — very easy'}
-        </p>
       </div>
 
-      {/* Tempo selector — horizontal rolling dial (one row, saves space) */}
-      <div style={{ marginBottom:16 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
-          <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.08em' }}>
-            Eccentric Tempo
-          </p>
-          <span style={{ fontSize:11, color:'rgba(10,132,255,0.7)', background:'rgba(10,132,255,0.1)',
-            padding:'2px 7px', borderRadius:6 }}>optional</span>
-          <span style={{ marginLeft:'auto', fontSize:14, fontWeight:800, color:accentColor, letterSpacing:'-0.2px' }}>{tempo}</span>
-        </div>
-        <div className="no-scrollbar" style={{ display:'flex', gap:8, overflowX:'auto', scrollSnapType:'x mandatory',
-          paddingBottom:2, WebkitOverflowScrolling:'touch', marginInline:-2, paddingInline:2 }}>
-          {TEMPOS.map(t => {
-            const sel = tempo === t.code
-            return (
-              <button key={t.code} onClick={()=>setTempo(t.code)}
-                style={{ scrollSnapAlign:'center', flexShrink:0, minWidth:74, padding:'8px 12px', borderRadius:12,
-                  background: sel ? accentColor : 'rgba(118,118,128,0.15)',
-                  border: sel ? 'none' : '0.5px solid rgba(84,84,88,0.3)',
-                  display:'flex', flexDirection:'column', alignItems:'center', gap:2, transition:'all 0.15s' }}>
-                <span style={{ fontSize:14, fontWeight:800, color: sel ? 'var(--bg)' : '#fff' }}>{t.code}</span>
-                <span style={{ fontSize:9, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em', whiteSpace:'nowrap',
-                  color: sel ? 'rgba(0,0,0,0.7)' : 'rgba(142,142,147,0.85)' }}>{t.purpose || 'Default'}</span>
+      {/* Optional extras, out of the way until wanted */}
+      {more && (
+        <div style={{ display:'flex', flexDirection:'column', gap:10, paddingTop:2 }}>
+          <div style={{ display:'flex', gap:6 }}>
+            {(dbMode ? [-5,-2.5,+2.5,+5] : [-10,-5,+5,+10]).map(d => (
+              <button key={d} onClick={()=>adjust('wt',d)} style={{ flex:1, height:32, borderRadius:8,
+                background:'var(--fill-4)', fontSize:13, fontWeight:600,
+                color: d<0 ? 'var(--label-2)' : accentColor }}>
+                {d>0?`+${d}`:d}
               </button>
-            )
-          })}
+            ))}
+          </div>
+          {!isBodyweight && <PlateCalc exerciseName={exerciseName} weight={wt} accentColor={accentColor} />}
+          <div>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+              <span style={{ fontSize:11, fontWeight:600, color:'var(--label-2)', letterSpacing:'0.04em' }}>ECCENTRIC TEMPO</span>
+              <span style={{ marginLeft:'auto', fontSize:12, fontWeight:700, color:accentColor }}>{tempo}</span>
+            </div>
+            <div className="no-scrollbar" style={{ display:'flex', gap:6, overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
+              {TEMPOS.map(t => {
+                const sel = tempo === t.code
+                return (
+                  <button key={t.code} onClick={()=>setTempo(t.code)}
+                    style={{ flexShrink:0, padding:'6px 10px', borderRadius:8,
+                      background: sel ? accentColor : 'var(--fill-4)',
+                      display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}>
+                    <span style={{ fontSize:13, fontWeight:700, color: sel ? '#fff' : 'var(--label)' }}>{t.code}</span>
+                    <span style={{ fontSize:9, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em', whiteSpace:'nowrap',
+                      color: sel ? 'rgba(255,255,255,0.8)' : 'var(--label-2)' }}>{t.purpose || 'Default'}</span>
+                  </button>
+                )
+              })}
+            </div>
+            {tempo !== 'Standard' && (
+              <p style={{ fontSize:12, color:'var(--label-2)', marginTop:6, lineHeight:1.45 }}>
+                {TEMPOS.find(t=>t.code===tempo)?.hint}
+              </p>
+            )}
+          </div>
         </div>
-        {tempo !== 'Standard' && (
-          <p style={{ fontSize:12, color:'rgba(10,132,255,0.85)', marginTop:8,
-            background:'rgba(10,132,255,0.08)', padding:'8px 12px', borderRadius:10, lineHeight:1.5 }}>
-            💡 {TEMPOS.find(t=>t.code===tempo)?.hint}
-          </p>
-        )}
-      </div>
+      )}
 
-      {/* LOG button */}
-      <button onClick={commit} disabled={busy}
-        style={{ width:'100%', height:54, borderRadius:14, fontSize:17, fontWeight:800,
-          display:'flex', alignItems:'center', justifyContent:'center', gap:8,
-          background: busy ? 'rgba(118,118,128,0.3)' : accentColor,
-          color: busy ? '#8E8E93' : 'var(--bg)', letterSpacing:'-0.3px',
-          boxShadow: busy ? 'none' : `0 4px 20px ${accentColor}55`,
-          transition:'background 0.15s, box-shadow 0.15s' }}>
-        {busy
-          ? <div style={{ width:20, height:20, borderRadius:'50%', border:'2.5px solid transparent',
-              borderTopColor:'#fff', animation:'spin 0.7s linear infinite' }} />
-          : <><Check size={20} strokeWidth={3} /> Log Set {setNum}</>}
-      </button>
+      {/* Log — the one thing you tap every set */}
+      <div style={{ display:'flex', gap:8 }}>
+        <button onClick={commit} disabled={busy}
+          style={{ flex:1, height:46, borderRadius:12, fontSize:16, fontWeight:600, letterSpacing:'-0.3px',
+            display:'flex', alignItems:'center', justifyContent:'center', gap:7,
+            background: busy ? 'var(--fill-3)' : accentColor, color: busy ? 'var(--label-2)' : '#fff',
+            transition:'background 0.15s' }}>
+          {busy
+            ? <div style={{ width:18, height:18, borderRadius:'50%', border:'2.5px solid transparent',
+                borderTopColor:'#fff', animation:'spin 0.7s linear infinite' }} />
+            : <><Check size={18} strokeWidth={3} /> Log Set {setNum}</>}
+        </button>
+        <button onClick={()=>setMore(m=>!m)} aria-label="More options" aria-expanded={more}
+          title="Quick jumps · plates · tempo"
+          style={{ width:46, height:46, borderRadius:12, background: more ? 'var(--fill-2)' : 'var(--fill-4)',
+            display:'grid', placeItems:'center', fontSize:18, fontWeight:700, color:'var(--label)', lineHeight:1 }}>
+          {tempo !== 'Standard' && !more
+            ? <span style={{ fontSize:10, fontWeight:700, color:accentColor }}>{tempo}</span>
+            : '···'}
+        </button>
+      </div>
     </div>
   )
 }
@@ -1700,9 +1682,10 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
               {/* Expanded */}
               {isOpen && (
-                <div style={{ padding:'0 14px 14px', display:'flex', flexDirection:'column', gap:8 }}>
+                <div style={{ padding:'0 12px 12px', display:'flex', flexDirection:'column', gap:6 }}>
 
-                  {/* Info strip */}
+                  {/* Info strip — only when no active set card is showing the same facts */}
+                  {(isComp || isTimedEx) && (
                   <div style={{ display:'flex', gap:6, padding:'8px 12px', borderRadius:10,
                     background:'rgba(118,118,128,0.1)', border:'0.5px solid rgba(84,84,88,0.3)', marginBottom:4 }}>
                     <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>{exSets} sets</span>
@@ -1719,6 +1702,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                       <span style={{ fontSize:12, color:'#8E8E93' }}>Last: {lastWt} lbs</span>
                     </>}
                   </div>
+                  )}
 
                   {/* BFR protocol banner */}
                   {!isComp && isBfrEx && (
@@ -1806,7 +1790,9 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
                   {/* Cue + swap */}
                   <div style={{ display:'flex', alignItems:'flex-start', gap:10, marginTop:4 }}>
-                    <p style={{ fontSize:12, color:'#8E8E93', fontStyle:'italic', lineHeight:1.6, flex:1 }}>
+                    <p onClick={e => { const el = e.currentTarget; el.style.webkitLineClamp = el.style.webkitLineClamp ? '' : '2' }}
+                      style={{ fontSize:12, color:'#8E8E93', fontStyle:'italic', lineHeight:1.5, flex:1,
+                        display:'-webkit-box', WebkitBoxOrient:'vertical', WebkitLineClamp:2, overflow:'hidden', cursor:'pointer' }}>
                       {effCue(origEx)}
                     </p>
                     {/* Technique video + swap. Every exercise is swappable. */}
