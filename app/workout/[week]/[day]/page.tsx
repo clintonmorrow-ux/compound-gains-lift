@@ -452,19 +452,26 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
   }
 
   // Compact stepper: 40pt buttons, a 26pt value, the unit tucked beneath.
-  const Stepper = ({ value, unit, onMinus, onPlus, input }: {
-    value: React.ReactNode; unit: string; onMinus: () => void; onPlus: () => void; input?: React.ReactNode
+  // Compact stepper. Digits are tabular so the value never reflows as it
+  // changes, and the value slot is sized for four characters ("22.5",
+  // "1000") on weight and two on reps.
+  const Stepper = ({ value, unit, onMinus, onPlus, input, grow = 1 }: {
+    value: React.ReactNode; unit: string; onMinus: () => void; onPlus: () => void
+    input?: React.ReactNode; grow?: number
   }) => (
-    <div style={{ flex:1, display:'flex', alignItems:'stretch', height:56, borderRadius:12,
-      background:'var(--fill-4)', overflow:'hidden' }}>
-      <button onClick={onMinus} aria-label="decrease" style={{ width:42, display:'grid', placeItems:'center' }}>
+    <div style={{ flex:grow, display:'flex', alignItems:'stretch', height:56, borderRadius:12,
+      background:'var(--fill-4)', overflow:'hidden', minWidth:0 }}>
+      <button onClick={onMinus} aria-label="decrease" style={{ width:38, flexShrink:0, display:'grid', placeItems:'center' }}>
         <Minus size={16} strokeWidth={2.5} style={{ color:'var(--label)' }} />
       </button>
       <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minWidth:0 }}>
-        {input ?? <span style={{ fontSize:26, fontWeight:700, letterSpacing:'-0.5px', lineHeight:1 }}>{value}</span>}
+        {input ?? (
+          <span style={{ fontSize:24, fontWeight:700, letterSpacing:'-0.3px', lineHeight:1,
+            fontVariantNumeric:'tabular-nums' }}>{value}</span>
+        )}
         <span style={{ fontSize:10, color:'var(--label-2)', marginTop:3, letterSpacing:'0.02em', whiteSpace:'nowrap' }}>{unit}</span>
       </div>
-      <button onClick={onPlus} aria-label="increase" style={{ width:42, display:'grid', placeItems:'center' }}>
+      <button onClick={onPlus} aria-label="increase" style={{ width:38, flexShrink:0, display:'grid', placeItems:'center' }}>
         <Plus size={16} strokeWidth={2.5} style={{ color:accentColor }} />
       </button>
     </div>
@@ -494,19 +501,25 @@ function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBody
 
       {/* Weight and reps, side by side */}
       <div style={{ display:'flex', gap:8 }}>
-        <Stepper
+        <Stepper grow={1.35}
           unit={isBodyweight ? (wt > 0 ? 'lbs added' : 'bodyweight') : 'lbs'}
           value={wt}
           onMinus={()=>adjust('wt', dbMode ? -dumbbellStep(wt,-1) : -5)}
           onPlus={()=>adjust('wt', dbMode ? dumbbellStep(wt,1) : +5)}
           input={
-            <input type="number" inputMode="decimal"
-              value={wt || ''} onChange={e => { userEdited.current = true; setWt(parseFloat(e.target.value)||0) }}
+            <input type="text" inputMode="decimal" pattern="[0-9]*[.]?[0-9]*"
+              value={wt || ''}
+              onChange={e => {
+                const clean = e.target.value.replace(/[^0-9.]/g, '')
+                userEdited.current = true
+                setWt(parseFloat(clean) || 0)
+              }}
               onFocus={e => e.target.select()} placeholder={isBodyweight ? '0' : ''}
-              style={{ width:'100%', background:'transparent', border:'none', outline:'none',
-                fontSize:26, fontWeight:700, color:'var(--label)', textAlign:'center', letterSpacing:'-0.5px', lineHeight:1 }} />
+              style={{ width:'100%', minWidth:0, padding:0, margin:0, background:'transparent', border:'none',
+                outline:'none', fontSize:24, fontWeight:700, color:'var(--label)', textAlign:'center',
+                letterSpacing:'-0.3px', lineHeight:1, fontVariantNumeric:'tabular-nums', WebkitAppearance:'none' }} />
           } />
-        <Stepper unit="reps" value={reps}
+        <Stepper grow={1} unit="reps" value={reps}
           onMinus={()=>adjust('reps',-1)} onPlus={()=>adjust('reps',+1)} />
       </div>
 
