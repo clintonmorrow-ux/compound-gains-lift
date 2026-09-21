@@ -11,7 +11,7 @@
 //   • Deloads: ~60% of the last hold.
 
 export function isTimedExercise(name: string): boolean {
-  return /\bplank\b|wall sit|hollow hold|dead hang|l-sit|\bisometric\b|\biso hold\b|farmer'?s? (carry|walk)|suitcase carry/i.test(name)
+  return /\bplank\b|wall sit|hollow hold|dead hang|l-sit|\bisometric\b|\biso hold\b|farmer'?s? (carry|walk)|suitcase carry|jump rope|rope interval|engine round|burpee interval|bike interval|row(er)? interval|sprint interval/i.test(name)
 }
 
 /** Rehab-style isometrics (tendon loading) progress by LOAD, not by time:

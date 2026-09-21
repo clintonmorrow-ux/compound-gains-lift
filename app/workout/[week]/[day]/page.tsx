@@ -1364,7 +1364,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     const newLogged = [...(sets[origEx.name]??[]), tempSet]
     const newSets   = {...sets, [origEx.name]: newLogged}
     setSets(newSets)
-    setRest({ sec: getRestSeconds(wk, origEx.type, activeProgramId, workout.dayType, rx(origEx.name)?.rir),
+    setRest({ sec: rx(origEx.name)?.restSec ?? getRestSeconds(wk, origEx.type, activeProgramId, workout.dayType, rx(origEx.name)?.rir),
              name: effName(origEx), startedAt: Date.now() })
     if (newLogged.length >= setsFor(origEx)) {
       const next = workout.exercises.find(e => (newSets[e.name]?.length??0) < setsFor(e))
@@ -1620,7 +1620,12 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           const isTimedEx  = isTimedExercise(origEx.name)
           const isTestEx   = exRx?.testMode !== undefined
           const isBfrEx    = exRx?.protocol === 'bfr'
-          const timedSugg  = isTimedEx ? suggestTimedTarget(lastDurs[origEx.name] ?? null, lastWt, cfg.isDeload, effName(origEx)) : null
+          // A prescription with a fixed duration (interval work, programmed holds)
+          // overrides the adaptive hold ladder, which is meant for open-ended planks.
+          const timedBase  = isTimedEx ? suggestTimedTarget(lastDurs[origEx.name] ?? null, lastWt, cfg.isDeload, effName(origEx)) : null
+          const timedSugg  = timedBase && exRx?.seconds
+            ? { ...timedBase, seconds: exRx.seconds, note: exRx.testNote ?? timedBase.note }
+            : timedBase
           // Belt weight for weighted dips/pull-ups (target is SYSTEM weight)
           const beltTgt  = loadableBW && target > 0 ? Math.max(0, Math.round((target - bodyWt) / round) * round) : 0
           const shownTgt = loadableBW ? beltTgt : target

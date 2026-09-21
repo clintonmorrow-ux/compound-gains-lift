@@ -1035,6 +1035,184 @@ export const EXERCISE_ALTS: Record<string, AltsMap> = {
                       { name:'Cable Curl', cue:'No rest at the bottom' }],
     barbell:         [{ name:'Cambered Bar Curl', cue:'Bilateral · elbows fixed' }],
   },
+  // ── Bodyweight Build ladders (REGRESSION → GRADUATION) ───────────────
+  'Neutral-Grip Pull-Up': {
+    bodyweight:      [{ name:'Pull-Up', cue:'Pronated grip · slightly harder on the elbow' },
+                      { name:'Chin-Up', cue:'Supinated · loads the biceps tendon more — skip if the elbow objects' },
+                      { name:'Band-Assisted Pull-Up', cue:'REGRESSION · band under the knee' },
+                      { name:'Archer Pull-Up', cue:'GRADUATION · one arm does most of the work' }],
+    bands:           [{ name:'Band-Assisted Pull-Up', cue:'Band under the knee · thinner band = harder' }],
+    cables:          [{ name:'Neutral Grip Pull-Down', cue:'Same grip on a machine if the bar is taken' }],
+    barbell:         [{ name:'Weighted Pull-Up', cue:'GRADUATION · belt on, once the elbow is quiet' }],
+  },
+  'Feet-Elevated Inverted Row': {
+    bodyweight:      [{ name:'Inverted Row', cue:'REGRESSION · feet on the floor' },
+                      { name:'Weighted Inverted Row', cue:'GRADUATION · vest on' },
+                      { name:'Archer Inverted Row', cue:'GRADUATION · one arm leads' }],
+    cables:          [{ name:'Seated Cable Row', cue:'Machine substitute' },
+                      { name:'Cable Row', cue:'Steady tension' }],
+    dumbbells:       [{ name:'Dumbbell Row', cue:'If the bar is unavailable' }],
+  },
+  'Weighted Inverted Row': {
+    bodyweight:      [{ name:'Feet-Elevated Inverted Row', cue:'REGRESSION · drop the vest' },
+                      { name:'Archer Inverted Row', cue:'GRADUATION · one arm leads' }],
+    cables:          [{ name:'Seated Cable Row', cue:'Machine substitute' }],
+    barbell:         [{ name:'Pendlay Row', cue:'If you want a bar in your hands again' }],
+  },
+  'Band Face Pull': {
+    cables:          [{ name:'Face Pull', cue:'Cable version · rope attachment' },
+                      { name:'Cable Reverse Fly', cue:'Constant tension' }],
+    dumbbells:       [{ name:'DB Rear Delt Fly', cue:'Bent over · squeeze the rear delts' }],
+    bands:           [{ name:'Band Pull-Apart', cue:'Same job, straight arms' }],
+  },
+  'Deficit Push-Up': {
+    bodyweight:      [{ name:'Push-Up', cue:'REGRESSION · hands on the floor' },
+                      { name:'Weighted Push-Up', cue:'GRADUATION · vest on' },
+                      { name:'Archer Push-Up', cue:'GRADUATION · one arm does most of the work' },
+                      { name:'Ring Push-Up', cue:'Unstable · rings' }],
+    dumbbells:       [{ name:'Flat Dumbbell Press', cue:'If you want a bell in your hands' }],
+    machines:        [{ name:'Flat Machine Press', cue:'Machine substitute' }],
+  },
+  'Weighted Push-Up': {
+    bodyweight:      [{ name:'Deficit Push-Up', cue:'REGRESSION · drop the vest, keep the depth' },
+                      { name:'Archer Push-Up', cue:'GRADUATION · one arm leads' },
+                      { name:'One-Arm Push-Up', cue:'GRADUATION · the top of the ladder' }],
+    dumbbells:       [{ name:'Flat Dumbbell Press', cue:'Loaded pressing alternative' }],
+    barbell:         [{ name:'Bench Press', cue:'If you want the bar back' }],
+  },
+  'Push-Up': {
+    bodyweight:      [{ name:'Incline Push-Up', cue:'REGRESSION · hands on the box' },
+                      { name:'Deficit Push-Up', cue:'GRADUATION · hands on the dip bars' },
+                      { name:'Weighted Push-Up', cue:'GRADUATION · vest on' }],
+    dumbbells:       [{ name:'Flat Dumbbell Press', cue:'Loaded alternative' }],
+  },
+  'Pike Push-Up': {
+    bodyweight:      [{ name:'Elevated Pike Push-Up', cue:'GRADUATION · feet on the box' },
+                      { name:'Wall Handstand Push-Up', cue:'GRADUATION · feet on the wall' }],
+    dumbbells:       [{ name:'Seated Dumbbell Press', cue:'Loaded overhead alternative' }],
+    barbell:         [{ name:'Overhead Press', cue:'Barbell overhead' }],
+    machines:        [{ name:'Machine Shoulder Press', cue:'Machine substitute' }],
+  },
+  'Elevated Pike Push-Up': {
+    bodyweight:      [{ name:'Pike Push-Up', cue:'REGRESSION · feet on the floor' },
+                      { name:'Wall Handstand Push-Up', cue:'GRADUATION · feet on the wall' }],
+    dumbbells:       [{ name:'Seated Dumbbell Press', cue:'Loaded overhead alternative' }],
+    barbell:         [{ name:'Overhead Press', cue:'Barbell overhead' }],
+  },
+  'Dip': {
+    bodyweight:      [{ name:'Deficit Push-Up', cue:'REGRESSION · kinder to the elbow' },
+                      { name:'Band-Assisted Dip', cue:'REGRESSION · band across the bars' },
+                      { name:'Weighted Dips', cue:'GRADUATION · belt on' }],
+    machines:        [{ name:'Chest Press Machine', cue:'If the elbow says no to dips today' }],
+  },
+  'Band-Assisted Pistol Squat': {
+    bodyweight:      [{ name:'Box Pistol Squat', cue:'GRADUATION · sit to the box, no band' },
+                      { name:'Pistol Squat', cue:'GRADUATION · free' },
+                      { name:'Bulgarian Split Squat', cue:'Different single-leg pattern' }],
+    dumbbells:       [{ name:'Goblet Squat', cue:'Bilateral, loaded, if single-leg is not happening today' }],
+    machines:        [{ name:'Leg Press', cue:'Bilateral machine substitute' }],
+  },
+  'Box Pistol Squat': {
+    bodyweight:      [{ name:'Band-Assisted Pistol Squat', cue:'REGRESSION · band at the chest' },
+                      { name:'Pistol Squat', cue:'GRADUATION · free' },
+                      { name:'Bulgarian Split Squat', cue:'Different single-leg pattern' }],
+    dumbbells:       [{ name:'Goblet Squat', cue:'Bilateral, loaded' }],
+  },
+  'Weighted Box Step-Up': {
+    bodyweight:      [{ name:'Box Step-Up', cue:'REGRESSION · no vest' },
+                      { name:'Bulgarian Split Squat', cue:'Rear foot elevated instead' }],
+    dumbbells:       [{ name:'DB Step-Up', cue:'Bells in hand instead of a vest' }],
+    machines:        [{ name:'Leg Press', cue:'Bilateral machine substitute' }],
+  },
+  'Box Jump': {
+    bodyweight:      [{ name:'Jump Squat', cue:'No box needed' },
+                      { name:'Broad Jump', cue:'Horizontal power' },
+                      { name:'Depth Jump', cue:'GRADUATION · step off, land, jump — advanced' }],
+    machines:        [{ name:'Leg Press', cue:'If impact is off the table today' }],
+  },
+  'Band-Assisted Nordic Curl': {
+    bodyweight:      [{ name:'Nordic Curl', cue:'GRADUATION · lose the band' },
+                      { name:'Glute Ham Raise', cue:'Same pattern on a GHD' },
+                      { name:'Slider Leg Curl', cue:'REGRESSION · heels on sliders' }],
+    machines:        [{ name:'Prone Leg Curl', cue:'Machine hamstrings' },
+                      { name:'Seated Leg Curl', cue:'Hamstrings at length' }],
+  },
+  'Nordic Curl': {
+    bodyweight:      [{ name:'Band-Assisted Nordic Curl', cue:'REGRESSION · band at the chest' },
+                      { name:'Glute Ham Raise', cue:'Same pattern on a GHD' }],
+    machines:        [{ name:'Prone Leg Curl', cue:'Machine hamstrings' },
+                      { name:'Seated Leg Curl', cue:'Hamstrings at length' }],
+    barbell:         [{ name:'Romanian Deadlift', cue:'Loaded hinge if you want the bar' }],
+  },
+  'Single-Leg RDL': {
+    bodyweight:      [{ name:'B-Stance RDL', cue:'REGRESSION · back toe as a kickstand' },
+                      { name:'Nordic Curl', cue:'Knee-flexion hamstrings instead' }],
+    dumbbells:       [{ name:'Dumbbell Romanian Deadlift', cue:'Bilateral, bells in hand' }],
+    barbell:         [{ name:'Romanian Deadlift', cue:'Bilateral barbell hinge' }],
+  },
+  'Single-Leg Hip Thrust': {
+    bodyweight:      [{ name:'Glute Bridge', cue:'REGRESSION · floor, both feet' },
+                      { name:'Single-Leg Glute Bridge', cue:'REGRESSION · floor, one foot' }],
+    barbell:         [{ name:'Barbell Hip Thrust', cue:'GRADUATION · bar across the hips' }],
+    machines:        [{ name:'Machine Hip Thrust', cue:'Fixed path' }],
+    bands:           [{ name:'Banded Glute Bridge', cue:'Band above the knees' }],
+  },
+  'Hollow Hold': {
+    bodyweight:      [{ name:'Dead Bug', cue:'REGRESSION · slower, one limb at a time' },
+                      { name:'Plank', cue:'Prone anti-extension' },
+                      { name:'L-Sit', cue:'GRADUATION · same shape, on the bars' }],
+  },
+  'L-Sit': {
+    bodyweight:      [{ name:'Tuck L-Sit', cue:'REGRESSION · knees in' },
+                      { name:'Hollow Hold', cue:'Same shape on the floor' },
+                      { name:'Hanging Leg Raise', cue:'Dynamic version on the bar' }],
+  },
+  'Side Plank': {
+    bodyweight:      [{ name:'Plank', cue:'Prone version' },
+                      { name:'Side Plank with Leg Raise', cue:'GRADUATION · top leg lifts' }],
+    cables:          [{ name:'Pallof Press', cue:'Loaded anti-rotation' }],
+    dumbbells:       [{ name:'Suitcase Carry', cue:'Walking version' }],
+  },
+  'Dead Hang': {
+    bodyweight:      [{ name:'Active Hang', cue:'GRADUATION · shoulders pulled down' },
+                      { name:"Farmer's Carry", cue:'Grip under load, walking' }],
+  },
+  'Jump Rope Intervals': {
+    bodyweight:      [{ name:'Burpee Intervals', cue:'No rope needed' },
+                      { name:'Mountain Climber Intervals', cue:'Low impact, floor' },
+                      { name:'Shadow Boxing Intervals', cue:'Zero impact' }],
+    machines:        [{ name:'Bike Intervals', cue:'Zero impact' },
+                      { name:'Rower Intervals', cue:'Zero impact, full body' }],
+  },
+  'Burpee Intervals': {
+    bodyweight:      [{ name:'Jump Rope Intervals', cue:'Rope instead' },
+                      { name:'Mountain Climber Intervals', cue:'Lower impact' }],
+    machines:        [{ name:'Bike Intervals', cue:'Zero impact' },
+                      { name:'Rower Intervals', cue:'Zero impact' }],
+  },
+  'Box Step-Up Engine Round': {
+    bodyweight:      [{ name:'Jump Rope Engine Round', cue:'Rope instead of the box' },
+                      { name:'Stair Climb Round', cue:'Stairs if you have them' }],
+    machines:        [{ name:'Bike Engine Round', cue:'Zero impact' },
+                      { name:'Rower Engine Round', cue:'Zero impact, full body' }],
+  },
+  'Jump Rope Engine Round': {
+    bodyweight:      [{ name:'Box Step-Up Engine Round', cue:'Box instead of the rope' },
+                      { name:'Stair Climb Round', cue:'Stairs' }],
+    machines:        [{ name:'Bike Engine Round', cue:'Zero impact' },
+                      { name:'Rower Engine Round', cue:'Zero impact' }],
+  },
+  'Biceps Isometric Hold': {
+    bands:           [{ name:'Band Curl', cue:'Light dynamic curl once the hold is comfortable' }],
+    dumbbells:       [{ name:'Hammer Curl', cue:'GRADUATION · neutral grip is easiest on the elbow' }],
+    cables:          [{ name:'Cable Curl', cue:'Constant tension, light' }],
+  },
+  'Triceps Isometric Hold': {
+    bands:           [{ name:'Band Pushdown', cue:'Light dynamic extension once the hold is comfortable' }],
+    cables:          [{ name:'Rope Press-Down', cue:'GRADUATION · light, elbows pinned' }],
+    bodyweight:      [{ name:'Deficit Push-Up', cue:'Compound pressing, elbow-friendly' }],
+  },
+
   // ── 4 Day Full Body additions ────────────────────────────────────────
   'Straight Bar Cable Crunch': {
     cables:          [{ name:'Rope Abdominal Crunch',    cue:'Rope attachment · same kneeling crunch' },
@@ -1255,14 +1433,6 @@ export const EXERCISE_ALTS: Record<string, AltsMap> = {
     dumbbells:       [{ name:'Flat Dumbbell Press', cue:'Free bells · deeper stretch' },
                       { name:'Dumbbell Floor Press', cue:'Floor limits the range' }],
     machines:        [{ name:'Flat Machine Press', cue:'Supported pressing' }],
-  },
-  'Weighted Push-Up': {
-    bodyweight:      [{ name:'Push-Up', cue:'No added load' },
-                      { name:'Decline Push-Up', cue:'Feet elevated · upper chest' }],
-    dumbbells:       [{ name:'Flat Dumbbell Press', cue:'Loadable pressing' },
-                      { name:'Incline Dumbbell Press', cue:'Upper chest' }],
-    barbell:         [{ name:'Bench Press', cue:'Heaviest pressing option' }],
-    machines:        [{ name:'Flat Machine Press', cue:'Supported and easy to load' }],
   },
   'Flat Dumbbell Fly': {
     dumbbells:       [{ name:'Incline Dumbbell Fly', cue:'Upper-chest bias' },
@@ -2142,8 +2312,9 @@ function muscleIndex(): Record<string, string> {
     const { bikiniBuilderWorkouts } = require('./bikiniBuilder') as typeof import('./bikiniBuilder')
     const { bbUpperWorkouts } = require('./bbUpper') as typeof import('./bbUpper')
     const { garageGainsWorkouts } = require('./garageGains') as typeof import('./garageGains')
+    const { bodyweightWorkouts } = require('./bodyweight') as typeof import('./bodyweight')
     const bikini: any[] = []
-    for (let w = 1; w <= 12; w++) bikini.push(...bikiniBuilderWorkouts(w), ...bbUpperWorkouts(w), ...garageGainsWorkouts(w))
+    for (let w = 1; w <= 12; w++) bikini.push(...bikiniBuilderWorkouts(w), ...bbUpperWorkouts(w), ...garageGainsWorkouts(w), ...bodyweightWorkouts(w))
     const allW = [...PROGRAM_LIBRARY.flatMap(p => p.workouts), ...PHAT_CUSTOM_BLOCK2_WORKOUTS, ...bikini]
     allW.forEach((w: any) =>
       (w.exercises ?? []).forEach((e: any) => { if (e?.name && !m[e.name]) m[e.name] = e.muscle }))

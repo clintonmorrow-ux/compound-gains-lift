@@ -47,6 +47,8 @@ export interface Prescription {
   testNote?: string             // protocol explanation shown on the set card
   protocol?: 'bfr'              // special training protocol needing its own UI + rules
   noOneRm?: boolean             // deliberately submaximal — must never feed 1RM estimation
+  restSec?: number              // explicit rest, e.g. the 'off' half of an interval
+  seconds?: number              // fixed hold/work duration for timed entries (intervals, holds)
 }
 
 export const PHAT_CUSTOM_ID = 'phat-custom-12wk'
