@@ -267,19 +267,67 @@ function WarmupSets({ working, round, accentColor, exerciseName }: {
 // Duration-based sets: a large adjustable countdown instead of reps.
 // Completing (or stopping) the hold logs the set through the normal
 // path, so the rest timer starts automatically like any logged set.
-function TimedSetCard({ setNum, setCount, suggestSec, suggestWt, note, accentColor, onLog, dbMode = false }: {
+/** Exercises that are done one side at a time — a set is BOTH sides. */
+const TWO_SIDED_DEFAULT = /single.?arm|single.?leg|one.?arm|one.?leg|side plank|suitcase|per side|unilateral|split squat|pistol|kickback|copenhagen|isometric hold/i
+
+const PREP_KEY = 'cg_timed_prep_sec'
+const readPrep = () => {
+  if (typeof window === 'undefined') return 5
+  const v = localStorage.getItem(PREP_KEY); return v === null ? 5 : parseInt(v)
+}
+const twoSidedKey = (n: string) => `cg_two_sided_${n}`
+
+type TimedPhase = 'idle' | 'prep' | 'hold' | 'switch'
+
+function TimedSetCard({ setNum, setCount, suggestSec, suggestWt, note, accentColor, onLog, dbMode = false, exerciseName = '' }: {
   setNum:number; setCount:number; suggestSec:number; suggestWt:number; note:string
-  accentColor:string; onLog:(weight:number|null, seconds:number)=>void; dbMode?:boolean
+  accentColor:string; onLog:(weight:number|null, seconds:number)=>void; dbMode?:boolean; exerciseName?:string
 }) {
   const [targetSec, setTargetSec] = useState(suggestSec)
   const [wt, setWt]               = useState(suggestWt)
-  const [running, setRunning]     = useState(false)
+  const [phase, setPhase]         = useState<TimedPhase>('idle')
+  const [side, setSide]           = useState<1|2>(1)
   const [endTime, setEndTime]     = useState(0)
   const [rem, setRem]             = useState(suggestSec)
+  const [prepSec, setPrepSec]     = useState(5)
+  const [twoSided, setTwoSided]   = useState(false)
+  const side1Held  = useRef(0)
   const lastBeeped = useRef(0)
   const loggedRef  = useRef(false)
 
-  useEffect(() => { if (!running) setRem(targetSec) }, [targetSec, running])
+  const SWITCH_SEC = 3
+
+  // Preferences: prep buffer is global, two-sided is remembered per exercise.
+  useEffect(() => {
+    setPrepSec(readPrep())
+    const saved = localStorage.getItem(twoSidedKey(exerciseName))
+    setTwoSided(saved === null ? TWO_SIDED_DEFAULT.test(exerciseName) : saved === '1')
+  }, [exerciseName])
+
+  useEffect(() => { if (phase === 'idle') setRem(targetSec) }, [targetSec, phase])
+
+  const running = phase !== 'idle'
+  const phaseLen = phase === 'prep' ? prepSec : phase === 'switch' ? SWITCH_SEC : targetSec
+
+  /** Move to whatever comes after the phase that just ended. */
+  const advance = useCallback(() => {
+    lastBeeped.current = 0
+    if (phase === 'prep') {
+      setPhase('hold'); setSide(1); setEndTime(Date.now() + targetSec * 1000); setRem(targetSec)
+    } else if (phase === 'hold' && twoSided && side === 1) {
+      side1Held.current = targetSec
+      setPhase('switch'); setEndTime(Date.now() + SWITCH_SEC * 1000); setRem(SWITCH_SEC)
+    } else if (phase === 'switch') {
+      setPhase('hold'); setSide(2); setEndTime(Date.now() + targetSec * 1000); setRem(targetSec)
+    } else {
+      // full set done (single side, or second side of two)
+      if (!loggedRef.current) {
+        loggedRef.current = true
+        setPhase('idle')
+        onLog(wt > 0 ? wt : null, targetSec)   // per-side duration is what progresses
+      }
+    }
+  }, [phase, side, twoSided, targetSec, wt, onLog])
 
   useEffect(() => {
     if (!running) return
@@ -289,104 +337,149 @@ function TimedSetCard({ setNum, setCount, suggestSec, suggestWt, note, accentCol
       setRem(remaining)
       if (remaining >= 1 && remaining <= 3 && lastBeeped.current !== remaining) {
         lastBeeped.current = remaining
-        countdownBeep(remaining === 1)
+        countdownBeep(remaining === 1)   // the "1" is the higher GO tone
       }
-      if (remaining <= 0 && !loggedRef.current) {
-        loggedRef.current = true
-        setRunning(false)
-        onLog(wt > 0 ? wt : null, targetSec)   // full hold completed → log + rest starts
-      }
-    }, 250)
+      if (remaining <= 0) advance()
+    }, 200)
     return () => clearInterval(id)
-  }, [running, endTime, targetSec, wt, onLog])
+  }, [running, endTime, advance])
 
   const start = () => {
     ensureBeepCtx()
     loggedRef.current = false
     lastBeeped.current = 0
-    setEndTime(Date.now() + targetSec * 1000)
-    setRem(targetSec)
-    setRunning(true)
+    side1Held.current = 0
+    setSide(1)
+    if (prepSec > 0) {
+      setPhase('prep'); setEndTime(Date.now() + prepSec * 1000); setRem(prepSec)
+    } else {
+      setPhase('hold'); setEndTime(Date.now() + targetSec * 1000); setRem(targetSec)
+    }
   }
+
   const stopAndLog = () => {
-    if (loggedRef.current) return
+    if (loggedRef.current || phase !== 'hold') return
     loggedRef.current = true
-    setRunning(false)
-    const held = Math.max(1, targetSec - rem)   // actual seconds held
+    const heldNow = Math.max(1, targetSec - rem)
+    // Two sides: the weaker side is the honest number.
+    const held = twoSided && side === 2 ? Math.min(side1Held.current, heldNow) : heldNow
+    setPhase('idle')
     onLog(wt > 0 ? wt : null, held)
   }
 
+  const setPrep = (v: number) => { setPrepSec(v); localStorage.setItem(PREP_KEY, String(v)) }
+  const toggleTwoSided = () => {
+    const v = !twoSided; setTwoSided(v); localStorage.setItem(twoSidedKey(exerciseName), v ? '1' : '0')
+  }
+
   const mm = Math.floor(rem / 60), ss = rem % 60
-  const pct = targetSec > 0 ? (targetSec - rem) / targetSec : 0
+  const pct = phaseLen > 0 ? (phaseLen - rem) / phaseLen : 0
+  const isCountIn = phase === 'prep' || phase === 'switch'
 
   return (
-    <div style={{ borderRadius:16, border:`1px solid ${accentColor}55`,
-      background:`linear-gradient(160deg, color-mix(in srgb, ${accentColor} 9%, transparent) 0%, rgba(0,0,0,0) 100%)`,
-      padding:'16px' }}>
-      <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase',
-        letterSpacing:'0.1em', marginBottom:10, display:'flex', alignItems:'center', gap:8 }}>
-        Set {setNum} of {setCount}
-        <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:6,
-          background:`color-mix(in srgb, ${accentColor} 16%, transparent)`, color:accentColor, letterSpacing:'0.06em' }}>
-          ⏱ TIMED HOLD
+    <div style={{ borderRadius:14, padding:12,
+      border:`1px solid color-mix(in srgb, ${accentColor} 35%, transparent)`,
+      background:`color-mix(in srgb, ${accentColor} 7%, var(--bg-2))`,
+      display:'flex', flexDirection:'column', gap:10 }}>
+
+      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+        <span style={{ fontSize:12, fontWeight:600, color:'var(--label-2)', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+          Set {setNum} of {setCount}
         </span>
-      </p>
+        <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'1px 6px', borderRadius:5,
+          background:`color-mix(in srgb, ${accentColor} 16%, transparent)`, color:accentColor, fontSize:10, fontWeight:700, letterSpacing:'0.05em' }}>
+          ⏱ TIMED
+        </span>
+        {twoSided && (
+          <span style={{ fontSize:11, color:'var(--label-2)' }}>· both sides</span>
+        )}
+      </div>
 
       {!running ? (<>
-        <p style={{ fontSize:12, color:'rgba(239,250,248,0.55)', lineHeight:1.5, marginBottom:14 }}>{note}</p>
+        <p style={{ fontSize:12, color:'var(--label-2)', lineHeight:1.5 }}>{note}</p>
 
-        {/* Duration stepper */}
-        <div style={{ marginBottom:14 }}>
-          <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>Hold duration</p>
-          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-            <button onClick={()=>setTargetSec(s=>Math.max(10, s-5))} style={{ width:44, height:44, borderRadius:12,
-              background:'rgba(118,118,128,0.14)', border:'0.5px solid rgba(84,84,88,0.35)', color:'#fff' }}><Minus size={18} style={{ margin:'0 auto' }} /></button>
-            <div style={{ flex:1, textAlign:'center' }}>
-              <span style={{ fontSize:40, fontWeight:800, color:'#fff', fontVariantNumeric:'tabular-nums' }}>{targetSec}</span>
-              <span style={{ fontSize:14, color:'#8E8E93', fontWeight:600 }}> sec</span>
+        {/* Duration + load, compact */}
+        <div style={{ display:'flex', gap:8 }}>
+          <div style={{ flex:1.3, display:'flex', alignItems:'stretch', height:56, borderRadius:12, background:'var(--fill-4)', overflow:'hidden' }}>
+            <button onClick={()=>setTargetSec(s=>Math.max(5, s-5))} aria-label="shorter" style={{ width:38, display:'grid', placeItems:'center' }}>
+              <Minus size={16} strokeWidth={2.5} style={{ color:'var(--label)' }} />
+            </button>
+            <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+              <span style={{ fontSize:24, fontWeight:700, lineHeight:1, fontVariantNumeric:'tabular-nums' }}>{targetSec}</span>
+              <span style={{ fontSize:10, color:'var(--label-2)', marginTop:3 }}>{twoSided ? 'sec per side' : 'seconds'}</span>
             </div>
-            <button onClick={()=>setTargetSec(s=>s+5)} style={{ width:44, height:44, borderRadius:12,
-              background:'rgba(118,118,128,0.14)', border:'0.5px solid rgba(84,84,88,0.35)', color:'#fff' }}><Plus size={18} style={{ margin:'0 auto' }} /></button>
+            <button onClick={()=>setTargetSec(s=>s+5)} aria-label="longer" style={{ width:38, display:'grid', placeItems:'center' }}>
+              <Plus size={16} strokeWidth={2.5} style={{ color:accentColor }} />
+            </button>
+          </div>
+          <div style={{ flex:1, display:'flex', alignItems:'stretch', height:56, borderRadius:12, background:'var(--fill-4)', overflow:'hidden' }}>
+            <button onClick={()=>setWt(w=>Math.max(0, w - (dbMode ? dumbbellStep(w,-1) : 5)))} aria-label="less weight" style={{ width:38, display:'grid', placeItems:'center' }}>
+              <Minus size={16} strokeWidth={2.5} style={{ color:'var(--label)' }} />
+            </button>
+            <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+              <span style={{ fontSize:24, fontWeight:700, lineHeight:1, fontVariantNumeric:'tabular-nums', color: wt>0 ? 'var(--label)' : 'var(--label-2)' }}>
+                {wt>0 ? `+${wt}` : 'BW'}
+              </span>
+              <span style={{ fontSize:10, color:'var(--label-2)', marginTop:3 }}>{wt>0 ? 'lbs added' : 'no load'}</span>
+            </div>
+            <button onClick={()=>setWt(w=>w + (dbMode ? dumbbellStep(w,1) : 5))} aria-label="more weight" style={{ width:38, display:'grid', placeItems:'center' }}>
+              <Plus size={16} strokeWidth={2.5} style={{ color:accentColor }} />
+            </button>
           </div>
         </div>
 
-        {/* Optional added load */}
-        <div style={{ marginBottom:16 }}>
-          <p style={{ fontSize:11, fontWeight:700, color:'#8E8E93', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>Added weight (optional)</p>
-          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-            <button onClick={()=>setWt(w=>Math.max(0, w - (dbMode ? dumbbellStep(w,-1) : 5)))} style={{ width:44, height:44, borderRadius:12,
-              background:'rgba(118,118,128,0.14)', border:'0.5px solid rgba(84,84,88,0.35)', color:'#fff' }}><Minus size={18} style={{ margin:'0 auto' }} /></button>
-            <div style={{ flex:1, textAlign:'center' }}>
-              <span style={{ fontSize:26, fontWeight:800, color: wt>0 ? '#fff' : '#8E8E93', fontVariantNumeric:'tabular-nums' }}>{wt>0 ? `+${wt}` : 'BW'}</span>
-              {wt>0 && <span style={{ fontSize:13, color:'#8E8E93', fontWeight:600 }}> lbs</span>}
-            </div>
-            <button onClick={()=>setWt(w=>w + (dbMode ? dumbbellStep(w,1) : 5))} style={{ width:44, height:44, borderRadius:12,
-              background:'rgba(118,118,128,0.14)', border:'0.5px solid rgba(84,84,88,0.35)', color:'#fff' }}><Plus size={18} style={{ margin:'0 auto' }} /></button>
+        {/* Count-in and two-sided controls */}
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ fontSize:11, fontWeight:600, color:'var(--label-2)', letterSpacing:'0.04em' }}>COUNT-IN</span>
+          <div style={{ display:'flex', gap:2, padding:2, borderRadius:8, background:'var(--fill-3)' }}>
+            {[0,3,5].map(v => (
+              <button key={v} onClick={()=>setPrep(v)} style={{ padding:'5px 10px', borderRadius:6, fontSize:12, fontWeight:700,
+                background: prepSec===v ? accentColor : 'transparent', color: prepSec===v ? '#fff' : 'var(--label-2)' }}>
+                {v===0?'Off':`${v}s`}
+              </button>
+            ))}
           </div>
+          <button onClick={toggleTwoSided} style={{ marginLeft:'auto', padding:'5px 10px', borderRadius:8, fontSize:12, fontWeight:700,
+            background: twoSided ? `color-mix(in srgb, ${accentColor} 18%, transparent)` : 'var(--fill-4)',
+            color: twoSided ? accentColor : 'var(--label-2)', border: twoSided ? `1px solid color-mix(in srgb, ${accentColor} 40%, transparent)` : '1px solid transparent' }}>
+            {twoSided ? '✓ Two sides' : 'Two sides'}
+          </button>
         </div>
 
-        <button onClick={start} style={{ width:'100%', padding:'15px', borderRadius:14,
-          background:accentColor, color:'var(--bg)', fontSize:16, fontWeight:800,
+        <button onClick={start} style={{ width:'100%', height:46, borderRadius:12,
+          background:accentColor, color:'#fff', fontSize:16, fontWeight:600, letterSpacing:'-0.3px',
           display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-          Start Hold
+          Start{prepSec > 0 ? ` · ${prepSec}s count-in` : ''}
         </button>
       </>) : (<>
-        {/* Running: the big countdown */}
-        <div style={{ textAlign:'center', padding:'8px 0 14px' }}>
-          <span style={{ fontSize:76, fontWeight:800, color:'#fff', fontVariantNumeric:'tabular-nums', lineHeight:1 }}>
+        {/* Running */}
+        <div style={{ textAlign:'center', padding:'4px 0 8px' }}>
+          <p style={{ fontSize:12, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em',
+            color: isCountIn ? 'var(--orange)' : accentColor, marginBottom:6 }}>
+            {phase === 'prep' ? 'Get set' : phase === 'switch' ? 'Switch sides' : twoSided ? `Side ${side} of 2` : 'Hold'}
+          </p>
+          <span style={{ fontSize:76, fontWeight:800, lineHeight:1, fontVariantNumeric:'tabular-nums',
+            color: isCountIn ? 'var(--orange)' : 'var(--label)' }}>
             {mm > 0 ? `${mm}:${String(ss).padStart(2,'0')}` : ss}
           </span>
-          {mm === 0 && <span style={{ fontSize:20, color:'#8E8E93', fontWeight:700 }}> s</span>}
-          {wt > 0 && <p style={{ fontSize:13, color:'#8E8E93', marginTop:6 }}>holding +{wt} lbs</p>}
+          {mm === 0 && <span style={{ fontSize:20, color:'var(--label-2)', fontWeight:700 }}> s</span>}
+          {wt > 0 && phase === 'hold' && <p style={{ fontSize:13, color:'var(--label-2)', marginTop:6 }}>holding +{wt} lbs</p>}
         </div>
-        <div style={{ height:6, borderRadius:3, background:'rgba(118,118,128,0.18)', overflow:'hidden', marginBottom:16 }}>
-          <div style={{ height:'100%', width:`${pct*100}%`, background:accentColor, transition:'width 0.25s linear' }} />
+        <div style={{ height:6, borderRadius:3, background:'var(--fill-4)', overflow:'hidden' }}>
+          <div style={{ height:'100%', width:`${pct*100}%`, background: isCountIn ? 'var(--orange)' : accentColor, transition:'width 0.2s linear' }} />
         </div>
-        <button onClick={stopAndLog} style={{ width:'100%', padding:'15px', borderRadius:14,
-          background:'rgba(255,159,10,0.16)', border:'1px solid rgba(255,159,10,0.45)', color:'var(--orange)',
-          fontSize:15, fontWeight:800 }}>
-          Stop & Log ({Math.max(1, targetSec - rem)}s held)
-        </button>
+        {phase === 'hold' ? (
+          <button onClick={stopAndLog} style={{ width:'100%', height:46, borderRadius:12,
+            background:'rgba(255,159,10,0.16)', border:'1px solid rgba(255,159,10,0.45)', color:'var(--orange)',
+            fontSize:15, fontWeight:700 }}>
+            Stop & Log ({Math.max(1, targetSec - rem)}s{twoSided && side === 2 ? ` · side 2` : ''})
+          </button>
+        ) : (
+          <button onClick={() => { setPhase('idle'); loggedRef.current = false }} style={{ width:'100%', height:46, borderRadius:12,
+            background:'var(--fill-4)', color:'var(--label-2)', fontSize:15, fontWeight:600 }}>
+            Cancel
+          </button>
+        )}
       </>)}
     </div>
   )
@@ -1786,7 +1879,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                   {!isComp && isTimedEx && timedSugg && (
                     <TimedSetCard key={nextSet} setNum={nextSet} setCount={exSets}
                       suggestSec={timedSugg.seconds} suggestWt={timedSugg.weight} note={timedSugg.note}
-                      accentColor={accent} dbMode={isDumbbellExercise(origEx.name)}
+                      accentColor={accent} dbMode={isDumbbellExercise(origEx.name)} exerciseName={effName(origEx)}
                       onLog={(w, secs) => handleLog(origEx, nextSet, w, secs, 0, 'timed')} />
                   )}
                   {!isComp && !isTimedEx && (
