@@ -38,6 +38,11 @@ const ALIAS_GROUPS: string[][] = [
   ['Lat Pulldown', 'Machine Pull-Down', 'Wide Grip Lat Pull-Down'],
   ['Neutral Grip Pull-Down', 'Close Grip Pulldown', 'Close Grip Lat Pull-Down'],
   ['Chin-Up', 'Supinated Grip Pull-Up'],
+  // System-weight movements: bodyweight and belt-loaded variants are the
+  // SAME scale (body + added), so a bodyweight AMRAP legitimately seeds the
+  // loaded max. Chin-Up stays separate — supinated grip changes the lift.
+  ['Weighted Pull-Up', 'Pull-Up', 'Neutral-Grip Pull-Up'],
+  ['Weighted Dips', 'Dip', 'Dips'],
 
   // ── legs, isolation ──
   ['Machine Leg Extension', 'Leg Extension'],
