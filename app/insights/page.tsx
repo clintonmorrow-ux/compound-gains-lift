@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import { canonicalExercise } from '@/lib/program/exerciseAliases'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, TrendingUp, Flame, Award, AlertTriangle } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
@@ -146,7 +147,7 @@ export default function InsightsPage() {
   const sessions  = new Set(sets.map(s => s.completed_at.slice(0,10))).size
 
   // Top lifts by data volume for trend charts
-  const topLifts = Array.from(new Set(sets.map(s=>s.exercise_name)))
+  const topLifts = Array.from(new Set(sets.map(s=>canonicalExercise(s.exercise_name))))   // one entry per movement, not per spelling
     .map(ex => ({ ex, series: e1rmSeries(sets, ex) }))
     .filter(x => x.series.length >= 2)
     .sort((a,b)=>b.series.length-a.series.length)

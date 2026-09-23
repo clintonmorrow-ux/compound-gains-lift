@@ -7,7 +7,7 @@ import { getProgram, getWeekConfig, getWeekWorkouts, getPrescription } from '@/l
 import { getTargetWeight, getSetsForWeek, getRepsForWeek, isDumbbellExercise, dumbbellRound, dumbbellStep } from '@/lib/program/calculator'
 import { fetchAllOneRms, fetchSettings, createSession, completeSession,
          logSet, getRecentSetsForExercise, fetchEquipment, fetchExercisePreferences,
-         deleteSession, findIncompleteSession, fetchAllLoggedSets, upsertOneRm, updateLoggedSet } from '@/lib/db'
+         deleteSession, findIncompleteSession, fetchAllLoggedSets, upsertOneRm, updateLoggedSet, getLastTimedSet } from '@/lib/db'
 import { getRestSeconds, fireRestCompleteNotification, requestNotificationPermission, getSupersetPairs } from '@/lib/program/restTimes'
 import { getAlternatives, EQUIPMENT_ICONS, type EquipmentKey } from '@/lib/program/alternatives'
 import { calculateSmartSuggestion, isLoadableBodyweight, withBodyweight, excludeSpeedSets, type SmartSuggestion } from '@/lib/program/smartSuggestions'
@@ -1341,13 +1341,22 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       const durMap:Record<string,number|null>={}
       await Promise.all(workout.exercises.map(async ex=>{
         const loadableBW = ex.isBodyweight && isLoadableBodyweight(ex.name) && (settings.body_weight_lbs ?? 0) > 0
+        // Timed work (holds, carries, intervals): the ladder needs the LAST
+        // DURATION and load, which live in the reps/weight columns of 'timed' rows.
+        if (isTimedExercise(ex.name)) {
+          const t = await getLastTimedSet(prefs[ex.name]?.name ?? ex.name)
+          durMap[ex.name] = t?.seconds ?? null
+          lastMap[ex.name] = t?.weight ?? null
+          smartM[ex.name] = null
+          return
+        }
         if (ex.isBodyweight && !loadableBW) { smartM[ex.name]=null; lastMap[ex.name]=null; return }
         // Use the preferred exercise name (from program prefs) for history lookup.
         // If user swapped "Bench Press" → "DB Bench Press" in Program, we look up
         // DB Bench Press history so suggestions are based on what they actually lift.
         const effectiveName = prefs[ex.name]?.name ?? ex.name
         // Also check if there's a 1RM stored under the effective name; fall back to original
-        const oneRm = rm[effectiveName] ?? 0
+        const oneRm = lookupByAlias(rm, effectiveName) ?? 0
         const recentRaw = await getRecentSetsForExercise(effectiveName, 15)
         // Exclude sets logged during the reintroduction window so an easy
         // ramp-back week never drags the suggestion / 1RM basis down.

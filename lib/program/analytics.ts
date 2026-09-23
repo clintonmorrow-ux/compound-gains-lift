@@ -6,6 +6,7 @@ import { bikiniBuilderWorkouts } from './bikiniBuilder'
 import { bbUpperWorkouts } from './bbUpper'
 import { garageGainsWorkouts } from './garageGains'
 import { hybridWorkouts } from './hybrid'
+import { canonicalExercise, lookupByAlias } from './exerciseAliases'
 import { EXERCISE_ALTS } from './alternatives'
 
 // Map every exercise → its primary muscle group.
@@ -70,15 +71,19 @@ export interface RawSet { exercise_name:string; weight_lbs:number|null; reps:num
 // Speed (dynamic-effort) sets are deliberately submaximal and must never
 // read as strength data. Timed holds store SECONDS in the reps column, so
 // they must never enter rep-based strength math or tonnage.
+// Names are folded to their canonical alias so 'Flat Dumbbell Press' and
+// 'Dumbbell Bench Press' read as one lift in PRs, series and plateaus.
 export const strengthSets = (sets: RawSet[]) =>
   sets.filter(s => !s.is_speed && !isTimedExercise(s.exercise_name))
+      .map(s => s.exercise_name === canonicalExercise(s.exercise_name) ? s : { ...s, exercise_name: canonicalExercise(s.exercise_name) })
 
 const epley = (w:number, r:number) => w * (1 + r/30)
 
 // ── e1RM time series for one exercise (best set per day) ────────────
 export function e1rmSeries(sets: RawSet[], exerciseName: string): { date:string; e1rm:number }[] {
   const byDay: Record<string, number> = {}
-  strengthSets(sets).filter(s => s.exercise_name===exerciseName && s.weight_lbs && s.reps)
+  const canon = canonicalExercise(exerciseName)
+  strengthSets(sets).filter(s => s.exercise_name===canon && s.weight_lbs && s.reps)
       .forEach(s => {
         const day = s.completed_at.slice(0,10)
         const est = Math.round(epley(s.weight_lbs!, s.reps!))
@@ -109,7 +114,7 @@ export function muscleVolume(sets: RawSet[], days = 30): Record<string, number> 
   sets.forEach(s => {
     if (!s.reps) return
     if (new Date(s.completed_at).getTime() < cutoff) return
-    const muscle = EXERCISE_MUSCLE[s.exercise_name]
+    const muscle = lookupByAlias(EXERCISE_MUSCLE, s.exercise_name)
     if (!muscle) return
     // Volume = weight×reps (bodyweight counts reps only).
     // Timed holds log SECONDS in reps → contribute seconds directly
@@ -175,7 +180,8 @@ export function cycleComparison(rawSets: CycleSet[]): CycleComparison | null {
     const best: Record<string, number> = {}
     sets.filter(s => (s.cycle_number ?? 1) === cycle && s.weight_lbs && s.reps).forEach(s => {
       const e = epley(s.weight_lbs!, s.reps!)
-      if (!best[s.exercise_name] || e > best[s.exercise_name]) best[s.exercise_name] = e
+      const k = canonicalExercise(s.exercise_name)
+      if (!best[k] || e > best[k]) best[k] = e
     })
     return best
   }

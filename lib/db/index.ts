@@ -201,6 +201,23 @@ export async function getRecentSetsForExercise(exerciseName: string, limit = 15)
   return (data ?? []) as { weight_lbs: number; reps: number; completed_at: string; rir: number | null; is_speed?: boolean | null }[]
 }
 
+/** Most recent timed row (hold / carry / interval) for a movement, across all
+ *  its aliases. Seconds live in `reps`, load in `weight_lbs`. */
+export async function getLastTimedSet(exerciseName: string): Promise<{ seconds: number; weight: number | null } | null> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('logged_sets')
+    .select('weight_lbs, reps, completed_at')
+    .in('exercise_name', aliasesOf(exerciseName))
+    .eq('tempo', 'timed')
+    .not('reps', 'is', null)
+    .order('completed_at', { ascending: false })
+    .limit(1)
+  if (error) throw error
+  const r = data?.[0]
+  return r ? { seconds: r.reps as number, weight: r.weight_lbs as number | null } : null
+}
+
 export async function fetchEquipment(): Promise<string[]> {
   const supabase = createClient()
   const { data, error } = await supabase
