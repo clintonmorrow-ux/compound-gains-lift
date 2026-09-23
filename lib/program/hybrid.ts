@@ -84,9 +84,9 @@ const DAYS: { key: WorkoutKey; name: string; shortName: string; focus: string; l
         cue: ['Neutral grip · bodyweight this block · 3-sec lower · full hang', 'Neutral grip, belt on · full hang · chin clears the bar', 'Neutral grip, belt on · full hang · chin clears the bar'] },
       { name: 'Dumbbell Bench Press', muscle: 'Chest', type: 'primary', sets: 4, range: [8, 10],
         cue: 'Shoulder blades pinned · elbows ~45° · touch the chest, press to lockout' },
-      { name: "Farmer's Carry", muscle: 'Core', type: 'isolation', isBodyweight: true, sets: 3,
+      { name: "Farmer's Carry", muscle: 'Core', type: 'secondary', sets: 3,
         timed: { secs: [40, 45, 50], rest: 90 },
-        cue: 'Heavy · tall, ribs down · walk the clock out, no leaning' },
+        cue: 'Kettlebells, dumbbells or trap bar — heavy · tall, ribs down · walk the clock out, no leaning · log the TOTAL load' },
     ],
   },
   {

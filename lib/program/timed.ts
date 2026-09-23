@@ -22,6 +22,12 @@ export function isRehabIsometric(name: string): boolean {
   return /\bisometric\b|\biso hold\b/i.test(name)
 }
 
+/** Loaded carries: the implement IS the exercise. Duration is set by the
+ *  program; the load is what progresses, +10 lbs total per clean carry. */
+export function isLoadedCarry(name: string): boolean {
+  return /farmer'?s? (carry|walk)|suitcase carry|trap.?bar carry|kettlebell carry|dumbbell carry|\bcarry\b/i.test(name)
+}
+
 export interface TimedTarget {
   seconds: number
   weight: number      // suggested added load (0 = bodyweight)
@@ -54,6 +60,20 @@ export function suggestTimedTarget(
     }
     return { seconds: r5(lastSeconds + 5), weight: lw,
       note: `+5s toward the top of the 30-45s window (last: ${lastSeconds}s${lw > 0 ? ` @ +${lw} lbs` : ''}). Load goes up once you reach 45s.` }
+  }
+
+  // ── Loaded carries: fixed time, progress the load ────────────────────
+  if (exerciseName && isLoadedCarry(exerciseName)) {
+    if (lastSeconds == null || lastSeconds <= 0) {
+      return { seconds: 40, weight: lw > 0 ? lw : 0,
+        note: 'Pick a load you can carry for the full time with your posture intact. Set the total weight below — the app progresses it from whatever you log.' }
+    }
+    if (isDeload) {
+      return { seconds: lastSeconds, weight: Math.max(0, Math.round((lw * 0.8) / 5) * 5),
+        note: `Light week — same ${lastSeconds}s carry at ~80% of last time's ${lw} lbs.` }
+    }
+    return { seconds: lastSeconds, weight: lw + 10,
+      note: `Last: ${lastSeconds}s with ${lw} lbs. Same time, +10 lbs total. If posture broke last time, repeat the load instead.` }
   }
 
   if (lastSeconds == null || lastSeconds <= 0) {

@@ -279,9 +279,10 @@ const twoSidedKey = (n: string) => `cg_two_sided_${n}`
 
 type TimedPhase = 'idle' | 'prep' | 'hold' | 'switch'
 
-function TimedSetCard({ setNum, setCount, suggestSec, suggestWt, note, accentColor, onLog, dbMode = false, exerciseName = '' }: {
+function TimedSetCard({ setNum, setCount, suggestSec, suggestWt, note, accentColor, onLog, dbMode = false, exerciseName = '', loaded = false }: {
   setNum:number; setCount:number; suggestSec:number; suggestWt:number; note:string
   accentColor:string; onLog:(weight:number|null, seconds:number)=>void; dbMode?:boolean; exerciseName?:string
+  loaded?:boolean   // the implement is the exercise (carries): weight is the load, not an add-on
 }) {
   const [targetSec, setTargetSec] = useState(suggestSec)
   const [wt, setWt]               = useState(suggestWt)
@@ -388,7 +389,7 @@ function TimedSetCard({ setNum, setCount, suggestSec, suggestWt, note, accentCol
         </span>
         <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'1px 6px', borderRadius:5,
           background:`color-mix(in srgb, ${accentColor} 16%, transparent)`, color:accentColor, fontSize:10, fontWeight:700, letterSpacing:'0.05em' }}>
-          ⏱ TIMED
+          {loaded ? '🏋️ LOADED CARRY' : '⏱ TIMED'}
         </span>
         {twoSided && (
           <span style={{ fontSize:11, color:'var(--label-2)' }}>· both sides</span>
@@ -418,9 +419,9 @@ function TimedSetCard({ setNum, setCount, suggestSec, suggestWt, note, accentCol
             </button>
             <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
               <span style={{ fontSize:24, fontWeight:700, lineHeight:1, fontVariantNumeric:'tabular-nums', color: wt>0 ? 'var(--label)' : 'var(--label-2)' }}>
-                {wt>0 ? `+${wt}` : 'BW'}
+                {loaded ? (wt>0 ? wt : '—') : (wt>0 ? `+${wt}` : 'BW')}
               </span>
-              <span style={{ fontSize:10, color:'var(--label-2)', marginTop:3 }}>{wt>0 ? 'lbs added' : 'no load'}</span>
+              <span style={{ fontSize:10, color:'var(--label-2)', marginTop:3 }}>{loaded ? 'lbs total' : wt>0 ? 'lbs added' : 'no load'}</span>
             </div>
             <button onClick={()=>setWt(w=>w + (dbMode ? dumbbellStep(w,1) : 5))} aria-label="more weight" style={{ width:38, display:'grid', placeItems:'center' }}>
               <Plus size={16} strokeWidth={2.5} style={{ color:accentColor }} />
@@ -449,7 +450,7 @@ function TimedSetCard({ setNum, setCount, suggestSec, suggestWt, note, accentCol
         <button onClick={start} style={{ width:'100%', height:46, borderRadius:12,
           background:accentColor, color:'#fff', fontSize:16, fontWeight:600, letterSpacing:'-0.3px',
           display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-          Start{prepSec > 0 ? ` · ${prepSec}s count-in` : ''}
+          Start{loaded && wt > 0 ? ` · ${wt} lbs` : ''}{prepSec > 0 ? ` · ${prepSec}s count-in` : ''}
         </button>
       </>) : (<>
         {/* Running */}
@@ -463,7 +464,7 @@ function TimedSetCard({ setNum, setCount, suggestSec, suggestWt, note, accentCol
             {mm > 0 ? `${mm}:${String(ss).padStart(2,'0')}` : ss}
           </span>
           {mm === 0 && <span style={{ fontSize:20, color:'var(--label-2)', fontWeight:700 }}> s</span>}
-          {wt > 0 && phase === 'hold' && <p style={{ fontSize:13, color:'var(--label-2)', marginTop:6 }}>holding +{wt} lbs</p>}
+          {wt > 0 && phase === 'hold' && <p style={{ fontSize:13, color:'var(--label-2)', marginTop:6 }}>{loaded ? `carrying ${wt} lbs` : `holding +${wt} lbs`}</p>}
         </div>
         <div style={{ height:6, borderRadius:3, background:'var(--fill-4)', overflow:'hidden' }}>
           <div style={{ height:'100%', width:`${pct*100}%`, background: isCountIn ? 'var(--orange)' : accentColor, transition:'width 0.2s linear' }} />
@@ -2042,7 +2043,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                   {!isComp && isTimedEx && !isTabataEx && timedSugg && (
                     <TimedSetCard key={nextSet} setNum={nextSet} setCount={exSets}
                       suggestSec={timedSugg.seconds} suggestWt={timedSugg.weight} note={timedSugg.note}
-                      accentColor={accent} dbMode={isDumbbellExercise(origEx.name)} exerciseName={effName(origEx)}
+                      accentColor={accent} dbMode={isDumbbellExercise(origEx.name)} exerciseName={effName(origEx)} loaded={!origEx.isBodyweight}
                       onLog={(w, secs) => handleLog(origEx, nextSet, w, secs, 0, 'timed')} />
                   )}
                   {!isComp && !isTimedEx && (
