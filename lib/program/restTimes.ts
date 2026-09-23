@@ -34,10 +34,10 @@ export function getRestSeconds(
   dayType?: DayType,
   rir?: number,
 ): number {
-  // Bodyweight Build: brisk. Intervals carry their own explicit rest.
-  if (programId === 'bodyweight-build-4day') {
-    // Bodyweight sets at RIR 1-3 recover faster than a heavy barbell set.
-    return { primary: 100, secondary: 60, isolation: 40 }[exerciseType]
+  // Hybrid Compound: 2 min on the heavy compounds, 90s elsewhere. Holds,
+  // carries and Tabata carry their own explicit rest in the prescription.
+  if (programId === 'hybrid-compound-4day') {
+    return { primary: 120, secondary: 90, isolation: 60 }[exerciseType]
   }
   // 4 Day Full Body: heavy fives on the mains need a fuller recovery.
   if (programId === 'full-body-4day') {

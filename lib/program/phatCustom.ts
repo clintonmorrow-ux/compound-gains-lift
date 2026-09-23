@@ -45,7 +45,10 @@ export interface Prescription {
   amrap?: boolean       // final set taken for as many reps as possible
   testMode?: 'reps' | 'onerm'   // dedicated testing protocol (see bikiniBuilder.ts)
   testNote?: string             // protocol explanation shown on the set card
-  protocol?: 'bfr'              // special training protocol needing its own UI + rules
+  protocol?: 'bfr' | 'tabata'   // special training protocol needing its own UI + rules
+  rounds?: number               // tabata: number of work intervals
+  workSec?: number              // tabata: seconds of work per round (restSec = seconds off)
+  movements?: string[]          // tabata: movements alternated round by round
   noOneRm?: boolean             // deliberately submaximal — must never feed 1RM estimation
   restSec?: number              // explicit rest, e.g. the 'off' half of an interval
   seconds?: number              // fixed hold/work duration for timed entries (intervals, holds)

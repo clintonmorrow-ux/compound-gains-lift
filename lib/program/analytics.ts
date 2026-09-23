@@ -5,7 +5,7 @@ import { PHAT_CUSTOM_BLOCK2_WORKOUTS } from './phatCustom'
 import { bikiniBuilderWorkouts } from './bikiniBuilder'
 import { bbUpperWorkouts } from './bbUpper'
 import { garageGainsWorkouts } from './garageGains'
-import { bodyweightWorkouts } from './bodyweight'
+import { hybridWorkouts } from './hybrid'
 import { EXERCISE_ALTS } from './alternatives'
 
 // Map every exercise → its primary muscle group.
@@ -39,7 +39,7 @@ export const EXERCISE_MUSCLE: Record<string,string> = (() => {
   for (let w = 1; w <= 12; w++) add(bikiniBuilderWorkouts(w))
   for (let w = 1; w <= 12; w++) add(bbUpperWorkouts(w))
   for (let w = 1; w <= 12; w++) add(garageGainsWorkouts(w))
-  for (let w = 1; w <= 12; w++) add(bodyweightWorkouts(w))
+  for (let w = 1; w <= 12; w++) add(hybridWorkouts(w))
   // 3. Alternatives inherit their parent exercise's muscle
   Object.entries(EXERCISE_ALTS).forEach(([parent, altsMap]) => {
     const muscle = m[parent]

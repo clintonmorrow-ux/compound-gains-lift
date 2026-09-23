@@ -485,6 +485,161 @@ function TimedSetCard({ setNum, setCount, suggestSec, suggestWt, note, accentCol
   )
 }
 
+/**
+ * Tabata block: N rounds of work/rest, alternating movements round by round.
+ * One card = one logged set (total block seconds). Count-in first, 3-2-1
+ * beeps before every transition, the CURRENT movement large and the NEXT
+ * one underneath so the swap is never a surprise.
+ */
+type TabataPhase = 'idle' | 'prep' | 'work' | 'rest'
+
+function TabataCard({ rounds, workSec, restSec, movements, accentColor, onLog }: {
+  rounds:number; workSec:number; restSec:number; movements:string[]
+  accentColor:string; onLog:(seconds:number)=>void
+}) {
+  const [phase, setPhase]     = useState<TabataPhase>('idle')
+  const [round, setRound]     = useState(1)
+  const [endTime, setEndTime] = useState(0)
+  const [rem, setRem]         = useState(workSec)
+  const [prepSec, setPrepSec] = useState(5)
+  const lastBeeped = useRef(0)
+  const loggedRef  = useRef(false)
+  const startedAt  = useRef(0)
+
+  useEffect(() => { setPrepSec(readPrep()) }, [])
+
+  const mv = (r: number) => movements[(r - 1) % movements.length]
+  const running = phase !== 'idle'
+  const phaseLen = phase === 'prep' ? prepSec : phase === 'work' ? workSec : restSec
+
+  const advance = useCallback(() => {
+    lastBeeped.current = 0
+    if (phase === 'prep') {
+      setPhase('work'); setEndTime(Date.now() + workSec * 1000); setRem(workSec)
+    } else if (phase === 'work') {
+      if (round >= rounds) {
+        if (!loggedRef.current) { loggedRef.current = true; setPhase('idle'); onLog(rounds * (workSec + restSec)) }
+      } else {
+        setPhase('rest'); setEndTime(Date.now() + restSec * 1000); setRem(restSec)
+      }
+    } else if (phase === 'rest') {
+      setRound(r => r + 1); setPhase('work'); setEndTime(Date.now() + workSec * 1000); setRem(workSec)
+    }
+  }, [phase, round, rounds, workSec, restSec, onLog])
+
+  useEffect(() => {
+    if (!running) return
+    ensureBeepCtx()
+    const id = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000))
+      setRem(remaining)
+      if (remaining >= 1 && remaining <= 3 && lastBeeped.current !== remaining) {
+        lastBeeped.current = remaining
+        countdownBeep(remaining === 1)
+      }
+      if (remaining <= 0) advance()
+    }, 200)
+    return () => clearInterval(id)
+  }, [running, endTime, advance])
+
+  const start = () => {
+    ensureBeepCtx()
+    loggedRef.current = false; lastBeeped.current = 0
+    setRound(1); startedAt.current = Date.now()
+    if (prepSec > 0) { setPhase('prep'); setEndTime(Date.now() + prepSec * 1000); setRem(prepSec) }
+    else { setPhase('work'); setEndTime(Date.now() + workSec * 1000); setRem(workSec) }
+  }
+  const stopAndLog = () => {
+    if (loggedRef.current) return
+    loggedRef.current = true
+    setPhase('idle')
+    onLog(Math.max(1, Math.round((Date.now() - startedAt.current) / 1000) - (prepSec || 0)))
+  }
+  const setPrep = (v: number) => { setPrepSec(v); localStorage.setItem(PREP_KEY, String(v)) }
+
+  const isWork = phase === 'work'
+  const colour = phase === 'prep' ? 'var(--orange)' : isWork ? accentColor : 'var(--green)'
+  const pct = phaseLen > 0 ? (phaseLen - rem) / phaseLen : 0
+  const total = rounds * (workSec + restSec)
+
+  return (
+    <div style={{ borderRadius:14, padding:12,
+      border:`1px solid color-mix(in srgb, ${accentColor} 35%, transparent)`,
+      background:`color-mix(in srgb, ${accentColor} 7%, var(--bg-2))`,
+      display:'flex', flexDirection:'column', gap:10 }}>
+
+      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+        <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'1px 6px', borderRadius:5,
+          background:`color-mix(in srgb, ${accentColor} 16%, transparent)`, color:accentColor, fontSize:10, fontWeight:700, letterSpacing:'0.05em' }}>
+          ⚡ TABATA
+        </span>
+        <span style={{ fontSize:12, fontWeight:600, color:'var(--label-2)' }}>
+          {rounds} × {workSec}s on / {restSec}s off · {Math.floor(total/60)}:{String(total%60).padStart(2,'0')}
+        </span>
+      </div>
+
+      {!running ? (<>
+        {/* Round order so the swap is known before starting */}
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+          {Array.from({ length: rounds }, (_, i) => (
+            <span key={i} style={{ padding:'4px 8px', borderRadius:6, fontSize:12, fontWeight:600,
+              background: i % 2 === 0 ? `color-mix(in srgb, ${accentColor} 14%, transparent)` : 'var(--fill-4)',
+              color: i % 2 === 0 ? accentColor : 'var(--label)' }}>
+              {i+1} · {mv(i+1)}
+            </span>
+          ))}
+        </div>
+
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ fontSize:11, fontWeight:600, color:'var(--label-2)', letterSpacing:'0.04em' }}>COUNT-IN</span>
+          <div style={{ display:'flex', gap:2, padding:2, borderRadius:8, background:'var(--fill-3)' }}>
+            {[0,3,5].map(v => (
+              <button key={v} onClick={()=>setPrep(v)} style={{ padding:'5px 10px', borderRadius:6, fontSize:12, fontWeight:700,
+                background: prepSec===v ? accentColor : 'transparent', color: prepSec===v ? '#fff' : 'var(--label-2)' }}>
+                {v===0?'Off':`${v}s`}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button onClick={start} style={{ width:'100%', height:46, borderRadius:12,
+          background:accentColor, color:'#fff', fontSize:16, fontWeight:600, letterSpacing:'-0.3px' }}>
+          Start Tabata{prepSec > 0 ? ` · ${prepSec}s count-in` : ''}
+        </button>
+      </>) : (<>
+        <div style={{ textAlign:'center', padding:'2px 0 6px' }}>
+          <p style={{ fontSize:12, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:colour, marginBottom:4 }}>
+            {phase === 'prep' ? 'Get set' : isWork ? `Round ${round} of ${rounds} · WORK` : `Round ${round} of ${rounds} · REST`}
+          </p>
+          <p style={{ fontSize:26, fontWeight:800, letterSpacing:'-0.5px', lineHeight:1.1, marginBottom:6,
+            color: isWork ? 'var(--label)' : 'var(--label-2)' }}>
+            {isWork ? mv(round) : `Next: ${mv(round + 1)}`}
+          </p>
+          <span style={{ fontSize:76, fontWeight:800, lineHeight:1, fontVariantNumeric:'tabular-nums', color:colour }}>{rem}</span>
+          <span style={{ fontSize:20, color:'var(--label-2)', fontWeight:700 }}> s</span>
+          {phase === 'prep' && <p style={{ fontSize:13, color:'var(--label-2)', marginTop:6 }}>First up: {mv(1)}</p>}
+        </div>
+        {/* round progress dots */}
+        <div style={{ display:'flex', gap:4 }}>
+          {Array.from({ length: rounds }, (_, i) => (
+            <div key={i} style={{ flex:1, height:6, borderRadius:3, overflow:'hidden',
+              background: i + 1 < round ? accentColor : 'var(--fill-4)' }}>
+              {i + 1 === round && <div style={{ height:'100%', width:`${(isWork ? pct : 1)*100}%`, background:colour, transition:'width 0.2s linear' }} />}
+            </div>
+          ))}
+        </div>
+        <button onClick={phase === 'prep' ? () => { setPhase('idle'); loggedRef.current = false } : stopAndLog}
+          style={{ width:'100%', height:46, borderRadius:12,
+            background: phase === 'prep' ? 'var(--fill-4)' : 'rgba(255,159,10,0.16)',
+            border: phase === 'prep' ? 'none' : '1px solid rgba(255,159,10,0.45)',
+            color: phase === 'prep' ? 'var(--label-2)' : 'var(--orange)', fontSize:15, fontWeight:700 }}>
+          {phase === 'prep' ? 'Cancel' : `Stop & Log (${round - (isWork ? 1 : 0)} rounds done)`}
+        </button>
+      </>)}
+    </div>
+  )
+}
+
 function ActiveSetCard({ setNum, setCount, target, repsRange, lastWeight, isBodyweight, accentColor, exerciseName, onLog, beltMode = false, speedMode = false, dbMode = false }: {
   // beltMode: weighted dips/pull-ups — target/wt are BELT (added) weight
   setNum:number; setCount:number; target:number; repsRange:string
@@ -1457,7 +1612,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     const newLogged = [...(sets[origEx.name]??[]), tempSet]
     const newSets   = {...sets, [origEx.name]: newLogged}
     setSets(newSets)
-    setRest({ sec: rx(origEx.name)?.restSec ?? getRestSeconds(wk, origEx.type, activeProgramId, workout.dayType, rx(origEx.name)?.rir),
+    setRest({ sec: rx(origEx.name)?.protocol === 'tabata' ? 120 : rx(origEx.name)?.restSec ?? getRestSeconds(wk, origEx.type, activeProgramId, workout.dayType, rx(origEx.name)?.rir),
              name: effName(origEx), startedAt: Date.now() })
     if (newLogged.length >= setsFor(origEx)) {
       const next = workout.exercises.find(e => (newSets[e.name]?.length??0) < setsFor(e))
@@ -1713,6 +1868,7 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
           const isTimedEx  = isTimedExercise(origEx.name)
           const isTestEx   = exRx?.testMode !== undefined
           const isBfrEx    = exRx?.protocol === 'bfr'
+          const isTabataEx = exRx?.protocol === 'tabata'
           // A prescription with a fixed duration (interval work, programmed holds)
           // overrides the adaptive hold ladder, which is meant for open-ended planks.
           const timedBase  = isTimedEx ? suggestTimedTarget(lastDurs[origEx.name] ?? null, lastWt, cfg.isDeload, effName(origEx)) : null
@@ -1801,7 +1957,9 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                     background:'rgba(118,118,128,0.1)', border:'0.5px solid rgba(84,84,88,0.3)', marginBottom:4 }}>
                     <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>{exSets} sets</span>
                     <span style={{ color:'#8E8E93' }}>·</span>
-                    {isTimedEx ? (
+                    {isTabataEx ? (
+                      <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>{exRx?.rounds} × {exRx?.workSec}/{exRx?.restSec}s</span>
+                    ) : isTimedEx ? (
                       <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>~{timedSugg?.seconds ?? 30}s holds</span>
                     ) : (<>
                       <span style={{ fontSize:13, fontWeight:600, color:'#fff' }}>{exReps} reps</span>
@@ -1876,7 +2034,12 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
                   ))}
 
                   {/* Active set card — timed holds get the countdown card */}
-                  {!isComp && isTimedEx && timedSugg && (
+                  {!isComp && isTabataEx && exRx && (
+                    <TabataCard key={nextSet} rounds={exRx.rounds ?? 8} workSec={exRx.workSec ?? 20} restSec={exRx.restSec ?? 10}
+                      movements={exRx.movements ?? [origEx.name]} accentColor={accent}
+                      onLog={(secs) => handleLog(origEx, nextSet, null, secs, 0, 'timed')} />
+                  )}
+                  {!isComp && isTimedEx && !isTabataEx && timedSugg && (
                     <TimedSetCard key={nextSet} setNum={nextSet} setCount={exSets}
                       suggestSec={timedSugg.seconds} suggestWt={timedSugg.weight} note={timedSugg.note}
                       accentColor={accent} dbMode={isDumbbellExercise(origEx.name)} exerciseName={effName(origEx)}

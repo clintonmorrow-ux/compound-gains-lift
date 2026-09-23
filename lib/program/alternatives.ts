@@ -2312,9 +2312,9 @@ function muscleIndex(): Record<string, string> {
     const { bikiniBuilderWorkouts } = require('./bikiniBuilder') as typeof import('./bikiniBuilder')
     const { bbUpperWorkouts } = require('./bbUpper') as typeof import('./bbUpper')
     const { garageGainsWorkouts } = require('./garageGains') as typeof import('./garageGains')
-    const { bodyweightWorkouts } = require('./bodyweight') as typeof import('./bodyweight')
+    const { hybridWorkouts } = require('./hybrid') as typeof import('./hybrid')
     const bikini: any[] = []
-    for (let w = 1; w <= 12; w++) bikini.push(...bikiniBuilderWorkouts(w), ...bbUpperWorkouts(w), ...garageGainsWorkouts(w), ...bodyweightWorkouts(w))
+    for (let w = 1; w <= 12; w++) bikini.push(...bikiniBuilderWorkouts(w), ...bbUpperWorkouts(w), ...garageGainsWorkouts(w), ...hybridWorkouts(w))
     const allW = [...PROGRAM_LIBRARY.flatMap(p => p.workouts), ...PHAT_CUSTOM_BLOCK2_WORKOUTS, ...bikini]
     allW.forEach((w: any) =>
       (w.exercises ?? []).forEach((e: any) => { if (e?.name && !m[e.name]) m[e.name] = e.muscle }))
