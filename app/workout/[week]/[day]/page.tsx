@@ -1431,21 +1431,22 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   // ── Intercept back button when workout has progress ────────────
 
   useEffect(() => {
-    // Push a dummy history entry so the first swipe-back / back-button
-    // hits our interceptor rather than immediately navigating away
+    // Nothing logged yet → nothing to protect. Leave the back gesture alone
+    // so the browser and the Next router perform ONE navigation. (Calling
+    // router.replace from inside a popstate handler races Next's own
+    // history restore and could leave the home screen stuck on its spinner.)
+    if (!hasProgress) return
+    // Progress exists: push a sentinel entry so the first swipe-back hits our
+    // interceptor and shows the save/discard sheet instead of leaving.
     window.history.pushState({ workout: true }, '')
     const onPop = () => {
-      if (hasProgress) {
-        // Re-push so the user can't just tap back again without confirming
-        window.history.pushState({ workout: true }, '')
-        setShowExitSheet(true)
-      } else {
-        router.replace('/')
-      }
+      // Re-push so a second back-tap still has to go through the sheet
+      window.history.pushState({ workout: true }, '')
+      setShowExitSheet(true)
     }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
-  }, [hasProgress, router])
+  }, [hasProgress])
 
   const total  = workout.exercises.reduce((a,ex)=>a+setsFor(ex), 0)
   const logged = Object.values(sets).reduce((a,s)=>a+s.length, 0)

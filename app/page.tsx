@@ -55,8 +55,13 @@ export default function Dashboard() {
   const init = useCallback(async () => {
     try {
       const sb = createClient()
-      const { data:{session} } = await sb.auth.getSession()
-      if (!session) await sb.auth.signInAnonymously()
+      // Auth calls take a navigator.lock; if one is wedged (backgrounded PWA,
+      // abandoned call from the previous page) getSession can hang forever.
+      // Never let that hold the whole dashboard hostage.
+      const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T) =>
+        Promise.race([p, new Promise<T>(res => setTimeout(() => res(fallback), ms))])
+      const { data:{session} } = await withTimeout(sb.auth.getSession(), 4000, { data: { session: null } } as any)
+      if (!session) await withTimeout(sb.auth.signInAnonymously(), 4000, null as any)
       const [s, sessions, rms, allSets, cp] = await Promise.all([
         fetchSettings(), fetchRecentSessions(20), fetchAllOneRms(),
         fetchAllLoggedSets(), fetchCoachPrefs()
@@ -124,7 +129,12 @@ export default function Dashboard() {
     }
   }, [])
 
-  useEffect(() => { init() }, [init])
+  useEffect(() => {
+    init()
+    // Belt and braces: whatever happens in init, the dashboard renders.
+    const t = setTimeout(() => setReady(true), 8000)
+    return () => clearTimeout(t)
+  }, [init])
 
 
 
