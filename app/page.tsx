@@ -58,10 +58,20 @@ export default function Dashboard() {
       // Auth calls take a navigator.lock; if one is wedged (backgrounded PWA,
       // abandoned call from the previous page) getSession can hang forever.
       // Never let that hold the whole dashboard hostage.
-      const withTimeout = <T,>(p: Promise<T>, ms: number, fallback: T) =>
-        Promise.race([p, new Promise<T>(res => setTimeout(() => res(fallback), ms))])
-      const { data:{session} } = await withTimeout(sb.auth.getSession(), 4000, { data: { session: null } } as any)
-      if (!session) await withTimeout(sb.auth.signInAnonymously(), 4000, null as any)
+      // A timeout is NOT "no account". Only a definitive null from getSession
+      // — with no session persisted in storage either — means this is a
+      // first visit that needs an anonymous user. Creating one on a slow
+      // handshake would replace the real session and make the athlete's
+      // data vanish (which is exactly what happened once).
+      const TIMEOUT = Symbol('timeout')
+      const withTimeout = <T,>(p: Promise<T>, ms: number) =>
+        Promise.race([p, new Promise<typeof TIMEOUT>(res => setTimeout(() => res(TIMEOUT), ms))])
+      const got = await withTimeout(sb.auth.getSession(), 6000)
+      if (got !== TIMEOUT) {
+        const session = got.data.session
+        const hasStored = typeof window !== 'undefined' && Object.keys(localStorage).some(k => /^sb-.*-auth-token$/.test(k))
+        if (!session && !hasStored) await sb.auth.signInAnonymously()
+      }
       const [s, sessions, rms, allSets, cp] = await Promise.all([
         fetchSettings(), fetchRecentSessions(20), fetchAllOneRms(),
         fetchAllLoggedSets(), fetchCoachPrefs()
