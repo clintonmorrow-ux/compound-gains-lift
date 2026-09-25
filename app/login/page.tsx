@@ -47,15 +47,20 @@ export default function LoginPage() {
     const sb = createClient()
     // Same rule for Google: link the identity to the existing anonymous user
     // rather than signing in as a new one.
-    const { error: err } = anon
-      ? (await sb.auth.linkIdentity({
-          provider: 'google',
-          options: { redirectTo: `${window.location.origin}/auth/callback` },
-        }))
-      : (await sb.auth.signInWithOAuth({
-          provider: 'google',
-          options: { redirectTo: `${window.location.origin}/auth/callback` },
-        }))
+    const opts = { redirectTo: `${window.location.origin}/auth/callback` }
+    let err: { message: string } | null = null
+    if (anon) {
+      ;({ error: err } = await sb.auth.linkIdentity({ provider: 'google', options: opts }))
+      // Linking can be refused (manual linking off in the project, or the
+      // Google identity already belongs to another account). Either way the
+      // right move is a plain sign-in with that Google account — which is
+      // where the athlete's data actually lives.
+      if (err && /manual linking|already|identity/i.test(err.message)) {
+        ;({ error: err } = await sb.auth.signInWithOAuth({ provider: 'google', options: opts }))
+      }
+    } else {
+      ;({ error: err } = await sb.auth.signInWithOAuth({ provider: 'google', options: opts }))
+    }
     if (err) { setError(err.message); setLoadGoogle(false) }
     // On success the page navigates away automatically
   }
