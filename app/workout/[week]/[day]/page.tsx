@@ -1,5 +1,5 @@
 'use client'
-import { use, useEffect, useRef, useState, useCallback } from 'react'
+import { use, useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Check, CheckCircle2, ArrowLeftRight, X, Trophy, Minus, Plus, Flame, Award, Lightbulb, RotateCcw, Zap, Pencil, PlayCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -1242,8 +1242,11 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     ? (localStorage.getItem('cg_program') ?? undefined) : undefined
   const activeProgram = getProgram(activeProgramId)
   // Week-aware: programs with block substitutions swap exercises mid-cycle
-  const weekWorkouts = getWeekWorkouts(activeProgramId, wk)
-  const workout = weekWorkouts.find(w => w.key === key) ?? weekWorkouts[0]
+  // Memoised: generated programs build fresh workout objects on every call,
+  // and init() keys off workout.exercises. Without this, every render re-ran
+  // init — re-fetching history and re-raising the resume prompt on each tap.
+  const weekWorkouts = useMemo(() => getWeekWorkouts(activeProgramId, wk), [activeProgramId, wk])
+  const workout = useMemo(() => weekWorkouts.find(w => w.key === key) ?? weekWorkouts[0], [weekWorkouts, key])
   /** Per-exercise prescription when the program defines one, else null. */
   const rx = (exName: string) => getPrescription(activeProgramId, key, exName, wk)
   const setsFor = (ex: Exercise) => rx(ex.name)?.sets ?? getSetsForWeek(ex.type, wk, cfg)
@@ -1290,6 +1293,9 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
   }, [])
   const [equipment, setEquipment] = useState<string[]>(['barbell','dumbbells','cables','machines'])
   const [sid,       setSid]       = useState<string|null>(null)
+  const sidRef = useRef<string|null>(null); sidRef.current = sid
+  const resumeChecked = useRef(false)
+  const sessionPromiseRef = useRef<Promise<string> | null>(null)
   const [sets,      setSets]      = useState<Record<string,any[]>>({})
   const [lasts,     setLasts]     = useState<Record<string,number|null>>({})
   const [lastDurs,  setLastDurs]  = useState<Record<string,number|null>>({})   // timed holds: last duration (sec)
@@ -1314,6 +1320,16 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
       const sb = createClient()
       const {data:{session}} = await sb.auth.getSession()
       if (!session) await sb.auth.signInAnonymously()
+      // Resume check runs FIRST (before the slow history loads) and once per
+      // visit, so the prompt appears on arrival — never after the athlete has
+      // already started logging into a session of their own.
+      if (!resumeChecked.current) {
+        resumeChecked.current = true
+        const incomplete = await findIncompleteSession(wk, key)
+        if (incomplete && incomplete.logged_sets?.length > 0 && !sidRef.current && !sessionPromiseRef.current) {
+          setResumeCandidate(incomplete)
+        }
+      }
       await requestNotificationPermission()
       const [rmArr, settings, equip, prefs] = await Promise.all([fetchAllOneRms(), fetchSettings(), fetchEquipment(), fetchExercisePreferences()])
       setProgPrefs(prefs)
@@ -1368,11 +1384,6 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
         smartM[ex.name]   = calculateSmartSuggestion(recent, ex.type, wk, oneRm, settings.round_to_lbs, exCfg)
       }))
       setLasts(lastMap); setSmartMap(smartM); setLastDurs(durMap)
-      // Check for an incomplete session from a previous interrupted workout
-      const incomplete = await findIncompleteSession(wk, key)
-      if (incomplete && incomplete.logged_sets?.length > 0) {
-        setResumeCandidate(incomplete)
-      }
       // Session is created lazily on first set logged — prevents ghost sessions
       // when user browses to workout page without actually training
     } catch(e){ console.error('Init:',e) }
@@ -1570,7 +1581,6 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
 
   // One session per workout, created lazily on the first log. A single shared
   // promise so two quick taps never create two sessions.
-  const sessionPromiseRef = useRef<Promise<string> | null>(null)
   const ensureSession = (): Promise<string> => {
     if (sid) return Promise.resolve(sid)
     if (!sessionPromiseRef.current) {
