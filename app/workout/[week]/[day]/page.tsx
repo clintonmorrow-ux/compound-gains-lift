@@ -1568,30 +1568,27 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     }
   }
 
-  const handleLog = async (origEx:Exercise, setNum:number, weight:number|null, reps:number, rir:number, tempo:string='Standard') => {
-    // Lazy session creation — only hit the DB when user actually logs a set
-    let sessionId = sid
-    if (!sessionId) {
-      try {
-        const sess = await createSession(wk, key, cycleNumber, activeProgramId)
-        sessionId = sess.id
-        setSid(sessionId)
-      } catch(e:any) {
-        // Surface the real error so a logging failure is never silent
-        const msg = e?.message || e?.error_description || 'Could not start the workout session'
-        setSyncErrors(prev => [...new Set([...prev, `⚠️ ${msg}`])])
-        throw e
-      }
+  // One session per workout, created lazily on the first log. A single shared
+  // promise so two quick taps never create two sessions.
+  const sessionPromiseRef = useRef<Promise<string> | null>(null)
+  const ensureSession = (): Promise<string> => {
+    if (sid) return Promise.resolve(sid)
+    if (!sessionPromiseRef.current) {
+      sessionPromiseRef.current = createSession(wk, key, cycleNumber, activeProgramId)
+        .then(sess => { setSid(sess.id); return sess.id as string })
+        .catch(e => { sessionPromiseRef.current = null; throw e })
     }
+    return sessionPromiseRef.current
+  }
 
-    // Optimistic update — advance UI immediately so the workout never freezes
+  const handleLog = async (origEx:Exercise, setNum:number, weight:number|null, reps:number, rir:number, tempo:string='Standard') => {
+    // Optimistic update FIRST — the set appears and the rest timer starts the
+    // instant the athlete taps. Nothing about the network can freeze the UI.
     const tempId = `pending-${Date.now()}`
     const tempSet = { id: tempId, exercise_name: effName(origEx), set_number: setNum,
                       weight_lbs: weight, reps, rir, pending: true }
     setSets(prev => ({...prev, [origEx.name]: [...(prev[origEx.name]??[]), tempSet]}))
 
-    // Dynamic-effort (speed) work — PHAT hypertrophy-day primary slot. Tagged
-    // so these deliberately submaximal sets never feed 1RM estimation.
     // Deliberately submaximal work that must never feed 1RM estimation:
     // dynamic-effort speed sets, and BFR sets at ~25% load. Both ride the
     // same is_speed exclusion pipeline (tagged at insert, filtered at every
@@ -1599,20 +1596,20 @@ export default function WorkoutPage({ params }: { params: Promise<{week:string;d
     const isSpeedSet = (origEx.type === 'primary' && String(cfg.reps.primary).includes('explosive'))
       || (rx(origEx.name)?.noOneRm === true)
 
-    // Sync to Supabase in background with retry
-    logWithRetry(sessionId!, effName(origEx), setNum, weight, reps, false, rir, tempo, isSpeedSet)  // 3 retries
+    // Background: make sure the session exists, then write the set, with
+    // retry. Failure marks the row so it is visible, never silent.
+    ensureSession()
+      .then(sessionId => logWithRetry(sessionId, effName(origEx), setNum, weight, reps, false, rir, tempo, isSpeedSet))
       .then(row => {
-        // Replace temp set with confirmed row
         setSets(prev => ({
           ...prev,
           [origEx.name]: (prev[origEx.name]??[]).map(s => s.id === tempId ? {...row, rir} : s)
         }))
-        // Clear any sync error for this exercise
-        setSyncErrors(prev => prev.filter(e => e !== origEx.name))
+        setSyncErrors(prev => prev.filter(e => e !== origEx.name && !e.startsWith('⚠️')))
       })
-      .catch(() => {
-        // Mark as failed — user can see it and the set stays logged locally
-        setSyncErrors(prev => [...new Set([...prev, origEx.name])])
+      .catch((e:any) => {
+        const msg = e?.message || e?.error_description || ''
+        setSyncErrors(prev => [...new Set([...prev, origEx.name, ...(msg ? [`⚠️ ${msg}`] : [])])])
         setSets(prev => ({
           ...prev,
           [origEx.name]: (prev[origEx.name]??[]).map(s =>

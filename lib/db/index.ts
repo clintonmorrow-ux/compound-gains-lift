@@ -1,4 +1,17 @@
 import { createClient } from '@/lib/supabase/client'
+
+/** The signed-in user WITHOUT a network round-trip. getUser() hits the auth
+ *  server (and takes the auth lock, and may refresh the token) — fine for a
+ *  security check, but a set log must not hang on it. The local session is
+ *  authoritative enough: every write is still enforced by RLS. Falls back to
+ *  getUser() only when nothing is cached. */
+async function currentUser(): Promise<import("@supabase/supabase-js").User | null> {
+  const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session?.user) return session.user
+  const user = await currentUser()
+  return user
+}
 import { aliasesOf } from '@/lib/program/exerciseAliases'
 import type { UserOneRm, UserSettings } from '@/types'
 
@@ -16,7 +29,7 @@ export async function fetchAllOneRms(): Promise<UserOneRm[]> {
 
 export async function upsertOneRm(exerciseName: string, weightLbs: number): Promise<void> {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await currentUser()
   if (!user) throw new Error('Not authenticated')
   const { error } = await supabase
     .from('user_1rm')
@@ -39,7 +52,7 @@ export async function deleteOneRm(exerciseName: string): Promise<void> {
 
 export async function fetchSettings(): Promise<UserSettings> {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await currentUser()
   if (!user) return { current_week: 1, round_to_lbs: 5 }
 
   const { data, error } = await supabase
@@ -91,7 +104,7 @@ export async function fetchSettings(): Promise<UserSettings> {
 // Most recent completed session date (for detecting a training layoff)
 export async function getLastWorkoutDate(): Promise<string | null> {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await currentUser()
   if (!user) return null
   const { data, error } = await supabase
     .from('sessions')
@@ -106,7 +119,7 @@ export async function getLastWorkoutDate(): Promise<string | null> {
 
 export async function updateSettings(settings: Partial<UserSettings>): Promise<void> {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await currentUser()
   if (!user) throw new Error('Not authenticated')
   const { error } = await supabase
     .from('user_settings')
@@ -118,7 +131,7 @@ export async function updateSettings(settings: Partial<UserSettings>): Promise<v
 
 export async function createSession(weekNumber: number, workoutKey: string, cycleNumber: number = 1, programId: string | null = null) {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await currentUser()
   if (!user) throw new Error('Not authenticated')
   const { data, error } = await supabase
     .from('sessions')
@@ -230,7 +243,7 @@ export async function fetchEquipment(): Promise<string[]> {
 
 export async function saveEquipment(types: string[]): Promise<void> {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await currentUser()
   if (!user) return
   await supabase.from('user_settings').upsert({ id: user.id, equipment_types: types }, { onConflict:'id' })
 }
@@ -309,7 +322,7 @@ export async function deleteLoggedSet(setId: string) {
 // ── Exercise preferences (whole-program customization) ───────────────
 export async function fetchExercisePreferences(): Promise<Record<string,{name:string;cue:string}>> {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await currentUser()
   if (!user) return {}
   const { data, error } = await supabase
     .from('user_exercise_preferences')
@@ -326,7 +339,7 @@ export async function saveExercisePreference(
   preferred: { name: string; cue: string } | null  // null = reset to default
 ): Promise<void> {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await currentUser()
   if (!user) throw new Error('Not authenticated')
 
   if (!preferred) {
@@ -367,7 +380,7 @@ export async function fetchCoachPrefs(): Promise<{rirTrend:boolean;deloadAlerts:
 
 export async function saveCoachPrefs(prefs: {rirTrend:boolean;deloadAlerts:boolean;setFatigue:boolean}): Promise<void> {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await currentUser()
   if (!user) return
   await supabase.from('user_settings')
     .upsert({ id: user.id, coaching_prefs: prefs }, { onConflict: 'id' })
@@ -387,7 +400,7 @@ export async function deleteSession(sessionId: string): Promise<void> {
 // ── Session resume ────────────────────────────────────────────────────
 export async function findIncompleteSession(weekNumber: number, workoutKey: string) {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await currentUser()
   if (!user) return null
   const { data } = await supabase
     .from('sessions')
@@ -405,7 +418,7 @@ export async function findIncompleteSession(weekNumber: number, workoutKey: stri
 // ── Program format ────────────────────────────────────────────────────
 export async function saveProgramFormat(format: '4day' | '5day'): Promise<void> {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await currentUser()
   if (!user) return
   await supabase.from('user_settings')
     .upsert({ id: user.id, program_format: format }, { onConflict: 'id' })
@@ -420,7 +433,7 @@ export async function fetchCycleStats(cycleNumber: number): Promise<{
   lastDate:  string | null
 }> {
   const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await currentUser()
   if (!user) return { workoutsCompleted:0, totalSets:0, sets:[], firstDate:null, lastDate:null }
 
   const { data: sessions } = await supabase
